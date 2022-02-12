@@ -1,7 +1,21 @@
+#
+# mrr_absorption_sensor package
+#
+# Classes:
+#   - Models
+#   - sensors: Mrr, Linear, Spiral
+#
+# Notes:
+#   1) On windows, the colorama package must be initiazed with colorama.init()
+#      prior to calling the package modules if colored text in the console is desired.
+#   2) "Auto-removal of grids by pcolor() and pcolormesh() is deprecated..."
+#      warnings caused by a bug in matplotlib 3.5.1 can be suppressed
+#      by calling "warnings.filterwarnings("ignore", category=DeprecationWarning)"
+
 from .modeling import Models
-from .sensor_mrr import Mrr
-from .sensor_linear import Linear
-from .sensor_spiral import Spiral
+from .mrr import Mrr
+from .linear import Linear
+from .spiral import Spiral
 from .fileio import (
     load_toml_file,
     define_excel_output_fname,

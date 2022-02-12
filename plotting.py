@@ -13,9 +13,9 @@ from pathlib import Path
 
 # Package modules
 from .modeling import Models
-from .sensor_mrr import Mrr
-from .sensor_linear import Linear
-from .sensor_spiral import Spiral
+from .mrr import Mrr
+from .linear import Linear
+from .spiral import Spiral
 from .fileio import write_2D_data_to_Excel
 
 
