@@ -4,7 +4,7 @@ from scipy import optimize
 from typing import Callable
 
 # Package modules
-from .modeling import Models
+from .models import Models
 
 
 class Linear:

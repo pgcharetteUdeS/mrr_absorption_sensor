@@ -12,7 +12,7 @@ import numpy as np
 from pathlib import Path
 
 # Package modules
-from .modeling import Models
+from .models import Models
 from .mrr import Mrr
 from .linear import Linear
 from .spiral import Spiral

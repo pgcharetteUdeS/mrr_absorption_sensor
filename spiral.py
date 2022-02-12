@@ -6,7 +6,7 @@ from scipy import optimize, integrate
 from typing import Callable
 
 # Package modules
-from .modeling import Models
+from .models import Models
 
 
 class Spiral:

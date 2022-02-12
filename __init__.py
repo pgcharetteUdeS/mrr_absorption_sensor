@@ -12,7 +12,7 @@
 #      warnings caused by a bug in matplotlib 3.5.1 can be suppressed
 #      by calling "warnings.filterwarnings("ignore", category=DeprecationWarning)"
 
-from .modeling import Models
+from .models import Models
 from .mrr import Mrr
 from .linear import Linear
 from .spiral import Spiral
