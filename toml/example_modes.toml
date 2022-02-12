@@ -1,0 +1,92 @@
+# Example data file for absorption_sensors.py
+					
+# Physical parameters							
+lambda_res = 0.532                    # Ring resonance wavelength (um)
+pol = "TE"                            # Mode polarization, for use in graph labeling ("TM" or "TE, default = "TE")
+core_width = 0.70                     # Waveguide core width (um)
+ni_op = 1.00e-6                       # Fluid refractive index imaginary component operating point (RIU)
+alpha_wg = 1                          # Intrinsic waveguide propagation losses due to material absorption and sidewall roughness (db/cm)
+spiral_spacing = 5                    # Spacing between the waveguides in the spiral (um)
+
+# Analysis parameters
+Rmin = 25                             # Analysis domain minimum radius (um)
+Rmax = 10000                          # Analysis domain maximum radius (um)
+R_samples_per_decade = 50             # Analysis domain  logarithmic sampling rate (number of samples per decade)
+T_SNR = 20                            # Transmission measurement SNR (dB)
+min_delta_ni = 1.0e-6                 # Desired minimum resolvable change in ni (RIU)
+write_excel_files = false		      # Enable/disable writing of results to Excel files (default = true)
+write_spiral_sequence_to_file = false # Enable/disable writing of spiral sequence to TIFF multi-image file (default = true)
+output_sub_dir = "data\\_Test"        # Subdirectory in which to write files, relative (default = "", use "/" or "\\" for delimiters on Windows)
+
+# Fitting parameters
+gamma_order = 4                       # Polynomial model order for interpolating gamma(h)
+neff_order = 3                        # Polynomial model order for interpolating neff(h)
+spiral_turns_min = 1.0			      # Minimum allowed turns in the spiral (default = 0.5)
+spiral_turns_max = 25                 # Maximum number of allowed turns in the spiral in the optimization (default = 25)
+alpha_bend_threshold = 0.001          # Maximum allowed value of alpha_bend used in extrapolation (um-1, default = 0.001)
+
+# Debugging flags                     # NB: "true and "false" MUST be lower-case in .toml format
+models_only = false                   # Calculate and plot models only, without analysing the waveguides (boolean, default = false)
+no_spiral = false		              # Analyse the MRR and linear waveguides only (boolean, default = false)
+disable_R_domain_check = true         # Show warning on console but don't exit the script if the mode solver data doesn't adequately
+                                      # cover the analysis domain, see below (boolean, default = false)
+
+# Mode solver data for mode characteristics: neff(RIU), gamma[0,1], h(um), as a list of triplets [neff, gamma, h].
+# NB: if the "modes" field is supplied, any neff & gamma data supplied with the bending loss data below is ignored.
+modes = [[1.33527, 0.69, 0.325], [1.33838, 0.66, 0.350], [1.3444, 0.6, 0.400], [1.34982, 0.57, 0.450], [1.35457, 0.54, 0.500], [1.35867, 0.52, 0.550], [1.3622, 0.51, 0.600], [1.36526, 0.5, 0.650], [1.36791, 0.49, 0.700], [1.37223, 0.48, 0.800], [1.37556, 0.47, 0.900]]
+
+# Dictionary of mode solver data for each h:
+# - Key: "h.XXX", indicates the value of h in nm (XXX = h in nm), in increasing order.
+# - Values:
+#   - R[] (um), aplha_bend[] (um-1) arrays: bending loss value pair arrays of alpha_bend(R) @ h.
+#     NB : to avoid edge effects in the analysis at small radii (R ~ Rmin), the mode solver arrays
+#          must include data at R < Rmin (for the largest values of h only). At the other end (large R),
+#          the mode solver arrays must include alpha_bend data down to values of ~min(alpha_prop)/100,
+#          for ALL values of h, where min(alpha_prop) = alpha_wg + min(gamma)*alpha_fluid.
+# - Also, if the "modes" field is NOT used:
+#   - gamma: fraction of mode power in the fluid medium ("gamma_fluid", in the range [0,1]).
+#   - neff: mode effective index (RIU).
+
+[h.325]
+R = [ 100.0, 209.0, 318.0, 427.0, 536.0, 645.0, 754.0, 863.0, 972.0, 1081.0, 1190.0, 1299.0,]
+alpha_bend = [ 0.011201808537827913, 0.0022461305961446955, 0.0006283346310064948, 0.00019888166873511886, 6.738493742175261e-05, 2.4040522744400616e-05, 8.956232734458628e-06, 3.4527210888460506e-06, 1.3634718063092064e-06, 5.563225041196381e-07, 2.3494132214330266e-07, 9.934626233442297e-08,]
+
+[h.350]
+R = [ 71.0, 125.0, 179.0, 233.0, 287.0, 341.0, 395.0, 449.0, 503.0, 557.0, 611.0, 665.0,]
+alpha_bend = [ 0.01131575759302564, 0.0027762997981717217, 0.0008405016887774018, 0.00027878022283925796, 9.740387148394148e-05, 3.5242197641062315e-05, 1.3089913454085544e-05, 4.97127759589937e-06, 1.925214359026996e-06, 7.58113199109941e-07, 3.0316429173409484e-07, 1.231231565939778e-07,]
+
+[h.400]
+R = [ 45.2, 70.6, 96.0, 121.4, 146.8, 172.2, 197.6, 223.0, 248.4, 273.8, 299.2, 324.6,]
+alpha_bend = [0.011850198, 0.003230332, 0.000999752, 0.000329276, 0.00011272, 3.96677e-5, 1.42605e-5, 5.21513e-6, 1.93436e-6, 7.26044e-7, 2.75333e-7, 1.05388e-7,]
+
+[h.450]
+R = [ 36.4, 52.2, 68.0, 83.8, 99.6, 115.4, 131.2, 147.0, 162.8, 178.6, 194.4, 210.2,]
+alpha_bend = [ 0.010426574, 0.003124869, 0.00101, 0.000343934, 0.000120022, 4.28087e-5, 1.55388e-5, 5.72255e-6, 2.13326e-6, 8.03495e-7, 3.05338e-7, 1.16929e-7,]
+
+[h.500]
+R = [ 30.4, 42.2, 54.0, 65.8, 77.6, 89.4, 101.2, 113.0, 124.8, 136.6, 148.4, 160.2,]
+alpha_bend = [ 0.010447319, 0.003201902, 0.00104, 0.000351695, 0.000121465, 4.27477e-5, 1.52796e-5, 5.53323e-6, 2.02616e-6, 7.49047e-7, 2.79209e-7, 1.04827e-7,]
+
+[h.550]
+R = [ 27.3, 36.65, 46.0, 55.35, 64.7, 74.05, 83.4, 92.75, 102.1, 111.45, 120.8, 130.15,]
+alpha_bend = [ 0.009717818, 0.003115205, 0.00104, 0.00035958, 0.000126231, 4.50206e-5, 1.62731e-5, 5.95012e-6, 2.19732e-6, 8.18475e-7, 3.07177e-7, 1.16049e-7,]
+
+[h.600]
+R = [ 24.6, 32.8, 41.0, 49.2, 57.4, 65.6, 73.8, 82.0, 90.2, 98.4, 106.6, 114.8,]
+alpha_bend = [ 0.009971294, 0.003132398, 0.00102, 0.000341305, 0.000115949, 3.9967e-5, 1.39503e-5, 4.92265e-6, 1.75363e-6, 6.29907e-7, 2.27913e-7, 8.2993e-8,]
+
+[h.650]
+R = [ 23.0, 30.0, 37.0, 44.0, 51.0, 58.0, 65.0, 72.0, 79.0, 86.0, 93.0, 100.0,]
+alpha_bend = [ 0.009713571, 0.003205421, 0.00109, 0.000376935, 0.000132139, 4.6923e-5, 1.68438e-5, 6.10462e-6, 2.23131e-6, 8.21701e-7, 3.04612e-7, 1.13593e-7,]
+
+[h.700]
+R = [ 21.1, 27.8, 34.5, 41.2, 47.9, 54.6, 61.3, 68.0, 74.7, 81.4, 88.1, 94.8,]
+alpha_bend = [ 0.010798592, 0.003368771, 0.00108, 0.000352066, 0.000116298, 6.13918e-5, 1.31395e-5, 4.48137e-6, 1.54183e-6, 5.34488e-7, 1.86226e-7, 6.55134e-8,]
+
+[h.800]
+R = [ 20.7, 26.1, 31.5, 36.9, 42.3, 47.7, 53.1, 58.5, 63.9, 69.3, 74.7, 80.1,]
+alpha_bend = [ 0.008370699, 0.002878349, 0.001, 0.000353257, 0.000125385, 4.48686e-5, 1.61815e-5, 5.87824e-6, 2.1496e-6, 7.90826e-7, 2.92526e-7, 1.08737e-7,]
+
+[h.900]
+R = [ 19.0, 24.0, 29.0, 34.0, 39.0, 44.0, 49.0, 54.0, 59.0, 64.0, 69.0, 74.0,]
+alpha_bend = [ 0.00949530959, 0.003214239, 0.0011, 0.000377755, 0.000130693, 4.55143e-5, 1.59566e-5, 5.63027e-6, 1.99864e-6, 7.1342e-7, 2.55948e-7, 9.22471e-8,]
