@@ -1,3 +1,12 @@
+#
+# File I/O utilities
+#
+# Exposed methods:
+#   - load_toml_file()
+#   - define_excel_output_fname()
+#   - write_2D_data_to_Excel()
+#
+
 # Standard library
 from colorama import Fore, Style
 import io
@@ -254,38 +263,3 @@ def write_2D_data_to_Excel(
         Y_sheet.append([y])
         S_sheet.append(z.tolist())
     wb.save(filename=filename)
-
-
-def append_image_to_seq(images: list, fig: plt.Figure):
-    """
-    Append a matplotlib Figure to a list of PIL Image objects (from figs2tiff.py)
-
-    NB: An empty list must be declared in the calling program prior to
-        the first call to the function.
-
-    Parameters
-    ----------
-    images :
-        List of PIL Image objects to which to append the figure.
-    fig : matplotlib.pyplot.Figure
-        matplotlib Figure object to append to the List.
-
-    Returns
-    -------
-    None.
-
-    """
-
-    with io.BytesIO() as buffer:
-        # Convert Figure to PIL Image using an intermediate memory buffer
-        fig.savefig(buffer, format="tif")
-        img: Image = Image.open(buffer)
-
-        # Initialize Image encoderinfo, encoderconfig, and mode (RGB)
-        # properties as required for a multi-image TIFF file
-        img = img.convert("RGB")
-        img.encoderinfo = {"tiffinfo": TiffImagePlugin.ImageFileDirectory()}
-        img.encoderconfig = ()
-
-        # Append Image object to the List
-        images.append(img)

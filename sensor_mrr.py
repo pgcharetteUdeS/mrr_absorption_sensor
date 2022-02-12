@@ -6,12 +6,6 @@ from typing import Callable
 # Package modules
 from .modeling import Models
 
-#######################################################################################
-#
-# Micro-ring resonator class
-#
-#######################################################################################
-
 
 class Mrr:
     """

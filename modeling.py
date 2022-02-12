@@ -1,3 +1,17 @@
+#
+# Polynomial interpolation models for gamma(h), neffs(h) and alpha_bend(r, h)
+#
+# Exposed methods:
+#   - gamma()
+#   - neff()
+#   - alpha_bend(r, h)
+#   - h_search_domain(
+#
+# NB: The model for alpha_bend(r, h) is hardcoded in fit_alpha_bend_model()
+# but the code is structured in such a way that it is relatively easy to change,
+# see the "USER-DEFINABLE MODEL-SPECIFIC SECTION" code section.
+#
+
 from colorama import Fore, Style
 import matplotlib.pyplot as plt
 from matplotlib import colors

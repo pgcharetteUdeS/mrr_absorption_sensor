@@ -1,3 +1,11 @@
+#
+# Plotting utilities
+#
+# Exposed methods:
+#   - plot_results()
+#
+#
+
 # Standard library packages
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,7 +16,7 @@ from .modeling import Models
 from .sensor_mrr import Mrr
 from .sensor_linear import Linear
 from .sensor_spiral import Spiral
-from .fileio import append_image_to_seq, write_2D_data_to_Excel
+from .fileio import write_2D_data_to_Excel
 
 
 def _calc_5X_10X_comp_data(
@@ -70,6 +78,41 @@ def _calc_plotting_extrema(
     )
 
 
+def _append_image_to_seq(images: list, fig: plt.Figure):
+    """
+    Append a matplotlib Figure to a list of PIL Image objects (from figs2tiff.py)
+
+    NB: An empty list must be declared in the calling program prior to
+        the first call to the function.
+
+    Parameters
+    ----------
+    images :
+        List of PIL Image objects to which to append the figure.
+    fig : matplotlib.pyplot.Figure
+        matplotlib Figure object to append to the List.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    with io.BytesIO() as buffer:
+        # Convert Figure to PIL Image using an intermediate memory buffer
+        fig.savefig(buffer, format="tif")
+        img: Image = Image.open(buffer)
+
+        # Initialize Image encoderinfo, encoderconfig, and mode (RGB)
+        # properties as required for a multi-image TIFF file
+        img = img.convert("RGB")
+        img.encoderinfo = {"tiffinfo": TiffImagePlugin.ImageFileDirectory()}
+        img.encoderconfig = ()
+
+        # Append Image object to the List
+        images.append(img)
+
+
 def _write_spiral_sequence_to_file(models: Models, spiral: Spiral, filename_path: Path):
     """
     Write sequence of consecutive spirals with n turns > spiral.n_turns_min
@@ -101,7 +144,7 @@ def _write_spiral_sequence_to_file(models: Models, spiral: Spiral, filename_path
             r_window=(models.R[index_max] // 25 + 1) * 25,
             figure=fig,
         )
-        append_image_to_seq(images=images, fig=fig)
+        _append_image_to_seq(images=images, fig=fig)
     plt.close(fig)
 
     # Save sequence to tiff multi-image file
