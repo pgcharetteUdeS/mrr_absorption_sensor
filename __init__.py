@@ -20,7 +20,6 @@ from .fileio import (
     load_toml_file,
     define_excel_output_fname,
     write_2D_data_to_Excel,
-    append_image_to_seq,
 )
 from .plotting import plot_results
 
