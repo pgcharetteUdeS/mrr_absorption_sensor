@@ -10,6 +10,11 @@ from .models import Models
 class Linear:
     """
     Linear waveguide class (straight waveguide of length equal to the ring diameter, 2r)
+
+    Exposed methods:
+        - analyze()
+
+    All lengths are in units of um
     """
 
     def __init__(self, models: Models, logger: Callable = print):
@@ -27,7 +32,7 @@ class Linear:
         self.gamma: np.ndarray = np.ndarray([])
         self.results: list = []
 
-    def calc_sensitivity(self, r: float, h: float) -> float:
+    def _calc_sensitivity(self, r: float, h: float) -> float:
         """
         Calculate sensitivity at radius r (length 2r) for a given core height
         """
@@ -54,10 +59,10 @@ class Linear:
         h = max(h, self.models.h_domain_min)
 
         # Calculate sensitivity at current solution vector S(r, h)
-        s: float = self.calc_sensitivity(r=r, h=h)
+        s: float = self._calc_sensitivity(r=r, h=h)
         return -s / 1000
 
-    def find_max_sensitivity(self, r: float) -> tuple[float, float, float]:
+    def _find_max_sensitivity(self, r: float) -> tuple[float, float, float]:
         """
         Calculate maximum sensitivity at r over all h
         """
@@ -86,7 +91,7 @@ class Linear:
         self.previous_solution = h_max_S
 
         # Calculate sensitivity at the solution
-        max_S = self.calc_sensitivity(r=r, h=h_max_S)
+        max_S = self._calc_sensitivity(r=r, h=h_max_S)
 
         # Calculate other useful parameters at the solution
         gamma: float = self.models.gamma(h_max_S) * 100
@@ -96,7 +101,7 @@ class Linear:
 
     def analyze(self):
         # Analyse the sensor performance for all radii in the R domain
-        self.results = [self.find_max_sensitivity(r=r) for r in self.models.R]
+        self.results = [self._find_max_sensitivity(r=r) for r in self.models.R]
 
         # Unpack the analysis results as a function of radius into separate lists, the
         # order must be the same as in the find_max_sensitivity() return statement above

@@ -13,6 +13,10 @@ class Spiral:
     """
     Spiral class
 
+    Exposed mathods:
+        - draw_spiral()
+        - analyze()
+
     Archimedes spiral: "r(theta) = a + b*theta", where:
         - "a": outer spiral starting point offset from the origin along the "x" axis
         - "2*pi*b": distance between the line pairs in the spiral.
@@ -29,6 +33,8 @@ class Spiral:
             2) The spiral must have at least one complete turn, else it's just a
                "curved waveguides", therefore the minimum spiral radius = a + linewidth,
                but this parameter us user-selectable in the .toml file.
+
+    All lengths are in units of um
     """
 
     def __init__(
@@ -80,7 +86,7 @@ class Spiral:
         """
 
         # Sensitivity
-        S = self.calc_sensitivity(h=h, n_turns=n_turns, r=r_outer)[0]
+        S = self._calc_sensitivity(h=h, n_turns=n_turns, r=r_outer)[0]
 
         # Archimedes spiral parameters
         a_spiral: float = r_outer - self.line_width * n_turns
@@ -217,7 +223,7 @@ class Spiral:
 
         return self.models.alpha_bend(r=r, h=h) * self._line_element(r=r)
 
-    def calc_sensitivity(
+    def _calc_sensitivity(
         self, r: float, h: float, n_turns: float
     ) -> tuple[float, float, float]:
         """
@@ -318,12 +324,12 @@ class Spiral:
         n_turns = max(n_turns, 0)
 
         # Calculate sensitivity at current solution vector S(r, h, n_turns)
-        s = self.calc_sensitivity(r=r, h=h, n_turns=n_turns)[0]
+        s = self._calc_sensitivity(r=r, h=h, n_turns=n_turns)[0]
         assert s >= 0, "S should not be negative!"
 
         return -s / 1000
 
-    def find_max_sensitivity(
+    def _find_max_sensitivity(
         self, r: float
     ) -> tuple[float, float, float, float, float, float]:
         """
@@ -364,7 +370,7 @@ class Spiral:
             n_turns_max_S = optimization_result["x"][1]
 
             # Calculate maximum sensitivity at the solution
-            S, outer_spiral_r_min, L = self.calc_sensitivity(
+            S, outer_spiral_r_min, L = self._calc_sensitivity(
                 r=r, h=h_max_S, n_turns=n_turns_max_S
             )
 
@@ -388,7 +394,7 @@ class Spiral:
 
     def analyze(self):
         # Analyse the sensor performance for all radii in the R domain
-        self.results = [self.find_max_sensitivity(r=r) for r in self.models.R]
+        self.results = [self._find_max_sensitivity(r=r) for r in self.models.R]
 
         # Unpack the analysis results as a function of radius into separate lists, the
         # order must be the same as in the find_max_sensitivity() return statement above

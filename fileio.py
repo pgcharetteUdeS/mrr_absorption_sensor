@@ -6,6 +6,8 @@
 #   - define_excel_output_fname()
 #   - write_image_data_to_Excel()
 #
+# All lengths are in units of um
+#
 
 # Standard library
 from colorama import Fore, Style

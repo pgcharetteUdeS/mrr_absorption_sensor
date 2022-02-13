@@ -11,6 +11,12 @@ class Mrr:
     """
     Micro-ring resonator class
 
+    Exposed methods:
+        - calc_sensitivity()
+        - analyze()
+
+    All lengths are in units of um
+
     See "Silicon micro-ring resonators" [Bogaerts, 2012] for formulas for Q (20)
     and finesse (21), with Q = (neff * L / lambda) * F. Q is also the total number
     of field oscillations in the ring, over the number of cycles around the ring (F).
@@ -79,7 +85,7 @@ class Mrr:
 
         return -s / 1000
 
-    def find_max_sensitivity(
+    def _find_max_sensitivity(
         self, r: float
     ) -> tuple[
         float,
@@ -138,7 +144,7 @@ class Mrr:
 
     def analyze(self):
         # Analyse the sensor performance for all radii in the R domain
-        self.results = [self.find_max_sensitivity(r=r) for r in self.models.R]
+        self.results = [self._find_max_sensitivity(r=r) for r in self.models.R]
 
         # Unpack the analysis results as a function of radius into separate lists, the
         # order must be the same as in the find_max_sensitivity() return statement above
