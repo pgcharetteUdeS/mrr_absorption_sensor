@@ -16,7 +16,7 @@ from .models import Models
 from .mrr import Mrr
 from .linear import Linear
 from .spiral import Spiral
-from .fileio import write_2D_data_to_Excel
+from .fileio import write_image_data_to_Excel
 
 
 def _calc_5X_10X_comp_data(
