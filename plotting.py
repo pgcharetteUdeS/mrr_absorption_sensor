@@ -7,9 +7,11 @@
 #
 
 # Standard library packages
+import io
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
+from PIL import Image, TiffImagePlugin
 
 # Package modules
 from .models import Models
@@ -556,7 +558,7 @@ def plot_results(
     fig.savefig(filename)
     logger(f"Wrote '{filename}'.")
     if write_excel_files:
-        write_2D_data_to_Excel(
+        write_image_data_to_Excel(
             filename=str(filename.with_suffix(".xlsx")),
             X=10 ** R_fig_6,
             Y=h_fig_6,
@@ -627,7 +629,7 @@ def plot_results(
     fig.savefig(filename)
     logger(f"Wrote '{filename}'.")
     if write_excel_files:
-        write_2D_data_to_Excel(
+        write_image_data_to_Excel(
             filename=str(filename.with_suffix(".xlsx")),
             X=10 ** R_fig_6,
             Y=h_fig_6,
