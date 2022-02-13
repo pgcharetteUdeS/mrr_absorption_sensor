@@ -4,7 +4,7 @@
 # Exposed methods:
 #   - load_toml_file()
 #   - define_excel_output_fname()
-#   - write_2D_data_to_Excel()
+#   - write_image_data_to_Excel()
 #
 
 # Standard library
@@ -241,7 +241,7 @@ def define_excel_output_fname(filename_path: Path) -> str:
     return excel_output_filename
 
 
-def write_2D_data_to_Excel(
+def write_image_data_to_Excel(
     filename: str,
     X: np.ndarray,
     Y: np.ndarray,
