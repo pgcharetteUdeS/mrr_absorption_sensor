@@ -205,7 +205,7 @@ def load_toml_file(
         / f"{filename.stem}_parameters.toml"
     )
     with open(filename_txt, "w") as f:
-        f.write(f"# mrr_absorption_sensor package {version()}")
+        f.write(f"# mrr_absorption_sensor package {version()}\n")
         toml.dump(parameters, f)
     logger(f"Wrote input parameters to '{filename_txt}'.")
 
