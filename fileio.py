@@ -3,7 +3,8 @@
 #
 # Exposed methods:
 #   - load_toml_file()
-#   - define_excel_output_fname()
+#   - validate_excel_output_file()
+#   - write_excel_output_file()
 #   - write_image_data_to_Excel()
 #
 # All lengths are in units of um
@@ -22,6 +23,10 @@ import toml
 from typing import Callable
 
 # Package modules
+from .models import Models
+from .mrr import Mrr
+from .linear import Linear
+from .spiral import Spiral
 from .version import version
 
 
@@ -218,7 +223,7 @@ def load_toml_file(
     )
 
 
-def define_excel_output_fname(filename_path: Path) -> str:
+def validate_excel_output_file(filename_path: Path) -> str:
     """
     Define output Excel filename string from a Path object. Test to see if the file is
     already open, if so return an exception. This function is useful to run before any
@@ -243,6 +248,60 @@ def define_excel_output_fname(filename_path: Path) -> str:
     return excel_output_filename
 
 
+def write_excel_output_file(
+    excel_output_fname: str,
+    models: Models,
+    mrr: Mrr,
+    linear: Linear,
+    spiral: Spiral,
+    no_spiral: bool = False,
+    logger: Callable = print,
+):
+    """
+    Write the analysis results to the output Excel file from a dictionary of
+    key:value pairs, where the keys are the Excel file column header text strings
+    and the values are the corresponding column data arrays
+    """
+
+    output_data_dict = {
+        "R (um)": models.R,
+        "neff": mrr.neff,
+        "MRR max(S) (RIU-1)": mrr.S,
+        "MRR Se": mrr.Se,
+        "MRR Snr (RIU-1)": mrr.Snr,
+        "MRR a2": mrr.a2,
+        "MRR tau": mrr.tau,
+        "MRR h (um)": mrr.h,
+        "MRR gamma (%)": mrr.gamma,
+        "MRR Finesse": mrr.Finesse,
+        "MRR Q": mrr.Q,
+        "FWHM": mrr.FWHM,
+        "FSR": mrr.FSR,
+        "LINEAR max(S) (RIU-1)": linear.S,
+        "LINEAR h (um)": linear.h,
+        "LINEAR gamma (%)": linear.gamma,
+        "LINEAR L (um)": 2 * models.R,
+    }
+    if not no_spiral:
+        output_data_dict.update(
+            {
+                "SPIRAL max(S) (RIU-1)": spiral.S,
+                "SPIRAL h (um)": spiral.h,
+                "SPIRAL gamma (%)": spiral.gamma,
+                "SPIRAL n turns": spiral.n_turns,
+                "SPIRAL Rmin (um)": spiral.outer_spiral_r_min,
+                "SPIRAL L (um)": spiral.L,
+            }
+        )
+    output_data: np.ndarray = np.asarray(list(output_data_dict.values())).T
+    wb = Workbook()
+    wb.active.append(list(output_data_dict.keys()))
+    for row in output_data:
+        wb.active.append(row.tolist())
+    wb.save(filename=excel_output_fname)
+    logger(f"Wrote '{excel_output_fname}'.")
+
+
 def write_image_data_to_Excel(
     filename: str,
     X: np.ndarray,
@@ -252,7 +311,7 @@ def write_image_data_to_Excel(
     y_label: str = "h",
 ):
     """
-    Write S(r, h) and S(r, gamma) 2D data sets to Excel file
+    Write image data to Excel file
     """
 
     wb = Workbook()

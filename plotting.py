@@ -634,7 +634,7 @@ def plot_results(
             X=10 ** R_fig_6,
             Y=h_fig_6,
             S=S_fig_6,
-            y_label="h",
+            y_label="gamma",
         )
         logger(f"Wrote '{filename.with_suffix('.xlsx')}'.")
 

@@ -14,7 +14,8 @@
 
 from .fileio import (
     load_toml_file,
-    define_excel_output_fname,
+    validate_excel_output_file,
+    write_excel_output_file,
     write_image_data_to_Excel,
 )
 from .linear import Linear
