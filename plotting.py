@@ -685,17 +685,13 @@ def plot_results(
         + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
         + "".join([f", w = {models.core_width:.3f} ", r"$\mu$m"])
     )
+
+    # MRR
     ax.set_xlabel(r"Ring radius ($\mu$m)")
     ax.set_ylabel(r"Maximum sensitivity ($RIU^{-1}$)")
     ax.loglog(models.R, mrr.S, color="b", label="MRR")
-    ax.loglog(
-        models.R[spiral.S > 1],
-        spiral.S[spiral.S > 1],
-        color="k",
-        label=f"Spiral (spacing = {spiral.spacing:.0f}"
-        + r" $\mu$m"
-        + f", min turns = {spiral.turns_min:.2f})",
-    )
+
+    # Linear waveguide
     ax.loglog(models.R, linear.S, color="g", label=r"Linear waveguide ($L = 2R$)")
     ax.loglog(
         [r_plot_min, r_plot_max],
@@ -710,22 +706,39 @@ def plot_results(
     )
     ax.set_xlim(r_plot_min, r_plot_max)
     ax.set_ylim(100, S_plot_max)
-    axR = ax.twinx()
-    axR.semilogx(
-        models.R,
-        mrr.S / spiral.S,
-        "k--",
-        label=r"max$\{S_{MRR}\}$ / max$\{S_{SPIRAL}\}$",
-    )
-    axR.set_ylabel(r"max$\{S_{MRR}\}$ / max$\{S_{SPIRAL}\}$")
-    axR.set_ylim(0, 30)
-    axR.grid(visible=False)
-    ax_lines = ax.get_legend_handles_labels()[0] + axR.get_legend_handles_labels()[0]
-    ax_labels = ax.get_legend_handles_labels()[1] + axR.get_legend_handles_labels()[1]
-    ax.legend(ax_lines, ax_labels, loc="lower right")
-    ax.patch.set_visible(False)
-    axR.patch.set_visible(True)
-    ax.set_zorder(axR.get_zorder() + 1)
+
+    # Spiral and MRR/spiral sensitivity ratio, if required
+    if not no_spiral:
+        ax.loglog(
+            models.R[spiral.S > 1],
+            spiral.S[spiral.S > 1],
+            color="k",
+            label=f"Spiral (spacing = {spiral.spacing:.0f}"
+            + r" $\mu$m"
+            + f", min turns = {spiral.turns_min:.2f})",
+        )
+        axR = ax.twinx()
+        axR.semilogx(
+            models.R,
+            mrr.S / spiral.S,
+            "k--",
+            label=r"max$\{S_{MRR}\}$ / max$\{S_{SPIRAL}\}$",
+        )
+        axR.set_ylabel(r"max$\{S_{MRR}\}$ / max$\{S_{SPIRAL}\}$")
+        axR.set_ylim(0, 30)
+        axR.grid(visible=False)
+        ax_lines = (
+            ax.get_legend_handles_labels()[0] + axR.get_legend_handles_labels()[0]
+        )
+        ax_labels = (
+            ax.get_legend_handles_labels()[1] + axR.get_legend_handles_labels()[1]
+        )
+        ax.legend(ax_lines, ax_labels, loc="lower right")
+        ax.patch.set_visible(False)
+        axR.patch.set_visible(True)
+        ax.set_zorder(axR.get_zorder() + 1)
+    else:
+        ax.legend(loc="lower right")
 
     # Save figure
     filename = filename_path.parent / (filename_path.stem + "_FIG7.png")
