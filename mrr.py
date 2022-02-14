@@ -1,3 +1,11 @@
+"""
+Micro-ring resonator sensor class
+
+Exposed methods:
+    - calc_sensitivity()
+    - analyze()
+
+"""
 # Standard library packages
 import numpy as np
 from scipy import optimize
@@ -10,10 +18,6 @@ from .models import Models
 class Mrr:
     """
     Micro-ring resonator class
-
-    Exposed methods:
-        - calc_sensitivity()
-        - analyze()
 
     All lengths are in units of um
 
@@ -143,6 +147,11 @@ class Mrr:
         return S, h_max_S, gamma, Snr, Se, a2, tau, neff, Q, finesse, FWHM, FSR
 
     def analyze(self):
+        """
+        Analyse the MRR sensor performance for all radii in the R domain
+
+        :return: None
+        """
         # Analyse the sensor performance for all radii in the R domain
         self.results = [self._find_max_sensitivity(r=r) for r in self.models.R]
 

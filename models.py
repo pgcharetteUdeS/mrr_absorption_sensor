@@ -1,3 +1,13 @@
+"""
+Models class
+
+Exposed methods:
+    - gamma()
+    - neff()
+    - alpha_bend(r, h)
+    - h_search_domain()
+
+"""
 from colorama import Fore, Style
 import matplotlib.pyplot as plt
 from matplotlib import colors
@@ -16,12 +26,6 @@ from typing import Callable
 class Models:
     """
     Models class for polynomial interpolation of gamma(h), neffs(h), alpha_bend(r, h)
-
-    Exposed methods:
-        - gamma()
-        - neff()
-        - alpha_bend(r, h)
-        - h_search_domain()
 
     NB: The model for alpha_bend(r, h) is hardcoded in fit_alpha_bend_model()
     but the code is structured in such a way that it is relatively easy to change,
@@ -141,9 +145,19 @@ class Models:
 
     # Wrappers for models-specific calls to _interpolate()
     def gamma(self, h: float) -> float:
+        """
+
+        :param h:  waveguide core height (um)
+        :return: gamma(h) polynomial model estimate
+        """
         return self._interpolate(model=self.gamma_model, h=h)
 
     def neff(self, h: float) -> float:
+        """
+
+        :param h: waveguide core height (um)
+        :return:  neff(h) polynomial model estimate
+        """
         return self._interpolate(model=self.neff_model, h=h)
 
     @staticmethod
@@ -271,6 +285,10 @@ class Models:
     def alpha_bend(self, r: float, h: float) -> float:
         """
         Interpolate bending loss coefficient at radius r and core height h
+
+        :param r: waveguide bending radius (h)
+        :param h: waveguide core height (um)
+        :return: alpha_bend(r, h) polynomial model estimate (um-1)
         """
 
         # Calculate the alpha_bend(r, h) model estimate
@@ -637,7 +655,7 @@ class Models:
         )
 
         # Plot h_lower_bound(r) data and spline interpolation
-        fig, axs = plt.subplots(1, 1)
+        fig, axs = plt.subplots()
         fig.suptitle(
             "Search domain lower bound for h at low radii in the optimization\n"
             + f"{self.pol}"
@@ -667,6 +685,9 @@ class Models:
     def h_search_domain(self, r: float) -> tuple[float, float]:
         """
         Determine h search domain extrema, see _set_h_search_lower_bound()
+
+        :param r: waveguide bending radius (um)
+        :return: (h_min, h_max) h search domain extrema (um)
         """
 
         if r < self.r_min_for_h_search_lower_bound:

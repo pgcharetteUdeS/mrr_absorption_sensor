@@ -1,23 +1,21 @@
-#
-# File I/O utilities
-#
-# Exposed methods:
-#   - load_toml_file()
-#   - validate_excel_output_file()
-#   - write_excel_output_file()
-#   - write_image_data_to_Excel()
-#
-# All lengths are in units of um
-#
+"""
+File I/O utilities
+
+Exposed methods:
+   - load_toml_file()
+   - validate_excel_output_file()
+   - write_excel_output_file()
+   - write_image_data_to_Excel()
+
+All lengths are in units of um
+
+"""
 
 # Standard library
 from colorama import Fore, Style
-import io
-import matplotlib.pyplot as plt
 import numpy as np
 from openpyxl.workbook import Workbook
 from pathlib import Path
-from PIL import Image, TiffImagePlugin
 import sys
 import toml
 from typing import Callable
@@ -98,9 +96,18 @@ def load_toml_file(
     filename: Path, logger: Callable = print
 ) -> tuple[dict, dict, dict,]:
     """
-    Load problem data from .toml file and parse it into internal dictionaries.
-    """
 
+    Load problem data from .toml file and parse it into internal dictionaries.
+
+    :param filename: .toml input file containing the problem data
+    :param logger: console logger (optional)
+    :return: parameters, modes_data, bending_loss_data
+             --
+             parameters (dict): problem parameters,
+             modes_data (dict): gamma(h) mode solver data,
+             bending_loss_data (dict): R(h) and alpha_bend(h) mode solver data
+
+    """
     # Load dictionary from the .toml file
     toml_data = toml.load(str(filename))
     logger(f"Parsing '{filename}'...")
@@ -230,7 +237,11 @@ def validate_excel_output_file(filename_path: Path) -> str:
     serious works starts because if the script tries to open a file that's already open,
     say in Excel, this causes the script to halt with an exception and the work done
     up to that point is lost.
+
+    :param filename_path: Excel filename (Path)
+    :return: Excel filename (str)
     """
+
     excel_output_filename: str = str(
         filename_path.parent / f"{filename_path.stem}_RESULTS.xlsx"
     )
@@ -261,6 +272,15 @@ def write_excel_output_file(
     Write the analysis results to the output Excel file from a dictionary of
     key:value pairs, where the keys are the Excel file column header text strings
     and the values are the corresponding column data arrays
+
+    :param excel_output_fname:
+    :param models:
+    :param mrr:
+    :param linear:
+    :param spiral:
+    :param no_spiral:
+    :param logger:
+    :return: None
     """
 
     output_data_dict = {
@@ -307,11 +327,19 @@ def write_image_data_to_Excel(
     X: np.ndarray,
     Y: np.ndarray,
     S: np.ndarray,
-    x_label: str = "R",
-    y_label: str = "h",
+    x_label: str,
+    y_label: str,
 ):
     """
     Write image data to Excel file
+
+    :param filename:
+    :param X:
+    :param Y:
+    :param S:
+    :param x_label:
+    :param y_label:
+    :return:
     """
 
     wb = Workbook()

@@ -1,3 +1,10 @@
+"""
+Linear waveguide sensor class
+
+Exposed methods:
+    - analyze()
+
+"""
 # Standard library packages
 import numpy as np
 from scipy import optimize
@@ -10,9 +17,6 @@ from .models import Models
 class Linear:
     """
     Linear waveguide class (straight waveguide of length equal to the ring diameter, 2r)
-
-    Exposed methods:
-        - analyze()
 
     All lengths are in units of um
     """
@@ -100,6 +104,11 @@ class Linear:
         return max_S, h_max_S, gamma
 
     def analyze(self):
+        """
+        Analyse the linear waveguide sensor performance for all radii in the R domain
+
+        :return: None
+        """
         # Analyse the sensor performance for all radii in the R domain
         self.results = [self._find_max_sensitivity(r=r) for r in self.models.R]
 

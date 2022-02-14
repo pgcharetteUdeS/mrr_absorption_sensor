@@ -1,10 +1,10 @@
-#
-# Plotting utilities
-#
-# Exposed methods:
-#   - plot_results()
-#
-#
+"""
+Plotting utilities
+
+Exposed methods:
+   - plot_results()
+
+"""
 
 # Standard library packages
 import io
@@ -136,7 +136,7 @@ def _write_spiral_sequence_to_file(models: Models, spiral: Spiral, filename_path
     index_inc: int = int((index_max - index_min) / 25)
 
     # Loop to write generate the spiral images in the sequence
-    fig, _ = plt.subplots(1, 1)
+    fig, _ = plt.subplots()
     images: list = []
     for index in range(index_min, index_max, index_inc):
         fig = spiral.draw_spiral(
@@ -180,7 +180,7 @@ def _plot_spiral_results(
     ) = _calc_plotting_extrema(models=models, mrr=mrr)
 
     # Plot max{S}, h, gamma, n turns mas, L
-    fig, axs = plt.subplots(5, 1)
+    fig, axs = plt.subplots(5)
     fig.suptitle(
         "Archimedes spiral "
         + f" ({models.pol}"
@@ -291,6 +291,22 @@ def plot_results(
     write_spiral_sequence_to_file: bool = False,
     logger=print,
 ):
+    """
+
+    :param models:
+    :param mrr:
+    :param linear:
+    :param spiral:
+    :param T_SNR:
+    :param min_delta_ni:
+    :param filename_path:
+    :param write_excel_files:
+    :param no_spiral:
+    :param draw_largest_spiral:
+    :param write_spiral_sequence_to_file:
+    :param logger:
+    :return: None
+    """
 
     # Calculate plotting extrema and max{S} vertical marker
     (
@@ -310,7 +326,7 @@ def plot_results(
     #
 
     # max{S}, S_NR, Se, a, h, gamma, Finesse
-    fig, axs = plt.subplots(7, 1)
+    fig, axs = plt.subplots(7)
     fig.suptitle(
         "Micro-ring resonator "
         + f"({models.pol}"
@@ -401,7 +417,7 @@ def plot_results(
     logger(f"Wrote '{filename}'.")
 
     # max{S}, Finesse, FWHM, FSR
-    fig, axs = plt.subplots(3, 1)
+    fig, axs = plt.subplots(3)
     fig.suptitle(
         "MRR - Ring resonator parameters"
         + f"\n{models.pol}"
@@ -563,6 +579,7 @@ def plot_results(
             X=10 ** R_fig_6,
             Y=h_fig_6,
             S=S_fig_6,
+            x_label="R",
             y_label="h",
         )
         logger(f"Wrote '{filename.with_suffix('.xlsx')}'.")
@@ -634,6 +651,7 @@ def plot_results(
             X=10 ** R_fig_6,
             Y=h_fig_6,
             S=S_fig_6,
+            x_label="R",
             y_label="gamma",
         )
         logger(f"Wrote '{filename.with_suffix('.xlsx')}'.")

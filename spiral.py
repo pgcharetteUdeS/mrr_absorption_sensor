@@ -1,3 +1,11 @@
+"""
+Spiral sensor class
+
+Exposed methods:
+    - draw_spiral()
+    - analyze()
+
+"""
 # Standard library packages
 from colorama import Fore, Style
 import matplotlib.pyplot as plt
@@ -12,10 +20,6 @@ from .models import Models
 class Spiral:
     """
     Spiral class
-
-    Exposed mathods:
-        - draw_spiral()
-        - analyze()
 
     Archimedes spiral: "r(theta) = a + b*theta", where:
         - "a": outer spiral starting point offset from the origin along the "x" axis
@@ -102,7 +106,7 @@ class Spiral:
 
         # Define new figure if required, else use axes passed as a function parameter
         if figure is None:
-            fig, ax = plt.subplots(1, 1)
+            fig, ax = plt.subplots()
         else:
             fig = figure
             ax = fig.axes[0]
@@ -393,6 +397,11 @@ class Spiral:
         return S, h_max_S, n_turns_max_S, outer_spiral_r_min, L, gamma
 
     def analyze(self):
+        """
+        Analyse the sensor performance for all radii in the R domain
+
+        :return: None
+        """
         # Analyse the sensor performance for all radii in the R domain
         self.results = [self._find_max_sensitivity(r=r) for r in self.models.R]
 

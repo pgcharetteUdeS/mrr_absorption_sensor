@@ -1,13 +1,15 @@
-#
-# Analyze all sensor types
-#
-# Exposed methods:
-#   - analyze()
-#
+"""
+
+Analyze all sensor types
+
+Exposed methods:
+   - analyze()
+
+"""
+
 
 # Standard library
 from colorama import Fore, Style
-import matplotlib.pyplot as plt
 from pathlib import Path
 
 # Package modules
@@ -20,14 +22,22 @@ from .fileio import load_toml_file, validate_excel_output_file, write_excel_outp
 from .version import version
 
 
-def analyze(toml_input_file_path: Path, logger=print,):
+def analyze(
+    toml_input_file_path: Path,
+    logger=print,
+):
     """
     Calculate the maximum achievable sensitivities over a range of radii for micro-ring
-    resonator, spiral, and linear waveguide absorption sensors, with waveguides
-    having a fixed core width and where the core height is allowed to vary
-    over a specified range to achieve maximum sensitivity at each radius.
-    """
+    resonator, spiral, and linear waveguide absorption sensors.
 
+    The waveguides have a fixed core width and where the core height is allowed to vary
+    over a specified range to achieve maximum sensitivity at each radius.
+
+    :param toml_input_file_path: input file containing the problem data (.toml format)
+    :param logger: console logger (optional), for example from the "logging" package
+    :return: None
+
+    """
     # Show the package version number
     print(f"{Fore.BLUE}mrr_absorption_sensor package {version()}{Style.RESET_ALL}")
 
@@ -37,8 +47,12 @@ def analyze(toml_input_file_path: Path, logger=print,):
         logger=logger,
     )
 
-    # Built the filename Path obhect for the output files
-    output_filenames_path: Path = toml_input_file_path.parent / parameters["output_sub_dir"] / toml_input_file_path.name
+    # Built the filename Path object for the output files
+    output_filenames_path: Path = (
+        toml_input_file_path.parent
+        / parameters["output_sub_dir"]
+        / toml_input_file_path.name
+    )
 
     # Instantiate the Models class to build/fit the interpolation models for
     # gamma_fluid(h), neff(h), and alpha_bend(h, r)
