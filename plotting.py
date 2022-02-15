@@ -1,10 +1,12 @@
 """
+
 Plotting utilities
 
 Exposed methods:
    - plot_results()
 
 """
+
 
 # Standard library packages
 import io

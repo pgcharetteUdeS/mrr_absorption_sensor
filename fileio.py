@@ -1,4 +1,5 @@
 """
+
 File I/O utilities
 
 Exposed methods:
@@ -10,6 +11,7 @@ Exposed methods:
 All lengths are in units of um
 
 """
+
 
 # Standard library
 from colorama import Fore, Style
@@ -25,7 +27,7 @@ from .models import Models
 from .mrr import Mrr
 from .linear import Linear
 from .spiral import Spiral
-from .version import version
+from .version import __version__
 
 
 def _check_mode_solver_data(
@@ -110,7 +112,6 @@ def load_toml_file(
     """
     # Load dictionary from the .toml file
     toml_data = toml.load(str(filename))
-    logger(f"Parsing '{filename}'...")
 
     # Parse fields from .toml file into the parameters{} dictionary
     parameters: dict = {
@@ -219,7 +220,7 @@ def load_toml_file(
         / f"{filename.stem}_parameters.toml"
     )
     with open(filename_txt, "w") as f:
-        f.write(f"# mrr_absorption_sensor package {version()}\n")
+        f.write(f"# mrr_absorption_sensor package {__version__}\n")
         toml.dump(parameters, f)
     logger(f"Wrote input parameters to '{filename_txt}'.")
 

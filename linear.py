@@ -1,10 +1,13 @@
 """
+
 Linear waveguide sensor class
 
 Exposed methods:
     - analyze()
 
 """
+
+
 # Standard library packages
 import numpy as np
 from scipy import optimize

@@ -1,4 +1,5 @@
 """
+
 Micro-ring resonator sensor class
 
 Exposed methods:
@@ -6,6 +7,8 @@ Exposed methods:
     - analyze()
 
 """
+
+
 # Standard library packages
 import numpy as np
 from scipy import optimize

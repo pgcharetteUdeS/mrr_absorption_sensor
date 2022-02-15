@@ -1,4 +1,5 @@
 """
+
 Spiral sensor class
 
 Exposed methods:
@@ -6,6 +7,8 @@ Exposed methods:
     - analyze()
 
 """
+
+
 # Standard library packages
 from colorama import Fore, Style
 import matplotlib.pyplot as plt

@@ -19,7 +19,7 @@ from .linear import Linear
 from .spiral import Spiral
 from .plotting import plot_results
 from .fileio import load_toml_file, validate_excel_output_file, write_excel_output_file
-from .version import version
+from .version import __version__
 
 
 def analyze(
@@ -39,7 +39,7 @@ def analyze(
 
     """
     # Show the package version number
-    print(f"{Fore.BLUE}mrr_absorption_sensor package {version()}{Style.RESET_ALL}")
+    print(f"{Fore.BLUE}mrr_absorption_sensor package {__version__}{Style.RESET_ALL}")
 
     # Load the problem parameters from the input .toml file
     (parameters, modes_data, bending_loss_data,) = load_toml_file(
