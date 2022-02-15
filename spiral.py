@@ -355,7 +355,7 @@ class Spiral:
             # maximum value in the domain and the numbers of turns at the minimum
             # value (at small radii, bending losses are high, the optimal solution
             # will be at high h and low number of turns),else use previous solution.
-            if np.any(self.previous_solution) == -1:
+            if np.any(self.previous_solution == -1):
                 h0: float = h_max
                 n_turns_0: float = self.turns_min
             else:
