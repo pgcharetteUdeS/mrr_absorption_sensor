@@ -47,7 +47,7 @@ def analyze(
         logger=logger,
     )
 
-    # Built the filename Path object for the output files
+    # Build the filename Path object for the output files
     output_filenames_path: Path = (
         toml_input_file_path.parent
         / parameters["output_sub_dir"]
