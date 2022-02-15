@@ -1,6 +1,6 @@
 """
 
-Analyze all sensor types
+Analyze the 3 sensor types
 
 Exposed methods:
    - analyze()
