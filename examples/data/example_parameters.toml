@@ -1,0 +1,23 @@
+# mrr_absorption_sensor package V20220214_13H00
+lambda_res = 0.532
+pol = "TE"
+core_width = 0.7
+ni_op = 1e-6
+alpha_wg = 1
+spiral_spacing = 5
+Rmin = 25
+Rmax = 10000
+R_samples_per_decade = 50
+spiral_turns_min = 1.0
+spiral_turns_max = 25
+T_SNR = 20
+min_delta_ni = 1e-6
+output_sub_dir = "data"
+alpha_bend_threshold = 0.001
+write_excel_files = false
+write_spiral_sequence_to_file = false
+gamma_order = 4
+neff_order = 3
+models_only = false
+disable_R_domain_check = true
+no_spiral = false
