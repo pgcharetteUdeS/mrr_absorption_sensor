@@ -25,6 +25,7 @@ NOTES:
        - In PyCharm, add the directory to the IDE search path:
          <Settings><Project Interpreter>, wheel icon next to the interpreter,
          <Show all...>, "Show paths for selected interpreter" icon.
+        - In the script, use the "sys.path.append(<package parent directory>)"
     2) The return value from mrr_absorption_sensor.analyze() MUST be stored in the local
        variable memory space for the buttons to work in the 3D graph of alpha_bend(r, h)
 
@@ -59,7 +60,9 @@ import sys
 import time
 import warnings
 
+
 # mrr_absorption_sensor package
+sys.path.append("../..")
 from mrr_absorption_sensor import Models, analyze
 
 

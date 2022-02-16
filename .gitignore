@@ -2,3 +2,4 @@
 /.mypy_cache/
 /examples/data/*.png
 /examples/data/*.xlsx
+/examples/data/*.toml
