@@ -18,11 +18,14 @@ Notes:
       the problem parameters and data, see "example.toml" for explanations
       of the key/value pairs and fileio.load_toml_file().
 
-   2) The alpha_bend(r, h) model is hardcoded in models.Models.fit_alpha_bend_model()
+   2) The return value from analyze.analyze() MUST be stored in a local variable in
+      the calling script for the buttons to work in the 3D graph of alpha_bend(r, h).
+
+   3) The alpha_bend(r, h) model is hardcoded in models.Models.fit_alpha_bend_model()
       but the code is structured in such a way that it is relatively easy to change, 
       see the "USER-DEFINABLE MODEL-SPECIFIC SECTION" code section.
 
-   3) On windows, the colorama package must be initialized with colorama.init()
+   4) On windows, the colorama package must be initialized with colorama.init()
       prior to calling the package modules if colored text on the console is desired.
 
 Known issues:
