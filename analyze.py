@@ -22,10 +22,7 @@ from .fileio import load_toml_file, validate_excel_output_file, write_excel_outp
 from .version import __version__
 
 
-def analyze(
-    toml_input_file_path: Path,
-    logger=print,
-):
+def analyze(toml_input_file_path: Path, logger=print,) -> Models:
     """
     Calculate the maximum achievable sensitivities over a range of radii for micro-ring
     resonator, spiral, and linear waveguide absorption sensors.
@@ -77,7 +74,7 @@ def analyze(
 
     # If only model fitting was required, return
     if parameters["models_only"]:
-        return
+        return models
 
     # Define output Excel filename: if file is already open, halt with an exception
     # (better to halt here with an exception than AFTER having done the analysis...)
@@ -131,3 +128,6 @@ def analyze(
             no_spiral=parameters["no_spiral"],
             logger=logger,
         ),
+
+    # Return the instantiated models class
+    return models
