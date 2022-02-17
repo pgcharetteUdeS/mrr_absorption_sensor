@@ -569,7 +569,7 @@ def plot_results(
             + "".join([f", h = {R_10X_h:.3f} ", r"$\mu$m"]),
         )
         ax.plot([R_fig_6[0], np.log10(R_10X)], [R_10X_h, R_10X_h], "r--")
-        ax.legend(loc="lower right")
+    ax.legend(loc="lower right")
 
     # Save Figure 6b to .png file and data to Excel file
     filename = filename_path.parent / (filename_path.stem + "_FIG6b.png")
