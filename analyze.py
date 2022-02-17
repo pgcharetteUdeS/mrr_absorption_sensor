@@ -25,7 +25,7 @@ from .version import __version__
 def analyze(
     toml_input_file_path: Path,
     logger=print,
-) -> tuple[Models, Mrr, Linear, Spiral]:
+) -> tuple[Models, Mrr | None, Linear | None, Spiral | None]:
     """
     Calculate the maximum achievable sensitivities over a range of radii for micro-ring
     resonator, spiral, and linear waveguide absorption sensors.
@@ -77,7 +77,7 @@ def analyze(
 
     # If only model fitting was required, return
     if parameters["models_only"]:
-        return models
+        return models, None, None, None
 
     # Define output Excel filename: if file is already open, halt with an exception
     # (better to halt here with an exception than AFTER having done the analysis...)

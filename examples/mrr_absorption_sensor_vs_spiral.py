@@ -63,7 +63,7 @@ import warnings
 
 # mrr_absorption_sensor package
 sys.path.append("../..")
-from mrr_absorption_sensor import Models, analyze
+from mrr_absorption_sensor import analyze
 
 
 def mrr_absorption_sensor_vs_spiral(toml_input_filename: str):
@@ -119,7 +119,7 @@ def mrr_absorption_sensor_vs_spiral(toml_input_filename: str):
     # Run the sensor analysis
     # IMPORTANT: the return value from analyze() MUST be stored in the local variable
     # memory space for the buttons to work in the 3D graph of alpha_bend(r, h)
-    models: Models = analyze(
+    models, mrr, linear, spiral = analyze(
         toml_input_file_path=toml_input_file_path, logger=logger.info
     )
 
