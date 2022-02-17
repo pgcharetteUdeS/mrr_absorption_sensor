@@ -22,7 +22,10 @@ from .fileio import load_toml_file, validate_excel_output_file, write_excel_outp
 from .version import __version__
 
 
-def analyze(toml_input_file_path: Path, logger=print,) -> Models:
+def analyze(
+    toml_input_file_path: Path,
+    logger=print,
+) -> tuple[Models, Mrr, Linear, Spiral]:
     """
     Calculate the maximum achievable sensitivities over a range of radii for micro-ring
     resonator, spiral, and linear waveguide absorption sensors.
@@ -130,4 +133,4 @@ def analyze(toml_input_file_path: Path, logger=print,) -> Models:
         ),
 
     # Return the instantiated models class
-    return models
+    return models, mrr, linear, spiral
