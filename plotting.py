@@ -418,8 +418,8 @@ def plot_results(
     fig.savefig(filename)
     logger(f"Wrote '{filename}'.")
 
-    # max{S}, Finesse, FWHM, FSR
-    fig, axs = plt.subplots(3)
+    # max{S}, Q, Finesse, FWHM, FSR
+    fig, axs = plt.subplots(4)
     fig.suptitle(
         "MRR - Ring resonator parameters"
         + f"\n{models.pol}"
@@ -445,31 +445,34 @@ def plot_results(
     axs[axs_index].set_ylim(1000, S_plot_max)
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
+    # Q @ max{S}
+    axs_index += 1
+    axs[axs_index].semilogx(models.R, mrr.Q, label="Q")
+    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
+    axs[axs_index].set_ylabel("Q")
+    axs[axs_index].axes.get_xaxis().set_ticklabels([])
+
     # (Finesse/2pi) / Se*a @ max{S}
     axs_index += 1
     axs[axs_index].semilogx(
         models.R,
         mrr.Finesse / (2 * np.pi) / (mrr.Se * np.sqrt(mrr.a2)),
-        "b",
-        label="FWHM",
     )
     axs[axs_index].set_ylim(0, 2.5)
     axs[axs_index].set_xlim(r_plot_min, r_plot_max)
     axs[axs_index].set_ylabel(r"$\frac{Finesse/2\pi}{S_e\times a}$")
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
-    # FWHM, FSR @ max{S}
+    # FWHM, FSR, Finesse/2pi @ max{S}
     axs_index += 1
     axs[axs_index].loglog(models.R, mrr.FWHM * 1e6, "b", label="FWHM")
     axs[axs_index].loglog(models.R, mrr.FSR * 1e6, "g", label="FSR")
     axs[axs_index].set_xlim(r_plot_min, r_plot_max)
     axs[axs_index].set_ylabel("FWHM and FSR (pm)")
     axs[axs_index].set_xlabel(r"Ring radius ($\mu$m)")
-
-    # Finesse @ max{S}
     axR = axs[axs_index].twinx()
-    axR.semilogx(models.R, mrr.Finesse, "k--", label="Finesse")
-    axR.set_ylabel(r"Finesse")
+    axR.semilogx(models.R, mrr.Finesse/(2*np.pi), "k--", label=r"Finesse/2$\pi$")
+    axR.set_ylabel(r"Finesse/2$\pi$")
     axR.grid(visible=False)
     ax_lines = (
         axs[axs_index].get_legend_handles_labels()[0]
@@ -483,6 +486,8 @@ def plot_results(
     axs[axs_index].patch.set_visible(False)
     axR.patch.set_visible(True)
     axs[axs_index].set_zorder(axR.get_zorder() + 1)
+
+    # Write figure to file
     filename = filename_path.parent / (filename_path.stem + "_MRR_ring_parms.png")
     fig.savefig(filename)
     logger(f"Wrote '{filename}'.")
@@ -501,7 +506,7 @@ def plot_results(
     )
     S_fig_6 = np.asarray(
         [
-            [mrr.calc_sensitivity(r=10 ** log10_R, h=hh)[0] for log10_R in R_fig_6]
+            [mrr.calc_sensitivity(r=10**log10_R, h=hh)[0] for log10_R in R_fig_6]
             for hh in h_fig_6
         ]
     )
@@ -578,7 +583,7 @@ def plot_results(
     if write_excel_files:
         write_image_data_to_Excel(
             filename=str(filename.with_suffix(".xlsx")),
-            X=10 ** R_fig_6,
+            X=10**R_fig_6,
             Y=h_fig_6,
             S=S_fig_6,
             x_label="R",
@@ -650,7 +655,7 @@ def plot_results(
     if write_excel_files:
         write_image_data_to_Excel(
             filename=str(filename.with_suffix(".xlsx")),
-            X=10 ** R_fig_6,
+            X=10**R_fig_6,
             Y=h_fig_6,
             S=S_fig_6,
             x_label="R",

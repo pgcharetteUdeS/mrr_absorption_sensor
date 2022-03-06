@@ -39,7 +39,7 @@ def analyze(
 
     """
     # Show the package version number
-    print(f"{Fore.BLUE}mrr_absorption_sensor package {__version__}{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}mrr_absorption_sensor package {__version__}{Style.RESET_ALL}")
 
     # Load the problem parameters from the input .toml file
     (parameters, modes_data, bending_loss_data,) = load_toml_file(
