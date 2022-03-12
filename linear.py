@@ -40,7 +40,7 @@ class Linear:
         self.a2: np.ndarray = np.ndarray([])
         self.results: list = []
 
-    def _calc_a2(self, r: float, h: float):
+    def calc_a2(self, r: float, h: float) -> float:
         """
         Calculate a2
         """
@@ -48,10 +48,8 @@ class Linear:
         gamma: float = self.models.gamma(h)
         alpha_prop: float = self.models.alpha_wg + (gamma * self.models.alpha_fluid)
         L: float = 2 * r
-        a2: float = np.e ** -(alpha_prop * L)
-        assert a2 <= 1, "a2 should not be > 1'"
 
-        return a2
+        return np.e ** -(alpha_prop * L)
 
     def _calc_sensitivity(self, r: float, h: float) -> float:
         """
@@ -63,7 +61,7 @@ class Linear:
             (4 * np.pi / self.models.lambda_res)
             * (2 * r)
             * self.models.gamma(h)
-            * self._calc_a2(r=r, h=h)
+            * self.calc_a2(r=r, h=h)
         )
         assert Snr >= 0, "Snr should not be negative'"
 
@@ -115,7 +113,7 @@ class Linear:
 
         # Calculate other useful parameters at the solution
         gamma: float = self.models.gamma(h_max_S) * 100
-        a2: float = self._calc_a2(r=r, h=h_max_S)
+        a2: float = self.calc_a2(r=r, h=h_max_S)
 
         # Return results to calling program
         return max_S, h_max_S, gamma, a2

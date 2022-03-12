@@ -5,7 +5,7 @@ lambda_res = 0.532                    # Ring resonance wavelength (um)
 pol = "TE"                            # Mode polarization, for use in graph labeling ("TM" or "TE, default = "TE")
 core_width = 0.70                     # Waveguide core width (um)
 ni_op = 1.00e-6                       # Fluid refractive index imaginary component operating point (RIU)
-alpha_wg = 1                          # Intrinsic waveguide propagation losses due to material absorption and sidewall roughness (db/cm)
+alpha_wg = 5                          # Intrinsic waveguide propagation losses due to material absorption and sidewall roughness (db/cm)
 spiral_spacing = 5                    # Spacing between the waveguides in the spiral (um)
 
 # Analysis parameters
@@ -14,7 +14,7 @@ Rmax = 10000                          # Analysis domain maximum radius (um)
 R_samples_per_decade = 50             # Analysis domain  logarithmic sampling rate (number of samples per decade)
 T_SNR = 20                            # Transmission measurement SNR (dB)
 min_delta_ni = 1.0e-6                 # Desired minimum resolvable change in ni (RIU)
-write_excel_files = true		      # Enable/disable writing of results to Excel files (default = true)
+write_excel_files = false		      # Enable/disable writing of results to Excel files (default = true)
 write_spiral_sequence_to_file = false # Enable/disable writing of spiral sequence to TIFF multi-image file (default = true)
 output_sub_dir = "data"        		  # Subdirectory in which to write files, relative (default = "", use "/" or "\\" for delimiters on Windows)
 

@@ -235,7 +235,7 @@ class Models:
         out_filename: str = str(
             (
                 self.filename_path.parent
-                / f"{self.filename_path.stem}_1D_POLY_MODELS.png"
+                / f"{self.filename_path.stem}_POLY_1D_MODELS.png"
             )
         )
 
@@ -521,7 +521,7 @@ class Models:
         self._alpha_bend_model_fig["out_filename"] = str(
             (
                 self.filename_path.parent
-                / f"{self.filename_path.stem}_3D_POLY_MODEL_FIT.png"
+                / f"{self.filename_path.stem}_POLY_3D_MODEL_FIT.png"
             )
         )
 
@@ -555,9 +555,9 @@ class Models:
             + c[1] * h
             + c[2] * r
             + c[3] * (h * r)
-            + c[4] * (h ** 2 * r)
-            + c[5] * (h ** 3 * r)
-            + c[6] * (h ** 4)
+            + c[4] * (h**2 * r)
+            + c[5] * (h**3 * r)
+            + c[6] * (h**4)
         )
 
         # Assemble the "M" coefficient matrix, where each column holds the values of
@@ -568,9 +568,9 @@ class Models:
                 self.h_data,
                 self.R_data,
                 self.h_data * self.R_data,
-                self.h_data ** 2 * self.R_data,
-                self.h_data ** 3 * self.R_data,
-                self.h_data ** 4,
+                self.h_data**2 * self.R_data,
+                self.h_data**3 * self.R_data,
+                self.h_data**4,
             ]
         ).T
 

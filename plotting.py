@@ -324,7 +324,7 @@ def plot_results(
     ) = _calc_plotting_extrema(models=models, mrr=mrr)
 
     #
-    # Intermediate MRR results figures
+    # MRR results
     #
 
     # max{S}, S_NR, Se, a, h, gamma, Finesse
@@ -414,7 +414,7 @@ def plot_results(
     axs[axs_index].set_ylim(0, Finesse_plot_max)
 
     axs[axs_index].set_xlabel(r"Ring radius ($\mu$m)")
-    filename: Path = filename_path.parent / (filename_path.stem + "_MRR.png")
+    filename: Path = filename_path.parent / f"{filename_path.stem}_MRR_ALL.png"
     fig.savefig(filename)
     logger(f"Wrote '{filename}'.")
 
@@ -471,7 +471,7 @@ def plot_results(
     axs[axs_index].set_ylabel("FWHM and FSR (pm)")
     axs[axs_index].set_xlabel(r"Ring radius ($\mu$m)")
     axR = axs[axs_index].twinx()
-    axR.semilogx(models.R, mrr.Finesse/(2*np.pi), "k--", label=r"Finesse/2$\pi$")
+    axR.semilogx(models.R, mrr.Finesse / (2 * np.pi), "k--", label=r"Finesse/2$\pi$")
     axR.set_ylabel(r"Finesse/2$\pi$")
     axR.grid(visible=False)
     ax_lines = (
@@ -493,37 +493,42 @@ def plot_results(
     logger(f"Wrote '{filename}'.")
 
     #
-    # Figures 6 and 6b: 2D maps of sensitivity as a functions of h, gamma, and R
+    # MRR 2D maps
     #
 
-    # Generate 2D map data
+    # Colormaps
+    # cmap = plt.colormaps["gray"]
+    # cmap = plt.colormaps["hot"]
+    cmap = plt.colormaps["plasma"]
+    # cmap = plt.colormaps["viridis"]
+
+    # Generate 2D map data X,Y data arrays
     n_grid_points: int = 500
-    R_fig_6 = np.linspace(np.log10(models.R[0]), np.log10(models.R[-1]), n_grid_points)
-    h_fig_6 = np.linspace(
+    R_2D_map = np.linspace(np.log10(models.R[0]), np.log10(models.R[-1]), n_grid_points)
+    h_2D_map = np.linspace(
         list(models.bending_loss_data)[0],
         list(models.bending_loss_data)[-1],
         n_grid_points,
     )
-    S_fig_6 = np.asarray(
-        [
-            [mrr.calc_sensitivity(r=10**log10_R, h=hh)[0] for log10_R in R_fig_6]
-            for hh in h_fig_6
-        ]
-    )
-    gamma_fig_6 = np.asarray([models.gamma(hh) * 100 for hh in h_fig_6])
+    gamma_2D_map = np.asarray([models.gamma(h) * 100 for h in h_2D_map])
 
-    # Indices for dashed lines at radii for S_mrr = 5X and 10X S_spiral, and max(Smrr)
+    # Indices for dashed lines at radii for max(Smrr)
     R_max_Smrr_index: int = int((np.abs(models.R - mrr.max_S_radius)).argmin())
     R_max_Smrr_h: float = mrr.h[R_max_Smrr_index]
     R_max_Smrr_gamma: float = mrr.gamma[R_max_Smrr_index]
 
-    # Fig.6b: plot 2D map of S(h, R)
+    # 2D map of S(h, R)
+    S_2D_map = np.asarray(
+        [
+            [mrr.calc_sensitivity(r=10**log10_R, h=h)[0] for log10_R in R_2D_map]
+            for h in h_2D_map
+        ]
+    )
     fig, ax = plt.subplots()
-    cm = ax.pcolormesh(R_fig_6, h_fig_6, S_fig_6)
-    ax.plot(np.log10(models.R), mrr.h, label=r"max$\{S(h, R)\}$")
+    cm = ax.pcolormesh(R_2D_map, h_2D_map, S_2D_map, cmap=cmap)
     ax.invert_yaxis()
     ax.set_title(
-        r"Fig.6b : MRR sensitivity as a function of $h$ and $R$"
+        r"MRR sensitivity as a function of $h$ and $R$"
         + f"\n{models.pol}"
         + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
         + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
@@ -531,72 +536,45 @@ def plot_results(
     )
     ax.set_xlabel(r"log(R) ($\mu$m)")
     ax.set_ylabel(r"$h$ ($\mu$m)")
-    ax.legend(loc="upper right")
     fig.colorbar(cm, label=r"S (RIU $^{-1}$)")
-
-    # Plot dashed lines at radii for S_mrr = 5X and 10X S_spiral, and max(Smrr)
+    ax.plot(np.log10(models.R), mrr.h, color="black", label=r"max$\{S(h, R)\}$")
     ax.plot(
         [np.log10(mrr.max_S_radius), np.log10(mrr.max_S_radius)],
-        [h_fig_6[-1], R_max_Smrr_h],
+        [h_2D_map[-1], R_max_Smrr_h],
         "w--",
         label="".join([r"$max\{S_{MRR}\}$", f" = {mrr.max_S:.0f} RIU", r"$^{-1}$"])
         + "".join([f" @ R = {mrr.max_S_radius:.0f} ", r"$\mu$", "m"])
         + "".join([f", h = {R_max_Smrr_h:.3f} ", r"$\mu$m"]),
     )
     ax.plot(
-        [R_fig_6[0], np.log10(mrr.max_S_radius)],
+        [R_2D_map[0], np.log10(mrr.max_S_radius)],
         [R_max_Smrr_h, R_max_Smrr_h],
         "w--",
     )
-    if not no_spiral:
-        R_5X_index, R_5X, R_5X_S, R_10X_index, R_10X, R_10X_S = _calc_5X_10X_comp_data(
-            R=models.R, R_max_Smrr_index=R_max_Smrr_index, mrr=mrr, spiral=spiral
-        )
-        R_5X_h: float = mrr.h[R_5X_index]
-        R_10X_h: float = mrr.h[R_10X_index]
-        ax.plot(
-            [np.log10(R_5X), np.log10(R_5X)],
-            [h_fig_6[-1], R_5X_h],
-            "k--",
-            label="".join([r"$S_{MRR} = 5\times S_{SPIRAL}$"])
-            + "".join([r"$, S_{MRR}/max\{S_{MRR}\} = $", f"{R_5X_S / mrr.max_S:.2f}"])
-            + "".join([f" @ R = {R_5X:.0f} ", r"$\mu$", "m"])
-            + "".join([f", h = {R_5X_h:.3f} ", r"$\mu$m"]),
-        )
-        ax.plot([R_fig_6[0], np.log10(R_5X)], [R_5X_h, R_5X_h], "k--")
-        ax.plot(
-            [np.log10(R_10X), np.log10(R_10X)],
-            [h_fig_6[-1], R_10X_h],
-            "r--",
-            label="".join([r"$S_{MRR} = 10\times S_{SPIRAL}$"])
-            + "".join([r"$, S_{MRR}/max\{S_{MRR}\} = $", f"{R_10X_S / mrr.max_S:.2f}"])
-            + "".join([f" @ R = {R_10X:.0f} ", r"$\mu$", "m"])
-            + "".join([f", h = {R_10X_h:.3f} ", r"$\mu$m"]),
-        )
-        ax.plot([R_fig_6[0], np.log10(R_10X)], [R_10X_h, R_10X_h], "r--")
     ax.legend(loc="lower right")
-
-    # Save Figure 6b to .png file and data to Excel file
-    filename = filename_path.parent / (filename_path.stem + "_FIG6b.png")
+    filename = filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_S_VS_H_and_R.png"
     fig.savefig(filename)
     logger(f"Wrote '{filename}'.")
     if write_excel_files:
         write_image_data_to_Excel(
-            filename=str(filename.with_suffix(".xlsx")),
-            X=10**R_fig_6,
-            Y=h_fig_6,
-            S=S_fig_6,
+            filename=str(
+                filename_path.parent
+                / f"{filename_path.stem}_MRR_2DMAPS_VS_H_and_R.xlsx"
+            ),
+            X=10**R_2D_map,
             x_label="R",
+            Y=h_2D_map,
             y_label="h",
+            Zs=[S_2D_map],
+            z_labels=["S"],
         )
         logger(f"Wrote '{filename.with_suffix('.xlsx')}'.")
 
-    # Fig.6: plot 2D map of S(gamma, R)
+    # 2D map of S(gamma, R)
     fig, ax = plt.subplots()
-    cm = ax.pcolormesh(R_fig_6, gamma_fig_6, S_fig_6)
-    ax.plot(np.log10(models.R), mrr.gamma, label=r"max$\{S(\Gamma_{fluid}, R)\}$")
+    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, S_2D_map, cmap=cmap)
     ax.set_title(
-        r"Fig.6 : MRR sensitivity as a function of $\Gamma_{fluid}$ and $R$"
+        r"MRR sensitivity as a function of $\Gamma_{fluid}$ and $R$"
         + f"\n{models.pol}"
         + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
         + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
@@ -605,61 +583,123 @@ def plot_results(
     ax.set_xlabel(r"log(R) ($\mu$m)")
     ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
     fig.colorbar(cm, label=r"S (RIU $^{-1}$)")
-
-    # Plot dashed lines at radii for S_mrr = 5X and 10X S_spiral, and max(Smrr)
+    ax.plot(
+        np.log10(models.R),
+        mrr.gamma,
+        color="black",
+        label=r"max$\{S(\Gamma_{fluid}, R)\}$",
+    )
     ax.plot(
         [np.log10(mrr.max_S_radius), np.log10(mrr.max_S_radius)],
-        [gamma_fig_6[-1], R_max_Smrr_gamma],
+        [gamma_2D_map[-1], R_max_Smrr_gamma],
         "w--",
         label="".join([r"$max\{S_{MRR}\}$", f" = {mrr.max_S:.0f} RIU", r"$^{-1}$"])
         + "".join([f" @ R = {mrr.max_S_radius:.0f} ", r"$\mu$", "m"])
         + "".join([r", $\Gamma$ = ", f"{R_max_Smrr_gamma:.0f}", r"$\%$"]),
     )
     ax.plot(
-        [R_fig_6[0], np.log10(mrr.max_S_radius)],
+        [R_2D_map[0], np.log10(mrr.max_S_radius)],
         [R_max_Smrr_gamma, R_max_Smrr_gamma],
         "w--",
     )
-    if not no_spiral:
-        R_5X_index, R_5X, R_5X_S, R_10X_index, R_10X, R_10X_S = _calc_5X_10X_comp_data(
-            R=models.R, R_max_Smrr_index=R_max_Smrr_index, mrr=mrr, spiral=spiral
-        )
-        R_5X_gamma: float = mrr.gamma[R_5X_index]
-        R_10X_gamma: float = mrr.gamma[R_10X_index]
-        ax.plot(
-            [np.log10(R_5X), np.log10(R_5X)],
-            [gamma_fig_6[-1], R_5X_gamma],
-            "k--",
-            label="".join([r"$S_{MRR} = 5\times S_{SPIRAL}$"])
-            + "".join([r"$, S_{MRR}/max\{S_{MRR}\} = $", f"{R_5X_S / mrr.max_S:.2f}"])
-            + "".join([f" @ R = {R_5X:.0f} ", r"$\mu$", "m"])
-            + "".join([r", $\Gamma$ = ", f"{R_5X_gamma:.0f}", r"$\%$"]),
-        )
-        ax.plot([R_fig_6[0], np.log10(R_5X)], [R_5X_gamma, R_5X_gamma], "k--")
-        ax.plot(
-            [np.log10(R_10X), np.log10(R_10X)],
-            [gamma_fig_6[-1], R_10X_gamma],
-            "r--",
-            label="".join([r"$S_{MRR} = 10\times S_{SPIRAL}$"])
-            + "".join([r"$, S_{MRR}/max\{S_{MRR}\} = $", f"{R_10X_S / mrr.max_S:.2f}"])
-            + "".join([f" @ R = {R_10X:.0f} ", r"$\mu$", "m"])
-            + "".join([r", $\Gamma$ = ", f"{R_10X_gamma:.0f}", r"$\%$"]),
-        )
-        ax.plot([R_fig_6[0], np.log10(R_10X)], [R_10X_gamma, R_10X_gamma], "r--")
     ax.legend(loc="lower right")
-
-    # Save figure 6 to .png file and data to Excel file ** LONG **
-    filename = filename_path.parent / (filename_path.stem + "_FIG6.png")
+    filename = (
+        filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_S_VS_GAMMA_and_R.png"
+    )
     fig.savefig(filename)
     logger(f"Wrote '{filename}'.")
+
+    # 2D map of a2(gamma, R)
+    a2_2D_map = np.asarray(
+        [[mrr.calc_a2(r=10**log10_R, h=h) for log10_R in R_2D_map] for h in h_2D_map]
+    )
+    fig, ax = plt.subplots()
+    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, a2_2D_map, cmap=cmap)
+    ax.plot(np.log10(models.R), mrr.gamma, "r--")
+    ax.set_title(
+        r"MRR $a^2$ as a function of $\Gamma_{fluid}$ and $R$"
+        + f"\n{models.pol}"
+        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
+        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
+        + "".join([f", w = {models.core_width:.3f} ", r"$\mu$m"])
+    )
+    ax.set_xlabel(r"log(R) ($\mu$m)")
+    ax.set_ylabel(r"$\Gamma_{fluid}$")
+    fig.colorbar(cm, label=r"$a^2$")
+    filename = (
+        filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_a2_VS_GAMMA_and_R.png"
+    )
+    fig.savefig(filename)
+    logger(f"Wrote '{filename}'.")
+
+    # 2D map of alphaL(gamma, R)
+    dB_per_cm_to_per_cm: float = 1.0 / 4.34
+    alpha_L_2D_map = (
+        np.asarray(
+            [
+                [mrr.calc_alpha_L(r=10**log10_R, h=h) for log10_R in R_2D_map]
+                for h in h_2D_map
+            ]
+        )
+        / dB_per_cm_to_per_cm
+    )
+    fig, ax = plt.subplots()
+    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, alpha_L_2D_map, cmap=cmap)
+    ax.plot(np.log10(models.R), mrr.gamma, "r--")
+    ax.set_title(
+        r"MRR $\alpha L$ as a function of $\Gamma_{fluid}$ and $R$"
+        + f"\n{models.pol}"
+        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
+        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
+        + "".join([f", w = {models.core_width:.3f} ", r"$\mu$m"])
+    )
+    ax.set_xlabel(r"log(R) ($\mu$m)")
+    ax.set_ylabel(r"$\Gamma_{fluid}$")
+    fig.colorbar(cm, label=r"$\alpha L$ (dB)")
+    filename = (
+        filename_path.parent
+        / f"{filename_path.stem}_MRR_2DMAP_alphaL_VS_GAMMA_and_R.png"
+    )
+    fig.savefig(filename)
+    logger(f"Wrote '{filename}'.")
+
+    # Save 2D maps as a function of gamma and R to output Excel file, if required
     if write_excel_files:
+        alpha_prop_L_2D_map = (
+            np.asarray(
+                [
+                    [
+                        mrr.calc_alpha_prop_L(r=10**log10_R, h=h)
+                        for log10_R in R_2D_map
+                    ]
+                    for h in h_2D_map
+                ]
+            )
+            / dB_per_cm_to_per_cm
+        )
+        alpha_bend_L_2D_map = (
+            np.asarray(
+                [
+                    [
+                        mrr.calc_alpha_bend_L(r=10**log10_R, h=h)
+                        for log10_R in R_2D_map
+                    ]
+                    for h in h_2D_map
+                ]
+            )
+            / dB_per_cm_to_per_cm
+        )
         write_image_data_to_Excel(
-            filename=str(filename.with_suffix(".xlsx")),
-            X=10**R_fig_6,
-            Y=h_fig_6,
-            S=S_fig_6,
+            filename=str(
+                filename_path.parent
+                / f"{filename_path.stem}_MRR_2DMAPS_VS_GAMMA_and_R.xlsx"
+            ),
+            X=10**R_2D_map,
             x_label="R",
+            Y=gamma_2D_map,
             y_label="gamma",
+            Zs=[S_2D_map, alpha_L_2D_map, alpha_bend_L_2D_map, alpha_prop_L_2D_map],
+            z_labels=["S", "alpha L", "alpha_bend L (dB)", "alpha_prop L (dB)"],
         )
         logger(f"Wrote '{filename.with_suffix('.xlsx')}'.")
 
@@ -676,7 +716,7 @@ def plot_results(
         )
 
     #
-    # Fig.7: Overlay plots of linear, spiral and MRR waveguide sensitivity(R)
+    # Overlaid plots of linear, spiral and MRR waveguide sensitivity as function of R
     #
 
     # Calculate minimum sensitivity required to detect the minimum resolvable
@@ -686,7 +726,7 @@ def plot_results(
     # Plot...
     fig, ax = plt.subplots()
     ax.set_title(
-        "Fig.7 : Maximum sensitivity for MRR, spiral, and linear sensors"
+        "Maximum sensitivity for MRR, spiral, and linear sensors"
         + f"\n{models.pol}"
         + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
         + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
@@ -748,6 +788,6 @@ def plot_results(
         ax.legend(loc="lower right")
 
     # Save figure
-    filename = filename_path.parent / (filename_path.stem + "_FIG7.png")
+    filename = filename_path.parent / f"{filename_path.stem}_MRR_VS_SPIRAL_VS_SWGD.png"
     fig.savefig(filename)
     logger(f"Wrote '{filename}'.")

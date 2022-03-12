@@ -244,7 +244,7 @@ def validate_excel_output_file(filename_path: Path) -> str:
     """
 
     excel_output_filename: str = str(
-        filename_path.parent / f"{filename_path.stem}_RESULTS.xlsx"
+        filename_path.parent / f"{filename_path.stem}_ALL_RESULTS.xlsx"
     )
 
     try:
@@ -327,30 +327,33 @@ def write_excel_output_file(
 def write_image_data_to_Excel(
     filename: str,
     X: np.ndarray,
-    Y: np.ndarray,
-    S: np.ndarray,
     x_label: str,
+    Y: np.ndarray,
     y_label: str,
+    Zs: list,
+    z_labels: list,
 ):
     """
     Write image data to Excel file
-
-    :param filename:
-    :param X:
-    :param Y:
-    :param S:
-    :param x_label:
-    :param y_label:
-    :return:
     """
 
     wb = Workbook()
+
+    # X sheet
     X_sheet = wb["Sheet"]
     X_sheet.title = x_label
-    Y_sheet = wb.create_sheet(y_label)
-    S_sheet = wb.create_sheet("S")
     X_sheet.append(X.tolist())
-    for y, z in zip(Y, S):
+
+    # Y sheet
+    Y_sheet = wb.create_sheet(y_label)
+    for y in Y:
         Y_sheet.append([y])
-        S_sheet.append(z.tolist())
+
+    # Z sheets
+    for i, Z in enumerate(Zs):
+        Z_sheet = wb.create_sheet(z_labels[i])
+        for z in Z:
+            Z_sheet.append(z.tolist())
+
+    # Save file
     wb.save(filename=filename)

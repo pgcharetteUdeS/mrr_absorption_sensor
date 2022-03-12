@@ -56,22 +56,56 @@ class Mrr:
         self.max_S_radius: float = 0
         self.results: list = []
 
+    def calc_alpha_prop_L(self, r: float, h: float) -> float:
+        """
+        Calculate alpha_prop * L component of ring round-trip losses
+        """
+
+        alpha_prop: float = self.models.alpha_wg + (
+            self.models.gamma(h) * self.models.alpha_fluid
+        )
+        L: float = 2 * np.pi * r
+
+        return alpha_prop * L
+
+    def calc_alpha_bend_L(self, r: float, h: float) -> float:
+        """
+        Calculate alpha_bend * L component of ring round-trip losses
+        """
+
+        L: float = 2 * np.pi * r
+        return self.models.alpha_bend(r=r, h=h) * L
+
+    def calc_alpha_L(self, r: float, h: float) -> float:
+        """
+        Calculate alpha * L total ring round-trip losses
+        """
+
+        alpha_prop: float = self.models.alpha_wg + (
+            self.models.gamma(h) * self.models.alpha_fluid
+        )
+        L: float = 2 * np.pi * r
+
+        return (alpha_prop + self.models.alpha_bend(r=r, h=h)) * L
+
+    def calc_a2(self, r: float, h: float) -> float:
+        """
+        Calculate a2 = e**(-alpha * L)
+        """
+
+        return np.e ** -self.calc_alpha_L(r=r, h=h)
+
     def calc_sensitivity(self, r: float, h: float) -> tuple[float, float, float, float]:
         """
         Calculate sensitivity at radius r for a given core height
         """
 
-        # Calculate interpolated value of gamma
-        gamma: float = self.models.gamma(h)
-
-        # Calculate ring round-trip losses
-        alpha_prop: float = self.models.alpha_wg + (gamma * self.models.alpha_fluid)
-        L: float = 2 * np.pi * r
-        round_trip_losses: float = (alpha_prop + self.models.alpha_bend(r=r, h=h)) * L
-        a2: float = np.e ** -round_trip_losses
-
         # Calculate sensitivity
-        Snr: float = (4 * np.pi / self.models.lambda_res) * L * gamma * a2
+        L: float = 2 * np.pi * r
+        a2: float = self.calc_a2(r=r, h=h)
+        Snr: float = (
+            (4 * np.pi / self.models.lambda_res) * L * self.models.gamma(h) * a2
+        )
         Se: float = 2 / (3 * np.sqrt(3)) / (np.sqrt(a2) * (1 - a2))
         S: float = Snr * Se
         assert S >= 0, "S should not be negative!"
