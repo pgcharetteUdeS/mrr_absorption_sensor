@@ -302,6 +302,7 @@ def write_excel_output_file(
         "LINEAR h (um)": linear.h,
         "LINEAR gamma (%)": linear.gamma,
         "LINEAR L (um)": 2 * models.R,
+        "LINEAR a2": linear.a2,
     }
     if not no_spiral:
         output_data_dict.update(

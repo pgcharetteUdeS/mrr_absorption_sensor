@@ -37,21 +37,34 @@ class Linear:
         self.S: np.ndarray = np.ndarray([])
         self.h: np.ndarray = np.ndarray([])
         self.gamma: np.ndarray = np.ndarray([])
+        self.a2: np.ndarray = np.ndarray([])
         self.results: list = []
+
+    def _calc_a2(self, r: float, h: float):
+        """
+        Calculate a2
+        """
+
+        gamma: float = self.models.gamma(h)
+        alpha_prop: float = self.models.alpha_wg + (gamma * self.models.alpha_fluid)
+        L: float = 2 * r
+        a2: float = np.e ** -(alpha_prop * L)
+        assert a2 <= 1, "a2 should not be > 1'"
+
+        return a2
 
     def _calc_sensitivity(self, r: float, h: float) -> float:
         """
         Calculate sensitivity at radius r (length 2r) for a given core height
         """
 
-        # Calculate linear losses
-        gamma: float = self.models.gamma(h)
-        alpha_prop: float = self.models.alpha_wg + (gamma * self.models.alpha_fluid)
-        L: float = 2 * r
-        a2: float = np.e ** -(alpha_prop * L)
-
         # Calculate sensitivity
-        Snr: float = (4 * np.pi / self.models.lambda_res) * L * gamma * a2
+        Snr: float = (
+            (4 * np.pi / self.models.lambda_res)
+            * (2 * r)
+            * self.models.gamma(h)
+            * self._calc_a2(r=r, h=h)
+        )
         assert Snr >= 0, "Snr should not be negative'"
 
         return Snr
@@ -69,7 +82,7 @@ class Linear:
         s: float = self._calc_sensitivity(r=r, h=h)
         return -s / 1000
 
-    def _find_max_sensitivity(self, r: float) -> tuple[float, float, float]:
+    def _find_max_sensitivity(self, r: float) -> tuple[float, float, float, float]:
         """
         Calculate maximum sensitivity at r over all h
         """
@@ -102,9 +115,10 @@ class Linear:
 
         # Calculate other useful parameters at the solution
         gamma: float = self.models.gamma(h_max_S) * 100
+        a2: float = self._calc_a2(r=r, h=h_max_S)
 
         # Return results to calling program
-        return max_S, h_max_S, gamma
+        return max_S, h_max_S, gamma, a2
 
     def analyze(self):
         """
@@ -121,6 +135,7 @@ class Linear:
             self.S,
             self.h,
             self.gamma,
+            self.a2,
         ] = list(np.asarray(self.results).T)
 
         # Console message
