@@ -605,6 +605,16 @@ def plot_results(
         [R_max_Smrr_gamma, R_max_Smrr_gamma],
         "w--",
     )
+    ax.plot(
+        np.log10(mrr.Re),
+        mrr.gamma_resampled * 100,
+        "g--",
+        label=r"Re$(\Gamma_{fluid})$",
+    )
+    ax.plot(
+        np.log10(mrr.Rw), mrr.gamma_resampled * 100, "g", label=r"Rw$(\Gamma_{fluid})$"
+    )
+    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100)
     ax.legend(loc="lower right")
     filename = (
         filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_S_VS_GAMMA_and_R.png"
