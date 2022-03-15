@@ -287,7 +287,9 @@ def plot_results(
     T_SNR: float,
     min_delta_ni: float,
     filename_path: Path,
+    n_2D_grid_points: int = 500,
     write_excel_files: bool = False,
+    colormap2D: str = "viridis",
     no_spiral: bool = False,
     draw_largest_spiral: bool = False,
     write_spiral_sequence_to_file: bool = False,
@@ -302,7 +304,9 @@ def plot_results(
     :param T_SNR:
     :param min_delta_ni:
     :param filename_path:
+    :param n_2D_grid_points:
     :param write_excel_files:
+    :param colormap2D:
     :param no_spiral:
     :param draw_largest_spiral:
     :param write_spiral_sequence_to_file:
@@ -496,21 +500,16 @@ def plot_results(
     # MRR 2D maps
     #
 
-    # Colormaps
-    # cmap = plt.colormaps["gray"]
-    # cmap = plt.colormaps["hot"]
-    cmap = plt.colormaps["plasma"]
-    # cmap = plt.colormaps["viridis"]
-
     # Generate 2D map data X,Y data arrays
-    n_grid_points: int = 500
-    R_2D_map = np.linspace(np.log10(models.R[0]), np.log10(models.R[-1]), n_grid_points)
+    R_2D_map = np.linspace(
+        np.log10(models.R[0]), np.log10(models.R[-1]), n_2D_grid_points
+    )
     h_2D_map = np.linspace(
         list(models.bending_loss_data)[0],
         list(models.bending_loss_data)[-1],
-        n_grid_points,
+        n_2D_grid_points,
     )
-    gamma_2D_map = np.asarray([models.gamma(h) * 100 for h in h_2D_map])
+    gamma_2D_map = np.asarray([models.gamma_of_h(h) * 100 for h in h_2D_map])
 
     # Indices for dashed lines at radii for max(Smrr)
     R_max_Smrr_index: int = int((np.abs(models.R - mrr.max_S_radius)).argmin())
@@ -525,7 +524,7 @@ def plot_results(
         ]
     )
     fig, ax = plt.subplots()
-    cm = ax.pcolormesh(R_2D_map, h_2D_map, S_2D_map, cmap=cmap)
+    cm = ax.pcolormesh(R_2D_map, h_2D_map, S_2D_map, cmap=colormap2D)
     ax.invert_yaxis()
     ax.set_title(
         r"MRR sensitivity as a function of $h$ and $R$"
@@ -542,7 +541,9 @@ def plot_results(
         [np.log10(mrr.max_S_radius), np.log10(mrr.max_S_radius)],
         [h_2D_map[-1], R_max_Smrr_h],
         "w--",
-        label="".join([r"$max\{S_{MRR}\}$", f" = {mrr.max_S:.0f} RIU", r"$^{-1}$"])
+        label="".join(
+            [r"max$\{$max$\{S_{MRR}\}\}$", f" = {mrr.max_S:.0f} RIU", r"$^{-1}$"]
+        )
         + "".join([f" @ R = {mrr.max_S_radius:.0f} ", r"$\mu$", "m"])
         + "".join([f", h = {R_max_Smrr_h:.3f} ", r"$\mu$m"]),
     )
@@ -572,7 +573,7 @@ def plot_results(
 
     # 2D map of S(gamma, R)
     fig, ax = plt.subplots()
-    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, S_2D_map, cmap=cmap)
+    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, S_2D_map, cmap=colormap2D)
     ax.set_title(
         r"MRR sensitivity as a function of $\Gamma_{fluid}$ and $R$"
         + f"\n{models.pol}"
@@ -593,7 +594,9 @@ def plot_results(
         [np.log10(mrr.max_S_radius), np.log10(mrr.max_S_radius)],
         [gamma_2D_map[-1], R_max_Smrr_gamma],
         "w--",
-        label="".join([r"$max\{S_{MRR}\}$", f" = {mrr.max_S:.0f} RIU", r"$^{-1}$"])
+        label="".join(
+            [r"max$\{$max$\{S_{MRR}\}\}$", f" = {mrr.max_S:.0f} RIU", r"$^{-1}$"]
+        )
         + "".join([f" @ R = {mrr.max_S_radius:.0f} ", r"$\mu$", "m"])
         + "".join([r", $\Gamma$ = ", f"{R_max_Smrr_gamma:.0f}", r"$\%$"]),
     )
@@ -614,8 +617,18 @@ def plot_results(
         [[mrr.calc_a2(r=10**log10_R, h=h) for log10_R in R_2D_map] for h in h_2D_map]
     )
     fig, ax = plt.subplots()
-    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, a2_2D_map, cmap=cmap)
-    ax.plot(np.log10(models.R), mrr.gamma, "r--")
+    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, a2_2D_map, cmap=colormap2D)
+    ax.plot(np.log10(models.R), mrr.gamma, "r--", label=r"max$\{S_{MRR}\}$")
+    ax.plot(
+        np.log10(mrr.Re),
+        mrr.gamma_resampled * 100,
+        "g--",
+        label=r"Re$(\Gamma_{fluid})$",
+    )
+    ax.plot(
+        np.log10(mrr.Rw), mrr.gamma_resampled * 100, "g", label=r"Rw$(\Gamma_{fluid})$"
+    )
+    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100)
     ax.set_title(
         r"MRR $a^2$ as a function of $\Gamma_{fluid}$ and $R$"
         + f"\n{models.pol}"
@@ -626,6 +639,7 @@ def plot_results(
     ax.set_xlabel(r"log(R) ($\mu$m)")
     ax.set_ylabel(r"$\Gamma_{fluid}$")
     fig.colorbar(cm, label=r"$a^2$")
+    ax.legend(loc="lower right")
     filename = (
         filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_a2_VS_GAMMA_and_R.png"
     )
@@ -644,8 +658,18 @@ def plot_results(
         / dB_per_cm_to_per_cm
     )
     fig, ax = plt.subplots()
-    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, alpha_L_2D_map, cmap=cmap)
-    ax.plot(np.log10(models.R), mrr.gamma, "r--")
+    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, alpha_L_2D_map, cmap=colormap2D)
+    ax.plot(np.log10(models.R), mrr.gamma, "r--", label=r"max$\{S_{MRR}\}$")
+    ax.plot(
+        np.log10(mrr.Re),
+        mrr.gamma_resampled * 100,
+        "g--",
+        label=r"Re$(\Gamma_{fluid})$",
+    )
+    ax.plot(
+        np.log10(mrr.Rw), mrr.gamma_resampled * 100, "g", label=r"Rw$(\Gamma_{fluid})$"
+    )
+    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100)
     ax.set_title(
         r"MRR $\alpha L$ as a function of $\Gamma_{fluid}$ and $R$"
         + f"\n{models.pol}"
@@ -656,6 +680,7 @@ def plot_results(
     ax.set_xlabel(r"log(R) ($\mu$m)")
     ax.set_ylabel(r"$\Gamma_{fluid}$")
     fig.colorbar(cm, label=r"$\alpha L$ (dB)")
+    ax.legend(loc="lower right")
     filename = (
         filename_path.parent
         / f"{filename_path.stem}_MRR_2DMAP_alphaL_VS_GAMMA_and_R.png"

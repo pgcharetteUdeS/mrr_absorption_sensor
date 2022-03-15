@@ -263,7 +263,7 @@ class Spiral:
         )
 
         # Calculate propagation losses in the spiral
-        gamma: float = self.models.gamma(h)
+        gamma: float = self.models.gamma_of_h(h)
         alpha_prop: float = self.models.alpha_wg + (gamma * self.models.alpha_fluid)
         prop_losses_spiral: float = alpha_prop * L
 
@@ -395,7 +395,7 @@ class Spiral:
             self.previous_solution = np.asarray([h_max, self.turns_min])
 
         # Calculate other useful parameters at the solution
-        gamma: float = self.models.gamma(h_max_S) * 100
+        gamma: float = self.models.gamma_of_h(h_max_S) * 100
 
         return S, h_max_S, n_turns_max_S, outer_spiral_r_min, L, gamma
 

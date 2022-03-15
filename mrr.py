@@ -10,8 +10,10 @@ Exposed methods:
 
 
 # Standard library packages
+from math import e
 import numpy as np
 from scipy import optimize
+from scipy.special import lambertw
 from typing import Callable
 
 # Package modules
@@ -40,53 +42,96 @@ class Mrr:
         self.previous_solution: float = -1
 
         # Define class instance result variables and arrays
-        self.S: np.ndarray = np.ndarray([])
-        self.h: np.ndarray = np.ndarray([])
-        self.gamma: np.ndarray = np.ndarray([])
-        self.Snr: np.ndarray = np.ndarray([])
-        self.Se: np.ndarray = np.ndarray([])
+        self.A: np.ndarray = np.ndarray([])
         self.a2: np.ndarray = np.ndarray([])
-        self.tau: np.ndarray = np.ndarray([])
-        self.neff: np.ndarray = np.ndarray([])
-        self.Q: np.ndarray = np.ndarray([])
+        self.B: np.ndarray = np.ndarray([])
         self.Finesse: np.ndarray = np.ndarray([])
-        self.FWHM: np.ndarray = np.ndarray([])
         self.FSR: np.ndarray = np.ndarray([])
+        self.FWHM: np.ndarray = np.ndarray([])
+        self.gamma: np.ndarray = np.ndarray([])
+        self.gamma_resampled: np.ndarray = np.ndarray([])
+        self.h: np.ndarray = np.ndarray([])
         self.max_S: float = 0
         self.max_S_radius: float = 0
+        self.neff: np.ndarray = np.ndarray([])
+        self.Q: np.ndarray = np.ndarray([])
         self.results: list = []
+        self.S: np.ndarray = np.ndarray([])
+        self.Re: np.ndarray = np.ndarray([])
+        self.Rw: np.ndarray = np.ndarray([])
+        self.Se: np.ndarray = np.ndarray([])
+        self.Snr: np.ndarray = np.ndarray([])
+        self.tau: np.ndarray = np.ndarray([])
+
+    def _objfun_Rw(self, R: float, h: float, A: float, B: float) -> float:
+        """
+        Calculate the residual squared with the current solution for Rw,
+        using equation (15) in the paper.
+        """
+
+        alpha_bend: float = A * np.exp(-B * R)
+        residual: float = 1 - R * (2 * np.pi) * (
+            self.alpha_prop(h=h) + (1 - B * R) * alpha_bend
+        )
+
+        return residual**2
+
+    def _calc_Re_Rw(self, gamma: float) -> tuple[float, float, float, float]:
+        """
+        Calculate Re(gamma) and Rw(gamma)
+        """
+
+        # h corresponding to gamma
+        h: float = self.models.h_of_gamma(gamma=gamma)
+
+        # alpha_bend(R) = A*exp(-BR) model parameters @gamma
+        A, B = self.models.calc_A_and_B(gamma=gamma)
+
+        # Re
+        W: float = lambertw(-e * self.alpha_prop(h=h) / A, k=-1).real
+        Re: float = (1 / B) * (1 - W)
+
+        # Rw
+        optimization_result = optimize.minimize(
+            fun=self._objfun_Rw,
+            x0=np.asarray(Re),
+            args=(h, A, B),
+            method="SLSQP",
+        )
+        Rw: float = optimization_result["x"][0]
+
+        return Re, Rw, A, B
+
+    def alpha_prop(self, h: float) -> float:
+        """
+        Calculate alpha_prop
+        """
+
+        return self.models.alpha_wg + (
+            self.models.gamma_of_h(h) * self.models.alpha_fluid
+        )
 
     def calc_alpha_prop_L(self, r: float, h: float) -> float:
         """
         Calculate alpha_prop * L component of ring round-trip losses
         """
 
-        alpha_prop: float = self.models.alpha_wg + (
-            self.models.gamma(h) * self.models.alpha_fluid
-        )
-        L: float = 2 * np.pi * r
-
-        return alpha_prop * L
+        return self.alpha_prop(h=h) * (2 * np.pi * r)
 
     def calc_alpha_bend_L(self, r: float, h: float) -> float:
         """
         Calculate alpha_bend * L component of ring round-trip losses
         """
-
-        L: float = 2 * np.pi * r
-        return self.models.alpha_bend(r=r, h=h) * L
+        return self.models.alpha_bend(r=r, h=h) * (2 * np.pi * r)
 
     def calc_alpha_L(self, r: float, h: float) -> float:
         """
         Calculate alpha * L total ring round-trip losses
         """
 
-        alpha_prop: float = self.models.alpha_wg + (
-            self.models.gamma(h) * self.models.alpha_fluid
+        return (self.alpha_prop(h=h) + self.models.alpha_bend(r=r, h=h)) * (
+            2 * np.pi * r
         )
-        L: float = 2 * np.pi * r
-
-        return (alpha_prop + self.models.alpha_bend(r=r, h=h)) * L
 
     def calc_a2(self, r: float, h: float) -> float:
         """
@@ -104,7 +149,7 @@ class Mrr:
         L: float = 2 * np.pi * r
         a2: float = self.calc_a2(r=r, h=h)
         Snr: float = (
-            (4 * np.pi / self.models.lambda_res) * L * self.models.gamma(h) * a2
+            (4 * np.pi / self.models.lambda_res) * L * self.models.gamma_of_h(h) * a2
         )
         Se: float = 2 / (3 * np.sqrt(3)) / (np.sqrt(a2) * (1 - a2))
         S: float = Snr * Se
@@ -172,8 +217,8 @@ class Mrr:
         S, Snr, Se, a2 = self.calc_sensitivity(r=r, h=h_max_S)
 
         # Calculate other useful MRR parameters at the solution
-        gamma: float = self.models.gamma(h_max_S) * 100
-        neff: float = self.models.neff(h_max_S)
+        gamma: float = self.models.gamma_of_h(h_max_S) * 100
+        neff: float = self.models.neff_of_h(h_max_S)
         tau: float = (np.sqrt(3) * a2 - np.sqrt(3) - 2 * np.sqrt(a2)) / (a2 - 3)
         finesse: float = np.pi * (np.sqrt(tau * np.sqrt(a2))) / (1 - tau * np.sqrt(a2))
         Q: float = (neff * (2 * np.pi * r) / self.models.lambda_res) * finesse
@@ -212,6 +257,14 @@ class Mrr:
         # Find maximum sensitivity overall and corresponding radius
         self.max_S = np.amax(self.S)
         self.max_S_radius = self.models.R[np.argmax(self.S)]
+
+        # Calculate Re(gamma) and Rw(gamma)
+        gamma_min: float = list(self.models.modes_data.values())[-1]["gamma"]
+        gamma_max: float = list(self.models.modes_data.values())[0]["gamma"]
+        self.gamma_resampled = np.linspace(gamma_min, gamma_max, 500)
+        self.Re, self.Rw, self.A, self.B = zip(
+            *[self._calc_Re_Rw(gamma=gamma) for gamma in self.gamma_resampled]
+        )
 
         # Console message
         self.logger("MRR sensor analysis done.")

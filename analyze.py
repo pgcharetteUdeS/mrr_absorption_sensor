@@ -18,7 +18,7 @@ from .mrr import Mrr
 from .linear import Linear
 from .spiral import Spiral
 from .plotting import plot_results
-from .fileio import load_toml_file, validate_excel_output_file, write_excel_output_file
+from .fileio import load_toml_file, validate_excel_output_file, write_excel_results_file
 from .version import __version__
 
 
@@ -115,6 +115,7 @@ def analyze(
         min_delta_ni=parameters["min_delta_ni"],
         filename_path=output_filenames_path,
         write_excel_files=parameters["write_excel_files"],
+        colormap2D=parameters["colormap2D"],
         no_spiral=parameters["no_spiral"],
         write_spiral_sequence_to_file=parameters["write_spiral_sequence_to_file"],
         logger=logger,
@@ -122,7 +123,7 @@ def analyze(
 
     # If required, write the analysis results to the output Excel file
     if parameters["write_excel_files"]:
-        write_excel_output_file(
+        write_excel_results_file(
             excel_output_fname=excel_output_fname,
             models=models,
             mrr=mrr,

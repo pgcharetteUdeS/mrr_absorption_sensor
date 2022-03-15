@@ -38,13 +38,8 @@ def _check_mode_solver_data(
 ) -> bool:
     """
     For each h entry in the dictionary, check that the mode solver data are ordered,
-    positive, and without duplicates. Check that the h dynamic range for the "modes"
-    data covers that of the "bending loss" data
+    positive, and without duplicates.
     """
-
-    #
-    # "Bending loss" mode solver data (alpha_bend, R) as a function of h
-    #
 
     # Check that h values are in ascending order and positive
     h_bending_loss: np.ndarray = np.asarray(list(bending_loss_data.keys()))
@@ -69,20 +64,6 @@ def _check_mode_solver_data(
         ):
             logger(f"Invalid alpha_bend array for height {h:.3f} in '{filename}'!")
             return False
-
-    #
-    # "modes" mode solver data (neff, gamma) as a function of h
-    #
-
-    # Check that h values are in ascending order & positive, and that
-    # the h dynamic range covers the bending loss data
-    h_modes: np.ndarray = np.asarray(list(modes_data.keys()))
-    if not np.all(h_modes[:-1] < h_modes[1:]) or h_modes[0] <= 0:
-        logger(f"'modes' data in '{filename}' are not in ascending h order!")
-        return False
-    if h_bending_loss[0] < h_modes[0] or h_bending_loss[-1] > h_modes[-1]:
-        logger(f"Mismatched modes and bending loss h dynamic range in '{filename}'!")
-        return False
 
     # Check that neff and gamma values are reasonable
     for m in modes_data.values():
@@ -137,16 +118,17 @@ def load_toml_file(
             "write_spiral_sequence_to_file", True
         ),
         # Fitting parameters
-        "gamma_order": toml_data.get("gamma_order", 3),
+        "gamma_order": toml_data.get("gamma_order", 4),
         "neff_order": toml_data.get("neff_order", 3),
-        # Debugging flags
+        # Debugging and other flags
+        "colormap2D": toml_data.get("colormap2D", "viridis"),
         "models_only": toml_data.get("models_only", False),
         "disable_R_domain_check": toml_data.get("disable_R_domain_check", False),
         "no_spiral": toml_data.get("no_spiral", False),
     }
 
     # Check if .toml file contains unsupported keys, if so exit
-    valid_keys: list = list(parameters.keys()) + ["modes", "h"]
+    valid_keys: list = list(parameters.keys()) + ["h"]
     invalid_keys: list = [key for key in toml_data.keys() if key not in valid_keys]
     if invalid_keys:
         valid_keys.sort(key=lambda x: x.lower())
@@ -164,37 +146,17 @@ def load_toml_file(
         )
         sys.exit()
 
-    # Copy the "neff" and "gamma" mode solver data to the modes_data{} dictionary.
-    # If the "modes" field is specified, fetch the data from the associated field
-    # value, else fetch the data from the "h" dictionary in the .toml file.
+    # Copy the neff(h) and gamma(h) mode solver data to the "modes_data{}" dictionary,
+    # and the alpha_bend(R, h) mode solver data to the "bending_loss_data{}" dictionary
     modes_data: dict = {}
-    if "modes" in toml_data.keys():
-        for mode in toml_data["modes"]:
-            h_key_um = mode[-1]
-            if h_key_um in modes_data:
-                print(
-                    f"{Fore.YELLOW}Duplicate 'modes' entries in "
-                    + f"'{filename}'!{Style.RESET_ALL}"
-                )
-                sys.exit()
-            modes_data[h_key_um] = {
-                "h": h_key_um,
-                "neff": mode[0],
-                "gamma": mode[1],
-            }
-    else:
-        for k, value in toml_data["h"].items():
-            h_key_um = float(k) / 1000
-            modes_data[h_key_um] = {
-                "h": h_key_um,
-                "neff": value["neff"],
-                "gamma": value["gamma"],
-            }
-
-    # Copy the "bending loss" mode solver data to the bending_loss_data{} dictionary
     bending_loss_data: dict = {}
     for k, value in toml_data["h"].items():
         h_key_um = float(k) / 1000
+        modes_data[h_key_um] = {
+            "h": h_key_um,
+            "neff": value["neff"],
+            "gamma": value["gamma"],
+        }
         bending_loss_data[h_key_um] = {
             "R": value["R"],
             "alpha_bend": value["alpha_bend"],
@@ -260,7 +222,7 @@ def validate_excel_output_file(filename_path: Path) -> str:
     return excel_output_filename
 
 
-def write_excel_output_file(
+def write_excel_results_file(
     excel_output_fname: str,
     models: Models,
     mrr: Mrr,
@@ -284,42 +246,71 @@ def write_excel_output_file(
     :return: None
     """
 
-    output_data_dict = {
+    # Create Excel workbook
+    wb = Workbook()
+
+    # Save the MMR data to a sheet
+    mrr_data_dict = {
         "R (um)": models.R,
         "neff": mrr.neff,
-        "MRR max(S) (RIU-1)": mrr.S,
-        "MRR Se": mrr.Se,
-        "MRR Snr (RIU-1)": mrr.Snr,
-        "MRR a2": mrr.a2,
-        "MRR tau": mrr.tau,
-        "MRR h (um)": mrr.h,
-        "MRR gamma (%)": mrr.gamma,
-        "MRR Finesse": mrr.Finesse,
-        "MRR Q": mrr.Q,
+        "max(S) (RIU-1)": mrr.S,
+        "Se": mrr.Se,
+        "Snr (RIU-1)": mrr.Snr,
+        "a2": mrr.a2,
+        "tau": mrr.tau,
+        "h (um)": mrr.h,
+        "gamma (%)": mrr.gamma,
+        "Finesse": mrr.Finesse,
+        "Q": mrr.Q,
         "FWHM": mrr.FWHM,
         "FSR": mrr.FSR,
-        "LINEAR max(S) (RIU-1)": linear.S,
-        "LINEAR h (um)": linear.h,
-        "LINEAR gamma (%)": linear.gamma,
-        "LINEAR L (um)": 2 * models.R,
-        "LINEAR a2": linear.a2,
     }
+    mrr_data: np.ndarray = np.asarray(list(mrr_data_dict.values())).T
+    mrr_sheet = wb["Sheet"]
+    mrr_sheet.title = "MRR"
+    mrr_sheet.append(list(mrr_data_dict.keys()))
+    for row in mrr_data:
+        mrr_sheet.append(row.tolist())
+
+    # Save the Re(gamma) & Rw(gamma) arrays to a sheet
+    ReRw_sheet = wb.create_sheet("Re and Rw")
+    ReRw_sheet.append(["gamma (%)", "Re (um)", "Rw (um)", "A (um-1)", "B (um-1)"])
+    for line in zip(mrr.gamma_resampled * 100, mrr.Re, mrr.Rw, mrr.A, mrr.B):
+        ReRw_sheet.append(line)
+
+    # Save the linear waveguide data to a sheet
+    linear_data_dict = {
+        "R (um)": models.R,
+        "max(S) (RIU-1)": linear.S,
+        "h (um)": linear.h,
+        "gamma (%)": linear.gamma,
+        "L (um)": 2 * models.R,
+        "a2": linear.a2,
+    }
+    linear_data: np.ndarray = np.asarray(list(linear_data_dict.values())).T
+    linear_sheet = wb.create_sheet("Linear")
+    linear_sheet.append(list(linear_data_dict.keys()))
+    for row in linear_data:
+        linear_sheet.append(row.tolist())
+
+    # If required, save the spiral data to a sheet
     if not no_spiral:
-        output_data_dict.update(
-            {
-                "SPIRAL max(S) (RIU-1)": spiral.S,
-                "SPIRAL h (um)": spiral.h,
-                "SPIRAL gamma (%)": spiral.gamma,
-                "SPIRAL n turns": spiral.n_turns,
-                "SPIRAL Rmin (um)": spiral.outer_spiral_r_min,
-                "SPIRAL L (um)": spiral.L,
-            }
-        )
-    output_data: np.ndarray = np.asarray(list(output_data_dict.values())).T
-    wb = Workbook()
-    wb.active.append(list(output_data_dict.keys()))
-    for row in output_data:
-        wb.active.append(row.tolist())
+        spiral_data_dict = {
+            "R (um)": models.R,
+            "max(S) (RIU-1)": spiral.S,
+            "h (um)": spiral.h,
+            "gamma (%)": spiral.gamma,
+            "n turns": spiral.n_turns,
+            "Rmin (um)": spiral.outer_spiral_r_min,
+            "L (um)": spiral.L,
+        }
+        spiral_data: np.ndarray = np.asarray(list(spiral_data_dict.values())).T
+        spiral_sheet = wb.create_sheet("Spiral")
+        spiral_sheet.append(list(spiral_data_dict.keys()))
+        for row in spiral_data:
+            spiral_sheet.append(row.tolist())
+
+    # Save the Excel file to disk
     wb.save(filename=excel_output_fname)
     logger(f"Wrote '{excel_output_fname}'.")
 

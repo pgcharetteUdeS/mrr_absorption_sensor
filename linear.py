@@ -45,7 +45,7 @@ class Linear:
         Calculate a2
         """
 
-        gamma: float = self.models.gamma(h)
+        gamma: float = self.models.gamma_of_h(h)
         alpha_prop: float = self.models.alpha_wg + (gamma * self.models.alpha_fluid)
         L: float = 2 * r
 
@@ -60,7 +60,7 @@ class Linear:
         Snr: float = (
             (4 * np.pi / self.models.lambda_res)
             * (2 * r)
-            * self.models.gamma(h)
+            * self.models.gamma_of_h(h)
             * self.calc_a2(r=r, h=h)
         )
         assert Snr >= 0, "Snr should not be negative'"
@@ -112,7 +112,7 @@ class Linear:
         max_S = self._calc_sensitivity(r=r, h=h_max_S)
 
         # Calculate other useful parameters at the solution
-        gamma: float = self.models.gamma(h_max_S) * 100
+        gamma: float = self.models.gamma_of_h(h_max_S) * 100
         a2: float = self.calc_a2(r=r, h=h_max_S)
 
         # Return results to calling program
