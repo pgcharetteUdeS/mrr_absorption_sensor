@@ -445,7 +445,6 @@ def plot_results(
     axs[axs_index].loglog(models.R, mrr.S)
     axs[axs_index].plot([mrr.max_S_radius, mrr.max_S_radius], [100, S_plot_max], "--")
     axs[axs_index].set_xlim(r_plot_min, r_plot_max)
-    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
     axs[axs_index].set_ylim(100, S_plot_max)
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
@@ -677,6 +676,38 @@ def plot_results(
     ax.legend(loc="lower right")
     filename = (
         filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_Se_VS_GAMMA_and_R.png"
+    )
+    fig.savefig(filename)
+    logger(f"Wrote '{filename}'.")
+
+    # 2D map of Se*a(gamma, R)
+    Se_times_a_2D_map = np.asarray(
+        [
+            [
+                mrr.calc_Se(r=10**log10_R, h=h)
+                * np.sqrt(mrr.calc_a2(r=10**log10_R, h=h))
+                for log10_R in R_2D_map
+            ]
+            for h in h_2D_map
+        ]
+    )
+    fig, ax = plt.subplots()
+    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, Se_times_a_2D_map, cmap=colormap2D)
+    ax.plot(np.log10(models.R), mrr.gamma, "r--", label=r"max$\{S_{MRR}\}$")
+    ax.set_title(
+        r"MRR $S_e \times a$ as a function of $\Gamma_{fluid}$ and $R$"
+        + f"\n{models.pol}"
+        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
+        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
+        + "".join([f", w = {models.core_width:.3f} ", r"$\mu$m"])
+    )
+    ax.set_xlabel(r"log(R) ($\mu$m)")
+    ax.set_ylabel(r"$\Gamma_{fluid}$")
+    fig.colorbar(cm, label=r"$S_e \times a$")
+    ax.legend(loc="lower right")
+    filename = (
+        filename_path.parent
+        / f"{filename_path.stem}_MRR_2DMAP_Se_x_a_VS_GAMMA_and_R.png"
     )
     fig.savefig(filename)
     logger(f"Wrote '{filename}'.")
