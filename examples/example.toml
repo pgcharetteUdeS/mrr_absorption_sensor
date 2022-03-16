@@ -21,7 +21,7 @@ gamma_order = 4                       # Polynomial model order for interpolating
 neff_order = 3                        # Polynomial model order for interpolating neff(h)
 spiral_turns_min = 1.0			      # Minimum allowed turns in the spiral (default = 0.5)
 spiral_turns_max = 50                 # Maximum number of allowed turns in the spiral in the optimization (default = 25)
-colormap2D = "plasma"
+colormap2D = "plasma"				  # matplotlib colormap for rendering 2D images
 
 # Debugging flags                     # NB: "true and "false" MUST be lower-case in .toml format
 models_only = false                   # Calculate and plot models only, without analysing the waveguides (boolean, default = false)
@@ -37,7 +37,6 @@ disable_R_domain_check = true         # Show warning on console but don't exit t
 #          must include data at R < Rmin (for the largest values of h only). At the other end (large R),
 #          the mode solver arrays must include alpha_bend data down to values of ~min(alpha_prop)/100,
 #          for ALL values of h, where min(alpha_prop) = alpha_wg + min(gamma)*alpha_fluid.
-# - Also, if the "modes" field is NOT used:
 #   - gamma: fraction of mode power in the fluid medium ("gamma_fluid", in the range [0,1]).
 #   - neff: mode effective index (RIU).
 

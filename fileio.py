@@ -262,8 +262,8 @@ def write_excel_results_file(
         "gamma (%)": mrr.gamma,
         "Finesse": mrr.Finesse,
         "Q": mrr.Q,
-        "FWHM": mrr.FWHM,
-        "FSR": mrr.FSR,
+        "FWHM (um)": mrr.FWHM,
+        "FSR (um)": mrr.FSR,
     }
     mrr_data: np.ndarray = np.asarray(list(mrr_data_dict.values())).T
     mrr_sheet = wb["Sheet"]

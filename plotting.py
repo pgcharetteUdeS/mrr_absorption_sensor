@@ -563,11 +563,11 @@ def plot_results(
                 / f"{filename_path.stem}_MRR_2DMAPS_VS_H_and_R.xlsx"
             ),
             X=10**R_2D_map,
-            x_label="R",
+            x_label="R (um)",
             Y=h_2D_map,
-            y_label="h",
+            y_label="h (um)",
             Zs=[S_2D_map],
-            z_labels=["S"],
+            z_labels=["S (RIU-1)"],
         )
         logger(f"Wrote '{filename.with_suffix('.xlsx')}'.")
 
@@ -730,11 +730,16 @@ def plot_results(
                 / f"{filename_path.stem}_MRR_2DMAPS_VS_GAMMA_and_R.xlsx"
             ),
             X=10**R_2D_map,
-            x_label="R",
+            x_label="R (um)",
             Y=gamma_2D_map,
-            y_label="gamma",
+            y_label="gamma (%)",
             Zs=[S_2D_map, alpha_L_2D_map, alpha_bend_L_2D_map, alpha_prop_L_2D_map],
-            z_labels=["S", "alpha L", "alpha_bend L (dB)", "alpha_prop L (dB)"],
+            z_labels=[
+                "S (RIU-1)",
+                "alpha x L (dB)",
+                "alpha_bend x L (dB)",
+                "alpha_prop x L (dB)",
+            ],
         )
         logger(f"Wrote '{filename.with_suffix('.xlsx')}'.")
 
