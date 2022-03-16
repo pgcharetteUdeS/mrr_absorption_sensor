@@ -258,6 +258,7 @@ def write_excel_results_file(
         "Snr (RIU-1)": mrr.Snr,
         "a2": mrr.a2,
         "tau": mrr.tau,
+        "contrast": mrr.contrast,
         "h (um)": mrr.h,
         "gamma (%)": mrr.gamma,
         "Finesse": mrr.Finesse,

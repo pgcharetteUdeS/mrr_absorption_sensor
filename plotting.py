@@ -355,7 +355,7 @@ def plot_results(
     axs[axs_index].loglog(models.R, mrr.S)
     axs[axs_index].plot([mrr.max_S_radius, mrr.max_S_radius], [100, S_plot_max], "--")
     axs[axs_index].set_xlim(r_plot_min, r_plot_max)
-    axs[axs_index].set_ylim(5000, S_plot_max)
+    axs[axs_index].set_ylim(100, S_plot_max)
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
     # S_NR @ max{S}
@@ -422,8 +422,8 @@ def plot_results(
     fig.savefig(filename)
     logger(f"Wrote '{filename}'.")
 
-    # max{S}, Q, Finesse, FWHM, FSR
-    fig, axs = plt.subplots(4)
+    # max{S}, Q, Finesse, FWHM, FSR, contrast
+    fig, axs = plt.subplots(5)
     fig.suptitle(
         "MRR - Ring resonator parameters"
         + f"\n{models.pol}"
@@ -446,8 +446,19 @@ def plot_results(
     axs[axs_index].plot([mrr.max_S_radius, mrr.max_S_radius], [100, S_plot_max], "--")
     axs[axs_index].set_xlim(r_plot_min, r_plot_max)
     axs[axs_index].set_xlim(r_plot_min, r_plot_max)
-    axs[axs_index].set_ylim(1000, S_plot_max)
+    axs[axs_index].set_ylim(100, S_plot_max)
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
+
+    # Contrast, tau & a @ max{S}
+    axs_index += 1
+    axs[axs_index].semilogx(models.R, mrr.tau, color="blue", label=r"$\tau$")
+    axs[axs_index].semilogx(models.R, np.sqrt(mrr.a2), color="green", label="a")
+    axs[axs_index].semilogx(models.R, mrr.contrast, color="red", label="contrast")
+    axs[axs_index].set_ylim(0, 1)
+    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
+    axs[axs_index].set_ylabel(r"Contrast, $a$, $\tau$")
+    axs[axs_index].axes.get_xaxis().set_ticklabels([])
+    axs[axs_index].legend(loc="upper right")
 
     # Q @ max{S}
     axs_index += 1
@@ -571,11 +582,11 @@ def plot_results(
         )
         logger(f"Wrote '{filename.with_suffix('.xlsx')}'.")
 
-    # 2D map of S(gamma, R)
+    # 2D map of Smrr(gamma, R)
     fig, ax = plt.subplots()
     cm = ax.pcolormesh(R_2D_map, gamma_2D_map, S_2D_map, cmap=colormap2D)
     ax.set_title(
-        r"MRR sensitivity as a function of $\Gamma_{fluid}$ and $R$"
+        r"MRR sensitivity, $S_{MRR}$, as a function of $\Gamma_{fluid}$ and $R$"
         + f"\n{models.pol}"
         + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
         + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
@@ -583,12 +594,12 @@ def plot_results(
     )
     ax.set_xlabel(r"log(R) ($\mu$m)")
     ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
-    fig.colorbar(cm, label=r"S (RIU $^{-1}$)")
+    fig.colorbar(cm, label=r"$S_{MRR}$ (RIU $^{-1}$)")
     ax.plot(
         np.log10(models.R),
         mrr.gamma,
         color="black",
-        label=r"max$\{S(\Gamma_{fluid}, R)\}$",
+        label=r"max$\{S_{MRR}(\Gamma_{fluid}, R)\}$",
     )
     ax.plot(
         [np.log10(mrr.max_S_radius), np.log10(mrr.max_S_radius)],
@@ -618,6 +629,54 @@ def plot_results(
     ax.legend(loc="lower right")
     filename = (
         filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_S_VS_GAMMA_and_R.png"
+    )
+    fig.savefig(filename)
+    logger(f"Wrote '{filename}'.")
+
+    # 2D map of Snr(gamma, R)
+    Snr_2D_map = np.asarray(
+        [[mrr.calc_Snr(r=10**log10_R, h=h) for log10_R in R_2D_map] for h in h_2D_map]
+    )
+    fig, ax = plt.subplots()
+    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, Snr_2D_map, cmap=colormap2D)
+    ax.plot(np.log10(models.R), mrr.gamma, "r--", label=r"max$\{S_{MRR}\}$")
+    ax.set_title(
+        r"MRR $S_{NR}$ as a function of $\Gamma_{fluid}$ and $R$"
+        + f"\n{models.pol}"
+        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
+        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
+        + "".join([f", w = {models.core_width:.3f} ", r"$\mu$m"])
+    )
+    ax.set_xlabel(r"log(R) ($\mu$m)")
+    ax.set_ylabel(r"$\Gamma_{fluid}$")
+    fig.colorbar(cm, label=r"$S_{NR}$ (RIU$^{-1}$)")
+    ax.legend(loc="lower right")
+    filename = (
+        filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_Snr_VS_GAMMA_and_R.png"
+    )
+    fig.savefig(filename)
+    logger(f"Wrote '{filename}'.")
+
+    # 2D map of Se(gamma, R)
+    Se_2D_map = np.asarray(
+        [[mrr.calc_Se(r=10**log10_R, h=h) for log10_R in R_2D_map] for h in h_2D_map]
+    )
+    fig, ax = plt.subplots()
+    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, Se_2D_map, cmap=colormap2D)
+    ax.plot(np.log10(models.R), mrr.gamma, "r--", label=r"max$\{S_{MRR}\}$")
+    ax.set_title(
+        r"MRR $S_e$ as a function of $\Gamma_{fluid}$ and $R$"
+        + f"\n{models.pol}"
+        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
+        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
+        + "".join([f", w = {models.core_width:.3f} ", r"$\mu$m"])
+    )
+    ax.set_xlabel(r"log(R) ($\mu$m)")
+    ax.set_ylabel(r"$\Gamma_{fluid}$")
+    fig.colorbar(cm, label=r"$S_e$")
+    ax.legend(loc="lower right")
+    filename = (
+        filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_Se_VS_GAMMA_and_R.png"
     )
     fig.savefig(filename)
     logger(f"Wrote '{filename}'.")
@@ -656,7 +715,7 @@ def plot_results(
     fig.savefig(filename)
     logger(f"Wrote '{filename}'.")
 
-    # 2D map of alphaL(gamma, R)
+    # 2D map of alpha*L(gamma, R)
     dB_per_cm_to_per_cm: float = 1.0 / 4.34
     alpha_L_2D_map = (
         np.asarray(
@@ -698,8 +757,9 @@ def plot_results(
     fig.savefig(filename)
     logger(f"Wrote '{filename}'.")
 
-    # Save 2D maps as a function of gamma and R to output Excel file, if required
+    # Save 2D map data as a function of gamma and R to output Excel file, if required
     if write_excel_files:
+        # In addition to alpha*L, calculate 2D maps of alpha_prop*L and alpha_bend*L
         alpha_prop_L_2D_map = (
             np.asarray(
                 [
@@ -724,6 +784,8 @@ def plot_results(
             )
             / dB_per_cm_to_per_cm
         )
+
+        # Write all 2D maps to single Excel file
         write_image_data_to_Excel(
             filename=str(
                 filename_path.parent
@@ -733,9 +795,18 @@ def plot_results(
             x_label="R (um)",
             Y=gamma_2D_map,
             y_label="gamma (%)",
-            Zs=[S_2D_map, alpha_L_2D_map, alpha_bend_L_2D_map, alpha_prop_L_2D_map],
+            Zs=[
+                S_2D_map,
+                Snr_2D_map,
+                Se_2D_map,
+                alpha_L_2D_map,
+                alpha_bend_L_2D_map,
+                alpha_prop_L_2D_map,
+            ],
             z_labels=[
                 "S (RIU-1)",
+                "Snr (RIU-1)",
+                "Se",
                 "alpha x L (dB)",
                 "alpha_bend x L (dB)",
                 "alpha_prop x L (dB)",

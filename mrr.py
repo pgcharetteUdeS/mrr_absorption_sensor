@@ -45,6 +45,7 @@ class Mrr:
         self.A: np.ndarray = np.ndarray([])
         self.a2: np.ndarray = np.ndarray([])
         self.B: np.ndarray = np.ndarray([])
+        self.contrast: np.ndarray = np.ndarray([])
         self.Finesse: np.ndarray = np.ndarray([])
         self.FSR: np.ndarray = np.ndarray([])
         self.FWHM: np.ndarray = np.ndarray([])
@@ -140,18 +141,37 @@ class Mrr:
 
         return np.e ** -self.calc_alpha_L(r=r, h=h)
 
+    def calc_Snr(self, r: float, h: float) -> float:
+        """
+        Calculate Snr
+        """
+        return (
+            (4 * np.pi / self.models.lambda_res)
+            * (2 * np.pi * r)
+            * self.models.gamma_of_h(h)
+            * self.calc_a2(r=r, h=h)
+        )
+
+    def calc_Se(self, r: float, h: float) -> float:
+        """
+        Calculate Se
+        """
+
+        return (
+            2
+            / (3 * np.sqrt(3))
+            / (np.sqrt(self.calc_a2(r=r, h=h)) * (1 - self.calc_a2(r=r, h=h)))
+        )
+
     def calc_sensitivity(self, r: float, h: float) -> tuple[float, float, float, float]:
         """
         Calculate sensitivity at radius r for a given core height
         """
 
         # Calculate sensitivity
-        L: float = 2 * np.pi * r
         a2: float = self.calc_a2(r=r, h=h)
-        Snr: float = (
-            (4 * np.pi / self.models.lambda_res) * L * self.models.gamma_of_h(h) * a2
-        )
-        Se: float = 2 / (3 * np.sqrt(3)) / (np.sqrt(a2) * (1 - a2))
+        Snr: float = self.calc_Snr(r=r, h=h)
+        Se: float = self.calc_Se(r=r, h=h)
         S: float = Snr * Se
         assert S >= 0, "S should not be negative!"
 
@@ -174,6 +194,7 @@ class Mrr:
     def _find_max_sensitivity(
         self, r: float
     ) -> tuple[
+        float,
         float,
         float,
         float,
@@ -217,16 +238,34 @@ class Mrr:
         S, Snr, Se, a2 = self.calc_sensitivity(r=r, h=h_max_S)
 
         # Calculate other useful MRR parameters at the solution
+        a: float = np.sqrt(a2)
         gamma: float = self.models.gamma_of_h(h_max_S) * 100
         neff: float = self.models.neff_of_h(h_max_S)
-        tau: float = (np.sqrt(3) * a2 - np.sqrt(3) - 2 * np.sqrt(a2)) / (a2 - 3)
-        finesse: float = np.pi * (np.sqrt(tau * np.sqrt(a2))) / (1 - tau * np.sqrt(a2))
+        tau: float = (np.sqrt(3) * a2 - np.sqrt(3) - 2 * a) / (a2 - 3)
+        finesse: float = np.pi * (np.sqrt(tau * a)) / (1 - tau * a)
         Q: float = (neff * (2 * np.pi * r) / self.models.lambda_res) * finesse
         FWHM: float = self.models.lambda_res / Q
         FSR: float = finesse * FWHM
+        contrast: float = ((tau + a) / (1 + tau * a)) ** 2 - (
+            (tau - a) / (1 - tau * a)
+        ) ** 2
 
         # Return results to calling program
-        return S, h_max_S, gamma, Snr, Se, a2, tau, neff, Q, finesse, FWHM, FSR
+        return (
+            S,
+            h_max_S,
+            gamma,
+            Snr,
+            Se,
+            a2,
+            tau,
+            contrast,
+            neff,
+            Q,
+            finesse,
+            FWHM,
+            FSR,
+        )
 
     def analyze(self):
         """
@@ -247,6 +286,7 @@ class Mrr:
             self.Se,
             self.a2,
             self.tau,
+            self.contrast,
             self.neff,
             self.Q,
             self.Finesse,
