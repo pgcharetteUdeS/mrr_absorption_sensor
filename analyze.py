@@ -30,8 +30,8 @@ def analyze(
     Calculate the maximum achievable sensitivities over a range of radii for micro-ring
     resonator, spiral, and linear waveguide absorption sensors.
 
-    The waveguides have a fixed core width and where the core height is allowed to vary
-    over a specified range to achieve maximum sensitivity at each radius.
+    The waveguides core geometry has a fixed dimension "v", the other "u" is allowed
+    to vary over a specified range to find the maximum sensitivity at each radius.
 
     :param toml_input_file_path: input file containing the problem data (.toml format)
     :param logger: console logger (optional), for example from the "logging" package
@@ -55,16 +55,18 @@ def analyze(
     )
 
     # Instantiate the Models class to build/fit the interpolation models for
-    # gamma_fluid(h), neff(h), and alpha_bend(h, r)
+    # gamma_fluid(u), neff(u), and alpha_bend(u, r)
     models: Models = Models(
         modes_data=modes_data,
         bending_loss_data=bending_loss_data,
+        core_u_name=parameters["core_u_name"],
+        core_v_name=parameters["core_v_name"],
+        core_v_value=parameters["core_v_value"],
         Rmin=parameters["Rmin"],
         Rmax=parameters["Rmax"],
         R_samples_per_decade=parameters["R_samples_per_decade"],
         lambda_res=parameters["lambda_res"],
         pol=parameters["pol"],
-        core_width=parameters["core_width"],
         ni_op=parameters["ni_op"],
         alpha_wg_dB_per_cm=parameters["alpha_wg"],
         filename_path=output_filenames_path,

@@ -2,9 +2,10 @@ mrr_absorption_sensor package
 
 Purpose:
     Calculate the maximum achievable sensitivities over a range of waveguide bending
-    radii for micro-ring resonator, spiral, and linear waveguide absorption sensors,
-    where the waveguide core has a fixed width and the core height is allowed
-    to vary over a specified range in the optimization at each bending radius.
+    radii for micro-ring resonator, spiral, and linear waveguide absorption sensors.
+    The waveguide core has either a fixed width or height and the other (free) core
+	geometry parameter is allowed to vary over a specified range in the optimization
+	at each bending radius.
 
 Main interface methods:
     - analyze.analyze()
@@ -21,7 +22,7 @@ Notes:
    2) The return value from analyze.analyze() MUST be stored in a local variable in
       the calling script for the buttons to work in the 3D graph of alpha_bend(r, h).
 
-   3) The alpha_bend(r, h) model is hardcoded in models.Models.fit_alpha_bend_model()
+   3) The alpha_bend(r, u) model is hardcoded in models.Models.fit_alpha_bend_model()
       but the code is structured in such a way that it is relatively easy to change, 
       see the "USER-DEFINABLE MODEL-SPECIFIC SECTION" code section.
 

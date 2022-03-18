@@ -35,88 +35,88 @@ class Linear:
 
         # Declare class instance result variables and arrays
         self.S: np.ndarray = np.ndarray([])
-        self.h: np.ndarray = np.ndarray([])
+        self.u: np.ndarray = np.ndarray([])
         self.gamma: np.ndarray = np.ndarray([])
         self.a2: np.ndarray = np.ndarray([])
         self.results: list = []
 
-    def calc_a2(self, r: float, h: float) -> float:
+    def calc_a2(self, r: float, u: float) -> float:
         """
         Calculate a2
         """
 
-        gamma: float = self.models.gamma_of_h(h)
+        gamma: float = self.models.gamma_of_u(u)
         alpha_prop: float = self.models.alpha_wg + (gamma * self.models.alpha_fluid)
         L: float = 2 * r
 
         return np.e ** -(alpha_prop * L)
 
-    def _calc_sensitivity(self, r: float, h: float) -> float:
+    def _calc_sensitivity(self, r: float, u: float) -> float:
         """
-        Calculate sensitivity at radius r (length 2r) for a given core height
+        Calculate sensitivity at radius r (length 2r) for a given core dimension u
         """
 
         # Calculate sensitivity
         Snr: float = (
             (4 * np.pi / self.models.lambda_res)
             * (2 * r)
-            * self.models.gamma_of_h(h)
-            * self.calc_a2(r=r, h=h)
+            * self.models.gamma_of_u(u)
+            * self.calc_a2(r=r, u=u)
         )
         assert Snr >= 0, "Snr should not be negative'"
 
         return Snr
 
-    def _obj_fun(self, h: float, r: float) -> float:
+    def _obj_fun(self, u: float, r: float) -> float:
         """
-        Objective function used for minimization in find_max_sensitivity()
+        Objective function used for minimization in find_max_sensitivity(u) @ r
         """
 
         # Minimizer sometimes tries values of the solution vector outside the bounds...
-        h = min(h, self.models.h_domain_max)
-        h = max(h, self.models.h_domain_min)
+        u = min(u, self.models.u_domain_max)
+        u = max(u, self.models.u_domain_min)
 
         # Calculate sensitivity at current solution vector S(r, h)
-        s: float = self._calc_sensitivity(r=r, h=h)
+        s: float = self._calc_sensitivity(r=r, u=u)
         return -s / 1000
 
     def _find_max_sensitivity(self, r: float) -> tuple[float, float, float, float]:
         """
-        Calculate maximum sensitivity at r over all h
+        Calculate maximum sensitivity at r over all u
         """
 
-        # Fetch h domain extrema
-        h_min: float = self.models.h_domain_min
-        h_max: float = self.models.h_domain_max
+        # Fetch u domain extrema
+        u_min: float = self.models.u_domain_min
+        u_max: float = self.models.u_domain_max
 
-        # If this is the first optimization, set the initial guess for h at the
+        # If this is the first optimization, set the initial guess for u at the
         # maximum value in the domain (at small radii, bending losses are high,
-        # the optimal solution will be at high h), else use previous solution.
-        h0 = h_max if self.previous_solution == -1 else self.previous_solution
+        # the optimal solution will be at high u), else use previous solution.
+        u0 = u_max if self.previous_solution == -1 else self.previous_solution
 
-        # Find h that maximizes S at radius R
+        # Find u that maximizes S at radius R
         optimization_result = optimize.minimize(
             fun=self._obj_fun,
-            x0=np.asarray([h0]),
-            bounds=((h_min, h_max),),
+            x0=np.asarray([u0]),
+            bounds=((u_min, u_max),),
             args=(r,),
             method="Powell",
             options={"ftol": 1e-9},
         )
-        h_max_S: float = optimization_result["x"][0]
+        u_max_S: float = optimization_result["x"][0]
 
         # Update previous solution
-        self.previous_solution = h_max_S
+        self.previous_solution = u_max_S
 
         # Calculate sensitivity at the solution
-        max_S = self._calc_sensitivity(r=r, h=h_max_S)
+        max_S = self._calc_sensitivity(r=r, u=u_max_S)
 
         # Calculate other useful parameters at the solution
-        gamma: float = self.models.gamma_of_h(h_max_S) * 100
-        a2: float = self.calc_a2(r=r, h=h_max_S)
+        gamma: float = self.models.gamma_of_u(u_max_S) * 100
+        a2: float = self.calc_a2(r=r, u=u_max_S)
 
         # Return results to calling program
-        return max_S, h_max_S, gamma, a2
+        return max_S, u_max_S, gamma, a2
 
     def analyze(self):
         """
@@ -131,7 +131,7 @@ class Linear:
         # order must be the same as in the find_max_sensitivity() return statement above
         [
             self.S,
-            self.h,
+            self.u,
             self.gamma,
             self.a2,
         ] = list(np.asarray(self.results).T)

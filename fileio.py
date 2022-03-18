@@ -37,37 +37,42 @@ def _check_mode_solver_data(
     logger=print,
 ) -> bool:
     """
-    For each h entry in the dictionary, check that the mode solver data are ordered,
+    For each u entry in the dictionary, check that the mode solver data are ordered,
     positive, and without duplicates.
     """
 
-    # Check that h values are in ascending order and positive
-    h_bending_loss: np.ndarray = np.asarray(list(bending_loss_data.keys()))
-    if not np.all(h_bending_loss[:-1] < h_bending_loss[1:]) or h_bending_loss[0] <= 0:
+    # Check that the mode solver data dictionary is not empty
+    if not bending_loss_data:
+        logger(f"No bending loss data loaded from '{filename}'!")
+        return False
+
+    # Check that u values are in ascending order and positive
+    u_bending_loss: np.ndarray = np.asarray(list(bending_loss_data.keys()))
+    if not np.all(u_bending_loss[:-1] < u_bending_loss[1:]) or u_bending_loss[0] <= 0:
         logger(f"Bending loss data in '{filename}' are not in ascending h order!")
         return False
 
     # Check radii and alpha_bend arrays are ordered, positive, and without duplicates
-    for h, value in bending_loss_data.items():
+    for u, value in bending_loss_data.items():
         Rs: np.ndarray = np.asarray(value["R"])
         ABs: np.ndarray = np.asarray(value["alpha_bend"])
         if len(Rs) != len(ABs) or len(Rs) < 3:
-            logger(f"Invalid R/alpha_bend arrays for height {h:.3f} in '{filename}'!")
+            logger(f"Invalid R/alpha_bend arrays for u = {u:.3f} in '{filename}'!")
             return False
         if len(np.unique(Rs)) != len(Rs) or not np.all(Rs[:-1] < Rs[1:]) or Rs[0] <= 0:
-            logger(f"Invalid R array for height {h:.3f} in '{filename}'!!")
+            logger(f"Invalid R array for u {u:.3f} in '{filename}'!!")
             return False
         if (
             len(np.unique(ABs)) != len(ABs)
             or not np.all(ABs[:-1] > ABs[1:])
             or ABs[-1] <= 0
         ):
-            logger(f"Invalid alpha_bend array for height {h:.3f} in '{filename}'!")
+            logger(f"Invalid alpha_bend array for u = {u:.3f} in '{filename}'!")
             return False
 
     # Check that neff and gamma values are reasonable
-    for m in modes_data.values():
-        if m["neff"] < 1 or m["gamma"] > 1:
+    for mode in modes_data.values():
+        if mode["neff"] < 1 or mode["gamma"] > 1:
             logger(f"Invalid 'modes' data in '{filename}'!")
             return False
 
@@ -87,8 +92,7 @@ def load_toml_file(
     :return: parameters, modes_data, bending_loss_data
              --
              parameters (dict): problem parameters,
-             modes_data (dict): gamma(h) mode solver data,
-             bending_loss_data (dict): R(h) and alpha_bend(h) mode solver data
+             bending_loss_data (dict): R(u) and alpha_bend(u) mode solver data
 
     """
     # Load dictionary from the .toml file
@@ -97,11 +101,12 @@ def load_toml_file(
     # Parse fields from .toml file into the parameters{} dictionary
     parameters: dict = {
         # Physical parameters
-        "lambda_res": toml_data.get("lambda_res", 0.633),
-        "pol": toml_data.get("pol", "TE"),
-        "core_width": toml_data.get("core_width", 0.7),
-        "ni_op": toml_data.get("ni_op", 1.0e-6),
         "alpha_wg": toml_data.get("alpha_wg", 1.0),
+        "core_height": toml_data.get("core_height"),
+        "core_width": toml_data.get("core_width"),
+        "lambda_res": toml_data.get("lambda_res", 0.633),
+        "ni_op": toml_data.get("ni_op", 1.0e-6),
+        "pol": toml_data.get("pol", "TE"),
         "spiral_spacing": toml_data.get("spiral_spacing", 5.0),
         # Analysis parameters
         "Rmin": toml_data.get("Rmin", 25.0),
@@ -128,7 +133,7 @@ def load_toml_file(
     }
 
     # Check if .toml file contains unsupported keys, if so exit
-    valid_keys: list = list(parameters.keys()) + ["h"]
+    valid_keys: list = list(parameters.keys()) + ["h", "w"]
     invalid_keys: list = [key for key in toml_data.keys() if key not in valid_keys]
     if invalid_keys:
         valid_keys.sort(key=lambda x: x.lower())
@@ -138,6 +143,39 @@ def load_toml_file(
         )
         sys.exit()
 
+    # Determine if this is a "fixed core height" or "fixed core width" analysis
+    if (
+        toml_data.get("core_width") is not None
+        and toml_data.get("core_height") is not None
+    ) or (toml_data.get("core_width") is None and toml_data.get("core_height") is None):
+        logger(
+            f"{Fore.YELLOW}EITHER 'core_width' or 'core_height' fields "
+            + f"nust be specified!{Style.RESET_ALL}"
+        )
+        sys.exit()
+    if toml_data.get("core_width") is not None:
+        logger(f"Fixed waveguide core width analysis.")
+        parameters["core_u_name"] = "h"
+        parameters["core_v_name"] = "w"
+        parameters["core_v_value"] = toml_data.get("core_width")
+        if toml_data.get("h") is None:
+            logger(f"{Fore.YELLOW}No 'h' fields specified!{Style.RESET_ALL}")
+            sys.exit()
+    else:
+        logger(f"Fixed waveguide core height analysis.")
+        parameters["core_u_name"] = "w"
+        parameters["core_v_name"] = "h"
+        parameters["core_v_value"] = toml_data.get("core_height")
+        if toml_data.get("w") is None:
+            logger(f"{Fore.YELLOW}No 'w' fields specified!{Style.RESET_ALL}")
+            sys.exit()
+        if not parameters["no_spiral"]:
+            parameters["no_spiral"] = True
+            logger(
+                f"{Fore.YELLOW}WARNING! Spiral analysis is not supported "
+                + f"for fixed height analysis!{Style.RESET_ALL}"
+            )
+
     # Check selected keys for valid content
     if parameters["pol"] not in ["TE", "TM"]:
         logger(
@@ -146,18 +184,18 @@ def load_toml_file(
         )
         sys.exit()
 
-    # Copy the neff(h) and gamma(h) mode solver data to the "modes_data{}" dictionary,
-    # and the alpha_bend(R, h) mode solver data to the "bending_loss_data{}" dictionary
+    # Copy the neff(u) and gamma(u) mode solver data to the "modes_data{}" dictionary,
+    # and the alpha_bend(R, u) mode solver data to the "bending_loss_data{}" dictionary
     modes_data: dict = {}
     bending_loss_data: dict = {}
-    for k, value in toml_data["h"].items():
-        h_key_um = float(k) / 1000
-        modes_data[h_key_um] = {
-            "h": h_key_um,
+    for k, value in toml_data[parameters["core_u_name"]].items():
+        u_key_um = float(k) / 1000
+        modes_data[u_key_um] = {
+            "u": u_key_um,
             "neff": value["neff"],
             "gamma": value["gamma"],
         }
-        bending_loss_data[h_key_um] = {
+        bending_loss_data[u_key_um] = {
             "R": value["R"],
             "alpha_bend": value["alpha_bend"],
         }
@@ -259,7 +297,7 @@ def write_excel_results_file(
         "a2": mrr.a2,
         "tau": mrr.tau,
         "contrast": mrr.contrast,
-        "h (um)": mrr.h,
+        f"{models.core_u_name} (um)": mrr.u,
         "gamma (%)": mrr.gamma,
         "Finesse": mrr.Finesse,
         "Q": mrr.Q,
@@ -283,7 +321,7 @@ def write_excel_results_file(
     linear_data_dict = {
         "R (um)": models.R,
         "max(S) (RIU-1)": linear.S,
-        "h (um)": linear.h,
+        f"{models.core_u_name} (um)": linear.u,
         "gamma (%)": linear.gamma,
         "L (um)": 2 * models.R,
         "a2": linear.a2,

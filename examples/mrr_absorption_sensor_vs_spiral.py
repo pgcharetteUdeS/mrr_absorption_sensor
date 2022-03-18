@@ -2,8 +2,8 @@
 
 FILENAME: mrr_absorption_sensor_vs_spiral.py
 
-PURPOSE: Determine maximum achievable sensitivity as a function of waveguide
-         core height at a fixed waveguide core width over a range of ring/spiral
+PURPOSE: Determine the maximum achievable sensitivity as a function of the waveguide
+         core geometry free parameter (height or width) over a range of ring/spiral
          radii for micro-ring resonator, Archimedes spiral, and linear (straight)
          waveguide sensors.
 
