@@ -4,3 +4,5 @@
 /examples/data/*.png
 /examples/data/*.xlsx
 /examples/data/*.toml
+/examples/Tableau_TE_h03.toml
+/examples/Tableau_TE_h03_w05_min.toml

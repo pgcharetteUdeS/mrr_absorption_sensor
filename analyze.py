@@ -119,6 +119,7 @@ def analyze(
         write_excel_files=parameters["write_excel_files"],
         colormap2D=parameters["colormap2D"],
         no_spiral=parameters["no_spiral"],
+        draw_largest_spiral=parameters["write_spiral_sequence_to_file"],
         write_spiral_sequence_to_file=parameters["write_spiral_sequence_to_file"],
         logger=logger,
     )

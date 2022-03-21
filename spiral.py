@@ -61,16 +61,23 @@ class Spiral:
         self.logger: Callable = logger
 
         # Calculate spiral parameters
-        self.line_width: float = 2 * (self.models.core_v_value + self.spacing)
-        self.a_spiral: float = 1.5 * self.line_width
-        self.b_spiral: float = self.line_width / (2 * np.pi)
+        self.line_width_min: float = 2 * (
+            (
+                self.models.core_v_value
+                if self.models.core_v_name == "w"
+                else self.models.u_domain_min
+            )
+            + self.spacing
+        )
+        self.a_spiral_min: float = 1.5 * self.line_width_min
+        self.b_spiral_min: float = self.line_width_min / (2 * np.pi)
 
         # Declare class instance internal variables
         self.previous_solution: np.ndarray = np.asarray([-1, -1])
 
         # Declare class instance result variables and arrays
         self.S: np.ndarray = np.ndarray([])
-        self.h: np.ndarray = np.ndarray([])
+        self.u: np.ndarray = np.ndarray([])
         self.n_turns: np.ndarray = np.ndarray([])
         self.outer_spiral_r_min: np.ndarray = np.ndarray([])
         self.L: np.ndarray = np.ndarray([])
@@ -79,41 +86,169 @@ class Spiral:
         self.max_S_radius: float = 0
         self.results: list = []
 
+    def _calc_spiral_parameters(self, w: float) -> tuple[float, float, float]:
+        """
+        Calculate spiral parameters @ r, w, and n_turns
+        """
+
+        line_width: float = 2 * (w + self.spacing)
+        b: float = line_width / (2 * np.pi)
+        a: float = 1.5 * line_width
+
+        return line_width, a, b
+
+    @staticmethod
+    def _plot_arc(
+        ax: plt.Axes,
+        thetas: np.ndarray,
+        r: np.ndarray | float,
+        color: str,
+        x0: float = 0,
+        y0: float = 0,
+    ) -> float:
+        """
+        Plot parametric arc, theta(n) & r(n) centered at [x0,y0], calculate arc length
+        """
+
+        rs: np.ndarray = r * np.ones(len(thetas)) if isinstance(r, float) else r
+        ax.plot(x0 + r * np.cos(thetas), y0 + rs * np.sin(thetas), color=color)
+
+        return np.abs(np.sum(np.diff(thetas) * rs[:-1]))
+
     def draw_spiral(
         self,
         r_outer: float,
         h: float,
+        w: float,
         n_turns: float,
         r_window: float,
         figure: plt.Figure = None,
     ) -> plt.Figure:
         """
-        This function actually draws a rotated version of the spiral, where the inside
-        starting point is always on the x axis, i.e. theta_min = 0.
+        This function actually draws a spiral!
         """
 
-        # Sensitivity
-        S = self._calc_sensitivity(h=h, n_turns=n_turns, r=r_outer)[0]
-
         # Archimedes spiral parameters
-        a_spiral: float = r_outer - self.line_width * n_turns
-        L: float = integrate.quad(func=self._line_element, a=a_spiral, b=r_outer)[0]
-        theta_max: float = (r_outer - a_spiral) / self.b_spiral
-        thetas_spiral: np.ndarray = np.linspace(0, theta_max, 1000)
-        r_spiral: np.ndarray = a_spiral + (self.b_spiral * thetas_spiral)
-
-        # Half circle and S-bend joint parameters
-        thetas_joint: np.ndarray = -np.linspace(0, np.pi, 100)
-        r_half_circle: np.ndarray = a_spiral + (self.b_spiral * thetas_joint)
-        r_S_bend: float = r_half_circle[-1] + self.models.core_v_value
+        line_width, a_spiral, b_spiral = self._calc_spiral_parameters(w=w)
 
         # Define new figure if required, else use axes passed as a function parameter
+        S, _, L = self._calc_sensitivity(
+            r=r_outer, u=h if self.models.core_v_name == "w" else w, n_turns=n_turns
+        )
         if figure is None:
             fig, ax = plt.subplots()
         else:
             fig = figure
             ax = fig.axes[0]
             ax.clear()
+
+        # Outer spiral
+        theta_max: float = (r_outer - (a_spiral + self.spacing + 2 * w)) / b_spiral
+        theta_min: float = max(theta_max - (n_turns * 2 * np.pi), 0)
+        thetas_spiral: np.ndarray = np.linspace(theta_min, theta_max, 1000)
+        r_outer_spiral_inner: np.ndarray = (a_spiral + self.spacing + w) + (
+            b_spiral * thetas_spiral
+        )
+        L_spiral_outer_inner: float = self._plot_arc(
+            ax=ax,
+            thetas=thetas_spiral,
+            r=r_outer_spiral_inner,
+            color="red",
+        )
+        L_spiral_outer_outer: float = self._plot_arc(
+            ax=ax,
+            thetas=thetas_spiral,
+            r=r_outer_spiral_inner + w,
+            color="red",
+        )
+        L_spiral_outer: float = (L_spiral_outer_inner + L_spiral_outer_outer) / 2
+
+        # Inner spiral
+        r_inner_spiral_inner: np.ndarray = a_spiral + (b_spiral * thetas_spiral)
+        L_spiral_inner_inner: float = self._plot_arc(
+            ax=ax,
+            thetas=thetas_spiral,
+            r=r_inner_spiral_inner,
+            color="blue",
+        )
+        L_spiral_inner_outer: float = self._plot_arc(
+            ax=ax,
+            thetas=thetas_spiral,
+            r=r_inner_spiral_inner + w,
+            color="blue",
+        )
+        L_spiral_inner: float = (L_spiral_inner_inner + L_spiral_inner_outer) / 2
+
+        # Joint: outer waveguide half circle
+        thetas_joint: np.ndarray = np.linspace(theta_min, theta_min - np.pi, 100)
+        r_joint_inner: np.ndarray = (a_spiral + self.spacing + w) + (
+            b_spiral * thetas_joint
+        )
+        L_half_circle_inner: float = self._plot_arc(
+            ax=ax,
+            thetas=thetas_joint,
+            r=r_joint_inner,
+            color="red",
+        )
+        L_half_circle_outer: float = self._plot_arc(
+            ax=ax,
+            thetas=thetas_joint,
+            r=r_joint_inner + w,
+            color="red",
+        )
+        L_half_circle: float = (L_half_circle_inner + L_half_circle_outer) / 2
+
+        # Joint: "S-bend" between inner waveguide and half circle ("left side")
+        thetas_S_bend: np.ndarray = np.linspace(
+            thetas_joint[-1], thetas_joint[-1] - np.pi, 100
+        )
+        L_S_bend_left_inner: float = self._plot_arc(
+            ax=ax,
+            thetas=thetas_S_bend,
+            r=(r_joint_inner[-1] - w / 2) / 2,
+            color="red",
+            x0=-((r_joint_inner[-1] + w / 2) / 2) * np.cos(thetas_joint[0]),
+            y0=-((r_joint_inner[-1] + w / 2) / 2) * np.sin(thetas_joint[0]),
+        )
+        L_S_bend_left_outer: float = self._plot_arc(
+            ax=ax,
+            thetas=thetas_S_bend,
+            r=(r_joint_inner[-1] + 3 * w / 2) / 2,
+            color="red",
+            x0=-((r_joint_inner[-1] + w / 2) / 2) * np.cos(thetas_joint[0]),
+            y0=-((r_joint_inner[-1] + w / 2) / 2) * np.sin(thetas_joint[0]),
+        )
+        L_S_bend_left: float = (L_S_bend_left_outer + L_S_bend_left_inner) / 2
+
+        # Joint: "S-bend" between inner waveguide and half circle ("right side")
+        thetas_S_bend = np.linspace(thetas_spiral[0], thetas_spiral[0] - np.pi, 100)
+        L_S_bend_right_inner: float = self._plot_arc(
+            ax=ax,
+            thetas=thetas_S_bend,
+            r=(r_inner_spiral_inner[0] - w / 2) / 2,
+            color="red",
+            x0=((r_inner_spiral_inner[0] + w / 2) / 2) * np.cos(thetas_joint[0]),
+            y0=((r_inner_spiral_inner[0] + w / 2) / 2) * np.sin(thetas_joint[0]),
+        )
+        L_S_bend_right_outer: float = self._plot_arc(
+            ax=ax,
+            thetas=thetas_S_bend,
+            r=(r_inner_spiral_inner[0] + 3 * w / 2) / 2,
+            color="red",
+            x0=((r_inner_spiral_inner[0] + w / 2) / 2) * np.cos(thetas_joint[0]),
+            y0=((r_inner_spiral_inner[0] + w / 2) / 2) * np.sin(thetas_joint[0]),
+        )
+        L_S_bend_right: float = (L_S_bend_right_outer + L_S_bend_right_inner) / 2
+
+        Lint: float = (
+            L_spiral_outer
+            + L_spiral_inner
+            + L_half_circle
+            + L_S_bend_left
+            + L_S_bend_right
+        )
+
+        # Plot info & formatting
         ax.set_aspect("equal")
         ax.set_xlim(-r_window, r_window)
         ax.set_ylim(-r_window, r_window)
@@ -128,126 +263,57 @@ class Spiral:
             + "".join([f"R = {r_outer:.1f} ", r"$\mu$m, "])
             + "".join([r"R$_{min}$ = ", f"{a_spiral:.1f} ", r"$\mu$m, "])
             + "".join([r"S-bend radius = ", f"{a_spiral/2:.1f} ", r"$\mu$m, "])
-            + "".join([f"L = {L:.1f} ", r"$\mu$m"])
+            + "".join([f"L = {L:.1f} (vs {Lint:.2f}) ", r"$\mu$m"])
         )
         ax.set_xlabel(r"$\mu$m")
         ax.set_ylabel(r"$\mu$m")
 
-        # Inner spiral
-        ax.plot(
-            r_spiral * np.cos(thetas_spiral),
-            r_spiral * np.sin(thetas_spiral),
-            color="blue",
-        )
-        ax.plot(
-            (r_spiral + self.models.core_v_value) * np.cos(thetas_spiral),
-            (r_spiral + self.models.core_v_value) * np.sin(thetas_spiral),
-            color="blue",
-        )
-
-        # Outer spiral
-        ax.plot(
-            (r_spiral + self.models.core_v_value + self.spacing)
-            * np.cos(thetas_spiral),
-            (r_spiral + self.models.core_v_value + self.spacing)
-            * np.sin(thetas_spiral),
-            color="red",
-        )
-        ax.plot(
-            (r_spiral + 2 * self.models.core_v_value + self.spacing)
-            * np.cos(thetas_spiral),
-            (r_spiral + 2 * self.models.core_v_value + self.spacing)
-            * np.sin(thetas_spiral),
-            color="red",
-        )
-
-        # Joint: outer waveguide half circle
-        ax.plot(
-            (r_half_circle + self.models.core_v_value + self.spacing)
-            * np.cos(thetas_joint),
-            (r_half_circle + self.models.core_v_value + self.spacing)
-            * np.sin(thetas_joint),
-            color="red",
-        )
-        ax.plot(
-            (r_half_circle + 2 * self.models.core_v_value + self.spacing)
-            * np.cos(thetas_joint),
-            (r_half_circle + 2 * self.models.core_v_value + self.spacing)
-            * np.sin(thetas_joint),
-            color="red",
-        )
-
-        # Joint: inner waveguide "S-bend"
-        ax.plot(
-            (a_spiral + self.models.core_v_value / 2) / 2
-            + (a_spiral - self.models.core_v_value / 2) / 2 * np.cos(thetas_joint),
-            (a_spiral - self.models.core_v_value / 2) / 2 * np.sin(thetas_joint),
-            color="blue",
-        )
-        ax.plot(
-            (a_spiral + self.models.core_v_value / 2) / 2
-            + (a_spiral + 1.5 * self.models.core_v_value) / 2 * np.cos(thetas_joint),
-            (a_spiral + 1.5 * self.models.core_v_value) / 2 * np.sin(thetas_joint),
-            color="blue",
-        )
-        ax.plot(
-            -(
-                (r_S_bend + self.models.core_v_value / 2 + self.spacing) / 2
-                + (r_S_bend - self.models.core_v_value / 2 + self.spacing)
-                / 2
-                * np.cos(thetas_joint)
-            ),
-            -(r_S_bend - self.models.core_v_value / 2 + self.spacing)
-            / 2
-            * np.sin(thetas_joint),
-            color="blue",
-        )
-        ax.plot(
-            -(
-                (r_S_bend + self.models.core_v_value / 2 + self.spacing) / 2
-                + (r_S_bend + 3 * self.models.core_v_value / 2 + self.spacing)
-                / 2
-                * np.cos(thetas_joint)
-            ),
-            -(r_S_bend + 3 * self.models.core_v_value / 2 + self.spacing)
-            / 2
-            * np.sin(thetas_joint),
-            color="blue",
-        )
-
         return fig
 
-    def _line_element(self, r: float) -> float:
+    def _line_element(self, r: float, w: float) -> float:
         """
         Line element for numerical integration in polar coordinates (r, theta)
         "dl = sqrt(r**2 + (dr/dtheta)**2)*dtheta", converted to a function of "r" only
         with the spiral equation (r = a + b*theta) to "dl(r) = sqrt((r/b)**2 + 1)*dr".
         """
-        return np.sqrt((r / self.b_spiral) ** 2 + 1)
 
-    def _line_element_bend_loss(self, r: float, h: float) -> float:
+        _, _, b_spiral = self._calc_spiral_parameters(w=w)
+
+        return np.sqrt((r / b_spiral) ** 2 + 1)
+
+    def _line_element_bend_loss(self, r: float, h: float, w: float) -> float:
         """
         Bending losses for a line element: alpha_bend(r)*dl(r)
         """
 
-        return self.models.alpha_bend(r=r, u=h) * self._line_element(r=r)
+        return self.models.alpha_bend(r=r, u=h) * self._line_element(r=r, w=w)
 
     def _calc_sensitivity(
-        self, r: float, h: float, n_turns: float
+        self, r: float, u: float, n_turns: float
     ) -> tuple[float, float, float]:
         """
-        Calculate sensitivity at radius r for a given core height and number of turns
+        Calculate sensitivity at radius r for a given core height & height
+        and number of turns
         """
+
+        # Determine waveguide core width & height
+        if self.models.core_v_name == "w":
+            h = u
+            w = self.models.core_v_value
+        else:
+            h = self.models.core_v_value
+            w = u
 
         # Archimedes spiral: "r = a + b*theta", where "a" is the minimum radius of the
         # outer spiral and "2*pi*b" is the spacing between the lines pairs.
-        theta_max: float = (r - self.a_spiral) / self.b_spiral
+        line_width, a_spiral, b_spiral = self._calc_spiral_parameters(w=w)
+        theta_max: float = (r - a_spiral) / b_spiral
         theta_min: float = max(theta_max - (n_turns * 2 * np.pi), 0)
         assert theta_max > 0, "thetas max/min must be positive!"
         outer_spiral_r_max: float = r
-        outer_spiral_r_min: float = self.a_spiral + self.b_spiral * theta_min
-        inner_spiral_r_max: float = outer_spiral_r_max - self.line_width / 2
-        inner_spiral_r_min: float = outer_spiral_r_min - self.line_width / 2
+        outer_spiral_r_min: float = a_spiral + b_spiral * theta_min
+        inner_spiral_r_max: float = outer_spiral_r_max - line_width / 2
+        inner_spiral_r_min: float = outer_spiral_r_min - line_width / 2
 
         # Calculate the total spiral length (sum of outer and inner spirals)
         # by numerical integration w/r to the radius.
@@ -256,16 +322,20 @@ class Spiral:
                 func=self._line_element,
                 a=outer_spiral_r_min,
                 b=outer_spiral_r_max,
+                args=(w,),
             )[0]
             + integrate.quad(
                 func=self._line_element,
                 a=inner_spiral_r_min,
                 b=inner_spiral_r_max,
+                args=(w,),
             )[0]
         )
 
         # Calculate propagation losses in the spiral
-        gamma: float = self.models.gamma_of_u(h)
+        gamma: float = self.models.gamma_of_u(
+            h if self.models.core_v_name == "w" else w
+        )
         alpha_prop: float = self.models.alpha_wg + (gamma * self.models.alpha_fluid)
         prop_losses_spiral: float = alpha_prop * L
 
@@ -276,13 +346,19 @@ class Spiral:
                 func=self._line_element_bend_loss,
                 a=outer_spiral_r_min,
                 b=outer_spiral_r_max,
-                args=(h,),
+                args=(
+                    h,
+                    w,
+                ),
             )[0]
             + integrate.quad(
                 func=self._line_element_bend_loss,
                 a=inner_spiral_r_min,
                 b=inner_spiral_r_max,
-                args=(h,),
+                args=(
+                    h,
+                    w,
+                ),
             )[0]
         )
 
@@ -324,16 +400,16 @@ class Spiral:
         """
 
         # Fetch the solution vector components
-        h: float = x[0]
+        u: float = x[0]
         n_turns: float = x[1]
 
         # Minimizer sometimes tries values of the solution vector outside the bounds...
-        h = min(h, self.models.u_domain_max)
-        h = max(h, self.models.u_domain_min)
+        u = min(u, self.models.u_domain_max)
+        u = max(u, self.models.u_domain_min)
         n_turns = max(n_turns, 0)
 
-        # Calculate sensitivity at current solution vector S(r, h, n_turns)
-        s = self._calc_sensitivity(r=r, h=h, n_turns=n_turns)[0]
+        # Calculate sensitivity at current solution vector S(r, u, n_turns)
+        s, _, _ = self._calc_sensitivity(r=r, u=u, n_turns=n_turns)
         assert s >= 0, "S should not be negative!"
 
         return -s / 1000
@@ -345,61 +421,61 @@ class Spiral:
         Calculate maximum sensitivity at r over all h and n_turns
         """
 
-        # Determine search domain extrema for h
-        h_min, h_max = self.models.u_search_domain(r)
+        # Determine search domain extrema for u
+        u_min, u_max = self.models.u_search_domain(r)
 
         # Determine search domain extrema for the numer of turns in the spiral
-        n_turns_max: float = (r - self.a_spiral) / self.line_width
+        n_turns_max: float = (r - self.a_spiral_min) / self.line_width_min
         n_turns_max = min(n_turns_max, self.turns_max)
         n_turns_max = max(n_turns_max, self.turns_min)
 
         # Only proceed with the minimization if the radius at which the solution is
         # sought is greater than the minimum allowed outer spiral radius
-        if r >= self.a_spiral + self.line_width:
-            # If this is the first optimization, set the initial guesses for h at the
+        if r >= self.a_spiral_min + self.line_width_min:
+            # If this is the first optimization, set the initial guesses for u at the
             # maximum value in the domain and the numbers of turns at the minimum
             # value (at small radii, bending losses are high, the optimal solution
-            # will be at high h and low number of turns),else use previous solution.
+            # will be at high u and low number of turns),else use previous solution.
             if np.any(self.previous_solution == -1):
-                h0: float = h_max
+                u0: float = u_max
                 n_turns_0: float = self.turns_min
             else:
-                h0, n_turns_0 = self.previous_solution
+                u0, n_turns_0 = self.previous_solution
 
             # Find h and n_turns that maximize S at radius R
             optimization_result = optimize.minimize(
                 fun=self._obj_fun,
-                x0=np.asarray([h0, n_turns_0]),
-                bounds=((h_min, h_max), (self.turns_min, n_turns_max)),
+                x0=np.asarray([u0, n_turns_0]),
+                bounds=((u_min, u_max), (self.turns_min, n_turns_max)),
                 args=(r,),
                 method="Powell",
                 options={"ftol": 1e-9},
             )
-            h_max_S = optimization_result["x"][0]
+            u_max_S = optimization_result["x"][0]
             n_turns_max_S = optimization_result["x"][1]
 
             # Calculate maximum sensitivity at the solution
             S, outer_spiral_r_min, L = self._calc_sensitivity(
-                r=r, h=h_max_S, n_turns=n_turns_max_S
+                r=r, u=u_max_S, n_turns=n_turns_max_S
             )
 
             # Update previous solution
-            self.previous_solution = np.asarray([h_max_S, n_turns_max_S])
+            self.previous_solution = np.asarray([u_max_S, n_turns_max_S])
 
         else:
-            h_max_S = h_max
+            u_max_S = u_max
             n_turns_max_S = 0
             S = 1
             outer_spiral_r_min = 0
             L = 0
 
             # Update previous solution
-            self.previous_solution = np.asarray([h_max, self.turns_min])
+            self.previous_solution = np.asarray([u_max, self.turns_min])
 
         # Calculate other useful parameters at the solution
-        gamma: float = self.models.gamma_of_u(h_max_S) * 100
+        gamma: float = self.models.gamma_of_u(u_max_S) * 100
 
-        return S, h_max_S, n_turns_max_S, outer_spiral_r_min, L, gamma
+        return S, u_max_S, n_turns_max_S, outer_spiral_r_min, L, gamma
 
     def analyze(self):
         """
@@ -414,7 +490,7 @@ class Spiral:
         # order must be the same as in the find_max_sensitivity() return statement above
         [
             self.S,
-            self.h,
+            self.u,
             self.n_turns,
             self.outer_spiral_r_min,
             self.L,
@@ -427,7 +503,8 @@ class Spiral:
 
         # If dynamic range of mode solver data exceeded for the spiral, show warning
         inner_spiral_r_min: float = (
-            min(self.outer_spiral_r_min[self.outer_spiral_r_min > 0]) - self.line_width
+            min(self.outer_spiral_r_min[self.outer_spiral_r_min > 0])
+            - self.line_width_min
         )
         if inner_spiral_r_min < self.models.R_data_min:
             self.logger(

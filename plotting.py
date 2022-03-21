@@ -9,6 +9,7 @@ Exposed methods:
 
 
 # Standard library packages
+from colorama import Fore, Style
 import io
 import matplotlib.pyplot as plt
 import numpy as np
@@ -117,7 +118,9 @@ def _append_image_to_seq(images: list, fig: plt.Figure):
         images.append(img)
 
 
-def _write_spiral_sequence_to_file(models: Models, spiral: Spiral, filename_path: Path):
+def _write_spiral_sequence_to_file(
+    models: Models, spiral: Spiral, filename_path: Path, logger=print
+):
     """
     Write sequence of consecutive spirals with n turns > spiral.n_turns_min
     """
@@ -125,25 +128,34 @@ def _write_spiral_sequence_to_file(models: Models, spiral: Spiral, filename_path
     # Calculate spiral sequence looping indices (min, max, index)
     biggest_spiral_index: int = int(np.argmax(spiral.n_turns))
     index_min: int = int(
-        np.argmax(spiral.n_turns[:biggest_spiral_index] > (spiral.turns_min * 1.001))
+        np.argmax(spiral.n_turns[:biggest_spiral_index] > (spiral.turns_min * 1.01))
     )
     index_max: int = (
         int(
-            np.argmax(
-                spiral.n_turns[biggest_spiral_index:] < (spiral.turns_min * 1.001)
-            )
+            np.argmax(spiral.n_turns[biggest_spiral_index:] < (spiral.turns_min * 1.01))
         )
         + biggest_spiral_index
     )
-    index_inc: int = int((index_max - index_min) / 25)
+    indices: range = range(index_min, index_max)
+
+    # Check for adequate range of spirals in sequence, else exit with warning
+    if len(indices) <= 2:
+        logger(
+            f"{Fore.YELLOW}WARNING! Insufficient range in number of spiral turns "
+            + f"(array indices: [{indices[0]}, {indices[-1]}]), "
+            + f"max number of turns = {spiral.n_turns[biggest_spiral_index]:.1f}, "
+            + f"no sequence written!{Style.RESET_ALL}"
+        )
+        return
 
     # Loop to write generate the spiral images in the sequence
     fig, _ = plt.subplots()
     images: list = []
-    for index in range(index_min, index_max, index_inc):
+    for index in indices:
         fig = spiral.draw_spiral(
             r_outer=models.R[index],
-            h=spiral.h[index],
+            h=spiral.u[index] if models.core_v_name == "w" else models.core_v_value,
+            w=models.core_v_value if models.core_v_name == "w" else spiral.u[index],
             n_turns=spiral.n_turns[index],
             r_window=(models.R[index_max] // 25 + 1) * 25,
             figure=fig,
@@ -213,10 +225,10 @@ def _plot_spiral_results(
     axs[axs_index].set_xlim(r_plot_min, r_plot_max)
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
-    # h @ max{S}
+    # u @ max{S}
     axs_index += 1
     axs[axs_index].set_ylabel("".join([f"{models.core_u_name}", r" ($\mu$m)"]))
-    axs[axs_index].semilogx(models.R, spiral.h)
+    axs[axs_index].semilogx(models.R, spiral.u)
     axs[axs_index].plot(
         [spiral.max_S_radius, spiral.max_S_radius], [u_plot_min, u_plot_max], "--"
     )
@@ -264,7 +276,12 @@ def _plot_spiral_results(
         largest_spiral_index: int = int(np.argmax(spiral.n_turns))
         fig = spiral.draw_spiral(
             r_outer=models.R[largest_spiral_index],
-            h=spiral.h[largest_spiral_index],
+            h=spiral.u[largest_spiral_index]
+            if models.core_v_name == "w"
+            else models.core_v_value,
+            w=models.core_v_value
+            if models.core_v_name == "w"
+            else spiral.u[largest_spiral_index],
             n_turns=spiral.n_turns[largest_spiral_index],
             r_window=(models.R[largest_spiral_index] // 25 + 1) * 25,
         )
@@ -275,7 +292,7 @@ def _plot_spiral_results(
     # Write sequence of consecutive spirals with n turns > spiral.n_turns_min
     if write_spiral_sequence_to_file:
         _write_spiral_sequence_to_file(
-            models=models, spiral=spiral, filename_path=filename_path
+            models=models, spiral=spiral, filename_path=filename_path, logger=logger
         )
 
 

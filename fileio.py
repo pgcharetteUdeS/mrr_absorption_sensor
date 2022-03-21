@@ -169,12 +169,6 @@ def load_toml_file(
         if toml_data.get("w") is None:
             logger(f"{Fore.YELLOW}No 'w' fields specified!{Style.RESET_ALL}")
             sys.exit()
-        if not parameters["no_spiral"]:
-            parameters["no_spiral"] = True
-            logger(
-                f"{Fore.YELLOW}WARNING! Spiral analysis is not supported "
-                + f"for fixed height analysis!{Style.RESET_ALL}"
-            )
 
     # Check selected keys for valid content
     if parameters["pol"] not in ["TE", "TM"]:
@@ -337,7 +331,7 @@ def write_excel_results_file(
         spiral_data_dict = {
             "R (um)": models.R,
             "max(S) (RIU-1)": spiral.S,
-            "h (um)": spiral.h,
+            f"{models.core_u_name} (um)": spiral.u,
             "gamma (%)": spiral.gamma,
             "n turns": spiral.n_turns,
             "Rmin (um)": spiral.outer_spiral_r_min,
