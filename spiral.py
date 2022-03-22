@@ -82,6 +82,7 @@ class Spiral:
         self.outer_spiral_r_min: np.ndarray = np.ndarray([])
         self.L: np.ndarray = np.ndarray([])
         self.gamma: np.ndarray = np.ndarray([])
+        self.a2: np.ndarray = np.ndarray([])
         self.max_S: float = 0
         self.max_S_radius: float = 0
         self.results: list = []
@@ -105,13 +106,23 @@ class Spiral:
         color: str,
         x0: float = 0,
         y0: float = 0,
+        theta0: float = 0,
     ) -> float:
         """
-        Plot parametric arc, theta(n) & r(n) centered at [x0,y0], calculate arc length
+        Plot parametric arc, theta(n) & r(n) centered at [x0,y0], return arc length
         """
 
+        # Build array of radii by duplation if r is a float
         rs: np.ndarray = r * np.ones(len(thetas)) if isinstance(r, float) else r
-        ax.plot(x0 + r * np.cos(thetas), y0 + rs * np.sin(thetas), color=color)
+
+        # Rotate the arc by "theta0" so that consecutive spirals are aligned
+        x: np.ndarray = x0 + rs * np.cos(thetas)
+        y: np.ndarray = y0 + rs * np.sin(thetas)
+        xrot: np.ndarray = x * np.cos(theta0) - y * np.sin(theta0)
+        yrot: np.ndarray = y * np.cos(theta0) + x * np.sin(theta0)
+
+        # Plot the rotated arc
+        ax.plot(xrot, yrot, color=color)
 
         return np.abs(np.sum(np.diff(thetas) * rs[:-1]))
 
@@ -132,7 +143,7 @@ class Spiral:
         line_width, a_spiral, b_spiral = self._calc_spiral_parameters(w=w)
 
         # Define new figure if required, else use axes passed as a function parameter
-        S, _, L = self._calc_sensitivity(
+        S, _, L, _ = self._calc_sensitivity(
             r=r_outer, u=h if self.models.core_v_name == "w" else w, n_turns=n_turns
         )
         if figure is None:
@@ -154,12 +165,14 @@ class Spiral:
             thetas=thetas_spiral,
             r=r_outer_spiral_inner,
             color="red",
+            theta0=-theta_max,
         )
         L_spiral_outer_outer: float = self._plot_arc(
             ax=ax,
             thetas=thetas_spiral,
             r=r_outer_spiral_inner + w,
             color="red",
+            theta0=-theta_max,
         )
         L_spiral_outer: float = (L_spiral_outer_inner + L_spiral_outer_outer) / 2
 
@@ -170,12 +183,14 @@ class Spiral:
             thetas=thetas_spiral,
             r=r_inner_spiral_inner,
             color="blue",
+            theta0=-theta_max,
         )
         L_spiral_inner_outer: float = self._plot_arc(
             ax=ax,
             thetas=thetas_spiral,
             r=r_inner_spiral_inner + w,
             color="blue",
+            theta0=-theta_max,
         )
         L_spiral_inner: float = (L_spiral_inner_inner + L_spiral_inner_outer) / 2
 
@@ -189,12 +204,14 @@ class Spiral:
             thetas=thetas_joint,
             r=r_joint_inner,
             color="red",
+            theta0=-theta_max,
         )
         L_half_circle_outer: float = self._plot_arc(
             ax=ax,
             thetas=thetas_joint,
             r=r_joint_inner + w,
             color="red",
+            theta0=-theta_max,
         )
         L_half_circle: float = (L_half_circle_inner + L_half_circle_outer) / 2
 
@@ -209,6 +226,7 @@ class Spiral:
             color="red",
             x0=-((r_joint_inner[-1] + w / 2) / 2) * np.cos(thetas_joint[0]),
             y0=-((r_joint_inner[-1] + w / 2) / 2) * np.sin(thetas_joint[0]),
+            theta0=-theta_max,
         )
         L_S_bend_left_outer: float = self._plot_arc(
             ax=ax,
@@ -217,6 +235,7 @@ class Spiral:
             color="red",
             x0=-((r_joint_inner[-1] + w / 2) / 2) * np.cos(thetas_joint[0]),
             y0=-((r_joint_inner[-1] + w / 2) / 2) * np.sin(thetas_joint[0]),
+            theta0=-theta_max,
         )
         L_S_bend_left: float = (L_S_bend_left_outer + L_S_bend_left_inner) / 2
 
@@ -229,6 +248,7 @@ class Spiral:
             color="red",
             x0=((r_inner_spiral_inner[0] + w / 2) / 2) * np.cos(thetas_joint[0]),
             y0=((r_inner_spiral_inner[0] + w / 2) / 2) * np.sin(thetas_joint[0]),
+            theta0=-theta_max,
         )
         L_S_bend_right_outer: float = self._plot_arc(
             ax=ax,
@@ -237,6 +257,7 @@ class Spiral:
             color="red",
             x0=((r_inner_spiral_inner[0] + w / 2) / 2) * np.cos(thetas_joint[0]),
             y0=((r_inner_spiral_inner[0] + w / 2) / 2) * np.sin(thetas_joint[0]),
+            theta0=-theta_max,
         )
         L_S_bend_right: float = (L_S_bend_right_outer + L_S_bend_right_inner) / 2
 
@@ -263,7 +284,7 @@ class Spiral:
             + "".join([f"R = {r_outer:.1f} ", r"$\mu$m, "])
             + "".join([r"R$_{min}$ = ", f"{a_spiral:.1f} ", r"$\mu$m, "])
             + "".join([r"S-bend radius = ", f"{a_spiral/2:.1f} ", r"$\mu$m, "])
-            + "".join([f"L = {L:.1f} (vs {Lint:.2f}) ", r"$\mu$m"])
+            + "".join([f"L = {L:.1f} ({Lint:.2f} by finite diffs) ", r"$\mu$m"])
         )
         ax.set_xlabel(r"$\mu$m")
         ax.set_ylabel(r"$\mu$m")
@@ -290,7 +311,7 @@ class Spiral:
 
     def _calc_sensitivity(
         self, r: float, u: float, n_turns: float
-    ) -> tuple[float, float, float]:
+    ) -> tuple[float, float, float, float]:
         """
         Calculate sensitivity at radius r for a given core height & height
         and number of turns
@@ -298,7 +319,7 @@ class Spiral:
 
         # Input parameter check
         if r < self.a_spiral_min + self.line_width_min:
-            return 0, 0, 0
+            return 0, 0, 0, 0
 
         # Determine waveguide core width & height
         if self.models.core_v_name == "w":
@@ -396,7 +417,7 @@ class Spiral:
         L_total: float = L + L_HC + L_SB1 + L_SB2
         Snr: float = (4 * np.pi / self.models.lambda_res) * L_total * gamma * a2
 
-        return Snr, outer_spiral_r_min, L_total
+        return Snr, outer_spiral_r_min, L_total, a2
 
     def _obj_fun(self, x, r: float) -> float:
         """
@@ -413,14 +434,14 @@ class Spiral:
         n_turns = max(n_turns, 0)
 
         # Calculate sensitivity at current solution vector S(r, u, n_turns)
-        s, _, _ = self._calc_sensitivity(r=r, u=u, n_turns=n_turns)
+        s, _, _, _ = self._calc_sensitivity(r=r, u=u, n_turns=n_turns)
         assert s >= 0, "S should not be negative!"
 
         return -s / 1000
 
     def _find_max_sensitivity(
         self, r: float
-    ) -> tuple[float, float, float, float, float, float]:
+    ) -> tuple[float, float, float, float, float, float, float]:
         """
         Calculate maximum sensitivity at r over all h and n_turns
         """
@@ -459,7 +480,7 @@ class Spiral:
             n_turns_max_S = optimization_result["x"][1]
 
             # Calculate maximum sensitivity at the solution
-            S, outer_spiral_r_min, L = self._calc_sensitivity(
+            S, outer_spiral_r_min, L, a2 = self._calc_sensitivity(
                 r=r, u=u_max_S, n_turns=n_turns_max_S
             )
 
@@ -472,6 +493,7 @@ class Spiral:
             S = 1
             outer_spiral_r_min = 0
             L = 0
+            a2 = 0
 
             # Update previous solution
             self.previous_solution = np.asarray([u_max, self.turns_min])
@@ -479,7 +501,7 @@ class Spiral:
         # Calculate other useful parameters at the solution
         gamma: float = self.models.gamma_of_u(u_max_S) * 100
 
-        return S, u_max_S, n_turns_max_S, outer_spiral_r_min, L, gamma
+        return S, u_max_S, n_turns_max_S, outer_spiral_r_min, L, gamma, a2
 
     def analyze(self):
         """
@@ -499,6 +521,7 @@ class Spiral:
             self.outer_spiral_r_min,
             self.L,
             self.gamma,
+            self.a2,
         ] = list(np.asarray(self.results).T)
 
         # Find maximum sensitivity overall and corresponding radius

@@ -194,7 +194,7 @@ def _plot_spiral_results(
     ) = _calc_plotting_extrema(models=models, mrr=mrr)
 
     # Plot max{S}, u, gamma, n turns mas, L
-    fig, axs = plt.subplots(5)
+    fig, axs = plt.subplots(6)
     fig.suptitle(
         "Archimedes spiral "
         + f" ({models.pol}"
@@ -255,6 +255,15 @@ def _plot_spiral_results(
     )
     axs[axs_index].set_xlim(r_plot_min, r_plot_max)
     axs[axs_index].set_ylim(0, n_turns_plot_max)
+    axs[axs_index].axes.get_xaxis().set_ticklabels([])
+
+    # a2 @ max{S}
+    axs_index += 1
+    axs[axs_index].set_ylabel(r"$a^2$")
+    axs[axs_index].semilogx(models.R, spiral.a2)
+    axs[axs_index].plot([spiral.max_S_radius, spiral.max_S_radius], [0, 1], "--")
+    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
+    axs[axs_index].set_ylim(0, 1)
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
     # L @ max{S}

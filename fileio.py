@@ -339,6 +339,7 @@ def write_excel_results_file(
             "n turns": spiral.n_turns,
             "Rmin (um)": spiral.outer_spiral_r_min,
             "L (um)": spiral.L,
+            "a2": spiral.a2,
         }
         spiral_data: np.ndarray = np.asarray(list(spiral_data_dict.values())).T
         spiral_sheet = wb.create_sheet("Spiral")
