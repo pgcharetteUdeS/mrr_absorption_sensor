@@ -143,9 +143,6 @@ class Spiral:
         line_width, a_spiral, b_spiral = self._calc_spiral_parameters(w=w)
 
         # Define new figure if required, else use axes passed as a function parameter
-        S, _, L, _ = self._calc_sensitivity(
-            r=r_outer, u=h if self.models.core_v_name == "w" else w, n_turns=n_turns
-        )
         if figure is None:
             fig, ax = plt.subplots()
         else:
@@ -153,8 +150,9 @@ class Spiral:
             ax = fig.axes[0]
             ax.clear()
 
-        # Outer spiral
-        theta_max: float = (r_outer - (a_spiral + self.spacing + 2 * w)) / b_spiral
+        # Outer spiral (* VERIFY! *)
+        #theta_max: float = (r_outer - (a_spiral + self.spacing + 2 * w)) / b_spiral
+        theta_max: float = (r_outer - (a_spiral + line_width)) / b_spiral
         theta_min: float = max(theta_max - (n_turns * 2 * np.pi), 0)
         thetas_spiral: np.ndarray = np.linspace(theta_min, theta_max, 1000)
         r_outer_spiral_inner: np.ndarray = (a_spiral + self.spacing + w) + (
@@ -261,6 +259,7 @@ class Spiral:
         )
         L_S_bend_right: float = (L_S_bend_right_outer + L_S_bend_right_inner) / 2
 
+        # Total spiral length calculated by finite differences
         Lint: float = (
             L_spiral_outer
             + L_spiral_inner
@@ -270,6 +269,9 @@ class Spiral:
         )
 
         # Plot info & formatting
+        S, _, L, _ = self._calc_sensitivity(
+            r=r_outer, u=h if self.models.core_v_name == "w" else w, n_turns=n_turns
+        )
         ax.set_aspect("equal")
         ax.set_xlim(-r_window, r_window)
         ax.set_ylim(-r_window, r_window)
@@ -302,12 +304,12 @@ class Spiral:
 
         return np.sqrt((r / b_spiral) ** 2 + 1)
 
-    def _line_element_bend_loss(self, r: float, h: float, w: float) -> float:
+    def _line_element_bend_loss(self, r: float, u: float, w: float) -> float:
         """
         Bending losses for a line element: alpha_bend(r)*dl(r)
         """
 
-        return self.models.alpha_bend(r=r, u=h) * self._line_element(r=r, w=w)
+        return self.models.alpha_bend(r=r, u=u) * self._line_element(r=r, w=w)
 
     def _calc_sensitivity(
         self, r: float, u: float, n_turns: float
@@ -333,6 +335,7 @@ class Spiral:
         # outer spiral and "2*pi*b" is the spacing between the lines pairs.
         line_width, a_spiral, b_spiral = self._calc_spiral_parameters(w=w)
         theta_max: float = (r - a_spiral) / b_spiral
+        #theta_max: float = (r - (a_spiral + line_width)) / b_spiral
         theta_min: float = max(theta_max - (n_turns * 2 * np.pi), 0)
         assert theta_max > 0, "thetas max/min must be positive!"
         outer_spiral_r_max: float = r
@@ -372,7 +375,7 @@ class Spiral:
                 a=outer_spiral_r_min,
                 b=outer_spiral_r_max,
                 args=(
-                    h,
+                    u,
                     w,
                 ),
             )[0]
@@ -381,7 +384,7 @@ class Spiral:
                 a=inner_spiral_r_min,
                 b=inner_spiral_r_max,
                 args=(
-                    h,
+                    u,
                     w,
                 ),
             )[0]
@@ -399,9 +402,9 @@ class Spiral:
         L_SB2: float = np.pi * (outer_spiral_r_min / 2)
         prop_losses_joint: float = alpha_prop * (L_HC + L_SB1 + L_SB2)
         bend_losses_joint: float = (
-            self.models.alpha_bend(r=outer_spiral_r_min, u=h) * L_HC
-            + self.models.alpha_bend(r=inner_spiral_r_min / 2, u=h) * L_SB1
-            + self.models.alpha_bend(r=outer_spiral_r_min / 2, u=h) * L_SB2
+            self.models.alpha_bend(r=outer_spiral_r_min, u=u) * L_HC
+            + self.models.alpha_bend(r=inner_spiral_r_min / 2, u=u) * L_SB1
+            + self.models.alpha_bend(r=outer_spiral_r_min / 2, u=u) * L_SB2
         )
 
         # Total losses in the spiral
@@ -451,6 +454,7 @@ class Spiral:
 
         # Determine search domain extrema for the numer of turns in the spiral
         n_turns_max: float = (r - self.a_spiral_min) / self.line_width_min
+        #n_turns_max: float = (r - (self.a_spiral_min + self.line_width_min)) / self.line_width_min
         n_turns_max = min(n_turns_max, self.turns_max)
         n_turns_max = max(n_turns_max, self.turns_min)
 
