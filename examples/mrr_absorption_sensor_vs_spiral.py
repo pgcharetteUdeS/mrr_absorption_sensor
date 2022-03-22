@@ -151,4 +151,5 @@ if __name__ == "__main__":
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 
     # Do the analysis
-    mrr_absorption_sensor_vs_spiral("example.toml")
+#    mrr_absorption_sensor_vs_spiral("example.toml")
+    mrr_absorption_sensor_vs_spiral("Tableau_TE_h03.toml")
