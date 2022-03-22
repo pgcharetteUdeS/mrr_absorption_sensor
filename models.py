@@ -7,7 +7,7 @@ Exposed methods:
     - calc_A_and_B_(gamma)
     - gamma_of_u(u)
     - neff_of_u(u)
-    - u_of_gamma(gamma)
+     - u_of_gamma(gamma)
     - u_search_domain(r)
 
     NB:
@@ -60,6 +60,7 @@ class Models:
         gamma_order,
         neff_order,
         disable_R_domain_check: bool = False,
+        disable_u_search_lower_bound: bool = False,
         logger: Callable = print,
     ):
 
@@ -80,6 +81,7 @@ class Models:
         self.alpha_bend_threshold: float = alpha_bend_threshold
         self.gamma_order = gamma_order
         self.neff_order = neff_order
+        self.disable_u_search_lower_bound = disable_u_search_lower_bound
         self.logger: Callable = logger
 
         # Define the array of radii to be analyzed (R domain)
@@ -695,8 +697,8 @@ class Models:
         # is determined by calculating the radius at each u for which
         # alpha_bend exceeds a user-specified threshold ("alpha_bend_threshold"),
         # values are stored in the array "r_alpha_bend_threshold",
-        # see fit_gamma_and_neff_models(). A spline interpolation is used to model the
-        # u search domain lower bound as a function of radius.
+        # see _parse_bending_loss_mode_solver_data(). A spline interpolation
+        # is used to model the u search domain lower bound as a function of radius.
         #
         # For radii greater than the spline r domain, u is allowed to take on any value
         # in the full u domain during optimization.
@@ -713,16 +715,30 @@ class Models:
         )
         max_indx: int = int(np.argmax(R_alpha_bend_threshold))
         R_alpha_bend_threshold: np.ndarray = R_alpha_bend_threshold[max_indx:]
+        if len(R_alpha_bend_threshold) <= 1:
+            self.logger(
+                f"{Fore.YELLOW}'alpha_bend_threshold' value us too high!"
+                + f"{Style.RESET_ALL}"
+            )
+            sys.exit()
         u_alpha_bend_threshold: np.ndarray = np.asarray(u[max_indx:])
         self.r_min_for_u_search_lower_bound = R_alpha_bend_threshold[-1]
         self.r_max_for_u_search_lower_bound = R_alpha_bend_threshold[0]
         self.u_lower_bound = interpolate.interp1d(
             x=R_alpha_bend_threshold, y=u_alpha_bend_threshold
         )
-        self.logger(
-            f"{self.core_u_name} search domain lower bound constrained for R < "
-            + f"{self.r_max_for_u_search_lower_bound:.1f} um"
-        )
+        if self.r_max_for_u_search_lower_bound < 500:
+            self.logger(
+                f"{self.core_u_name} search domain lower bound constrained for R < "
+                + f"{self.r_max_for_u_search_lower_bound:.1f} um"
+            )
+        else:
+            self.logger(
+                f"{Fore.YELLOW}WARNING!: {self.core_u_name} search domain lower"
+                + f"bound ({self.r_max_for_u_search_lower_bound:.1f} um) is unusually "
+                + "high, raise value of 'alpha_bend_threshold' in .toml file."
+                + f"{Style.RESET_ALL}"
+            )
 
         # Plot u_lower_bound(r) data and spline interpolation
         fig, axs = plt.subplots()
@@ -737,6 +753,17 @@ class Models:
             + "".join([r", $\lambda$", f" = {self.lambda_res:.3f} ", r"$\mu$m"])
             + "".join([r", $\alpha_{wg}$", f" = {self.alpha_wg_dB_per_cm:.1f} dB/cm"])
             + "".join([f", {self.core_v_name} = {self.core_v_value:.3f} ", r"$\mu$m"])
+            + (
+                "".join(
+                    [
+                        f"\nWARNING!: {self.core_u_name} search domain lower bound ",
+                        f"({self.r_max_for_u_search_lower_bound:.1f} um) is VERY HIGH!",
+                    ]
+                )
+                if self.r_max_for_u_search_lower_bound > 500
+                else ""
+            ),
+            color="black" if self.r_max_for_u_search_lower_bound < 500 else "red",
         )
         R_alpha_bend_threshold_i: np.ndarra = np.linspace(
             self.r_min_for_u_search_lower_bound,
@@ -750,7 +777,12 @@ class Models:
         out_filename: str = str(
             (
                 self.filename_path.parent
-                / f"{self.filename_path.stem}_H_SEARCH_LOWER_BOUND.png"
+                / "".join(
+                    [
+                        f"{self.filename_path.stem}_"
+                        + f"{'H' if self.core_v_name == 'w' else 'W'}_SRCH_LOWR_BND.png"
+                    ]
+                )
             )
         )
 
@@ -758,6 +790,7 @@ class Models:
         self.logger(f"Wrote '{out_filename}'.")
 
     def u_search_domain(self, r: float) -> tuple[float, float]:
+        # sourcery skip: remove-unnecessary-else, swap-if-else-branches
         """
         Determine u search domain extrema, see _set_u_search_lower_bound()
 
@@ -765,16 +798,18 @@ class Models:
         :return: (u_min, u_max) u search domain extrema (um)
         """
 
-        if r < self.r_min_for_u_search_lower_bound:
-            u_min = self.u_domain_max
-        elif r > self.r_max_for_u_search_lower_bound:
-            u_min = self.u_domain_min
+        if not self.disable_u_search_lower_bound:
+            if r < self.r_min_for_u_search_lower_bound:
+                u_min = self.u_domain_max
+            elif r > self.r_max_for_u_search_lower_bound:
+                u_min = self.u_domain_min
+            else:
+                u_min = min(self.u_lower_bound(r), self.u_domain_max)
+                u_min = max(u_min, self.u_domain_min)
+            u_max = self.u_domain_max
+            return u_min, u_max
         else:
-            u_min = min(self.u_lower_bound(r), self.u_domain_max)
-            u_min = max(u_min, self.u_domain_min)
-        u_max = self.u_domain_max
-
-        return u_min, u_max
+            return self.u_domain_min, self.u_domain_max
 
     def calc_A_and_B(self, gamma: float) -> tuple[float, float]:
         """

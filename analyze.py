@@ -73,8 +73,9 @@ def analyze(
         alpha_bend_threshold=parameters["alpha_bend_threshold"],
         gamma_order=parameters["gamma_order"],
         neff_order=parameters["neff_order"],
-        logger=logger,
         disable_R_domain_check=parameters["disable_R_domain_check"],
+        disable_u_search_lower_bound=parameters["disable_u_search_lower_bound"],
+        logger=logger,
     )
 
     # If only model fitting was required, return

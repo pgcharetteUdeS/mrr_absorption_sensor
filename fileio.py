@@ -117,7 +117,7 @@ def load_toml_file(
         "T_SNR": toml_data.get("T_SNR", 20.0),
         "min_delta_ni": toml_data.get("min_delta_ni", 1.0e-6),
         "output_sub_dir": toml_data.get("output_sub_dir", ""),
-        "alpha_bend_threshold": toml_data.get("alpha_bend_threshold", 0.001),
+        "alpha_bend_threshold": toml_data.get("alpha_bend_threshold", 0.005),
         "write_excel_files": toml_data.get("write_excel_files", True),
         "write_spiral_sequence_to_file": toml_data.get(
             "write_spiral_sequence_to_file", True
@@ -127,6 +127,9 @@ def load_toml_file(
         "neff_order": toml_data.get("neff_order", 3),
         # Debugging and other flags
         "colormap2D": toml_data.get("colormap2D", "viridis"),
+        "disable_u_search_lower_bound": toml_data.get(
+            "disable_u_search_lower_bound", False
+        ),
         "models_only": toml_data.get("models_only", False),
         "disable_R_domain_check": toml_data.get("disable_R_domain_check", False),
         "no_spiral": toml_data.get("no_spiral", False),
@@ -154,7 +157,7 @@ def load_toml_file(
         )
         sys.exit()
     if toml_data.get("core_width") is not None:
-        logger(f"Fixed waveguide core width analysis.")
+        logger("Fixed waveguide core width analysis.")
         parameters["core_u_name"] = "h"
         parameters["core_v_name"] = "w"
         parameters["core_v_value"] = toml_data.get("core_width")
@@ -162,7 +165,7 @@ def load_toml_file(
             logger(f"{Fore.YELLOW}No 'h' fields specified!{Style.RESET_ALL}")
             sys.exit()
     else:
-        logger(f"Fixed waveguide core height analysis.")
+        logger("Fixed waveguide core height analysis.")
         parameters["core_u_name"] = "w"
         parameters["core_v_name"] = "h"
         parameters["core_v_value"] = toml_data.get("core_height")

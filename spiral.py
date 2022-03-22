@@ -296,6 +296,10 @@ class Spiral:
         and number of turns
         """
 
+        # Input parameter check
+        if r < self.a_spiral_min + self.line_width_min:
+            return 0, 0, 0
+
         # Determine waveguide core width & height
         if self.models.core_v_name == "w":
             h = u
