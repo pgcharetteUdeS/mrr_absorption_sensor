@@ -193,7 +193,7 @@ class Spiral:
 
         # Joint: outer waveguide half circle
         thetas_joint: np.ndarray = np.linspace(theta_min, theta_min - np.pi, 100)
-        r_joint_inner: np.ndarray = (a_spiral + self.spacing + w) + (
+        r_joint_inner: np.ndarray = (a_spiral + self.spacing) + (
             b_spiral * thetas_joint
         )
         L_half_circle_inner: float = self._plot_arc(
@@ -318,10 +318,6 @@ class Spiral:
         and number of turns
         """
 
-        # Input parameter check
-        if r < self.a_spiral_min + self.line_width_min:
-            return 0, 0, 0, 0
-
         # Determine waveguide core width & height
         if self.models.core_v_name == "w":
             h = u
@@ -333,10 +329,15 @@ class Spiral:
         # Archimedes spiral: "r = a + b*theta", where "a" is the minimum radius of the
         # outer spiral and "2*pi*b" is the spacing between the lines pairs.
         line_width, a_spiral, b_spiral = self._calc_spiral_parameters(w=w)
-        theta_max: float = (r - a_spiral) / b_spiral
-        # theta_max: float = (r - (a_spiral + line_width)) / b_spiral
-        theta_min: float = max(theta_max - (n_turns * 2 * np.pi), 0)
-        assert theta_max > 0, "thetas max/min must be positive!"
+        r_min: float = a_spiral + self.spacing + w
+        theta_max: float = (r - r_min) / b_spiral
+        theta_min: float = theta_max - (n_turns * 2 * np.pi)
+
+        # Input parameter check
+        if r < r_min or theta_min < 0:
+            return 1.0e-10, 0, 0, 0
+
+        # Spiral radii extrema
         outer_spiral_r_max: float = r
         outer_spiral_r_min: float = a_spiral + b_spiral * theta_min
         inner_spiral_r_max: float = outer_spiral_r_max - line_width / 2
@@ -451,16 +452,24 @@ class Spiral:
         # Determine search domain extrema for u
         u_min, u_max = self.models.u_search_domain(r)
 
-        # Determine search domain extrema for the numer of turns in the spiral
-        n_turns_max: float = (
-            r - (self.a_spiral_min + self.spacing)
-        ) / self.line_width_min
+        # Spiral properties at minimum core width
+        w_min: float = (
+            self.models.core_v_value if self.models.core_v_name == "w" else u_min
+        )
+        line_width_min, a_spiral_min, b_spiral_min = self._calc_spiral_parameters(
+            w=w_min
+        )
+        theta_min: float = 2 * np.pi * self.turns_min
+        r_min: float = (a_spiral_min + self.spacing + w_min) + theta_min * b_spiral_min
+
+        # Determine search domain maximum for the numer of turns in the spiral
+        n_turns_max: float = (r - r_min) / line_width_min + 1
         n_turns_max = min(n_turns_max, self.turns_max)
-        n_turns_max = max(n_turns_max, self.turns_min)
 
         # Only proceed with the minimization if the radius at which the solution is
-        # sought is greater than the minimum allowed outer spiral radius
-        if r >= self.a_spiral_min + self.line_width_min:
+        # sought is greater than the minimum allowed outer spiral radius and the number
+        # of turns solution dynamic range is not null.
+        if r > r_min and n_turns_max > self.turns_min:
             # If this is the first optimization, set the initial guesses for u at the
             # maximum value in the domain and the numbers of turns at the minimum
             # value (at small radii, bending losses are high, the optimal solution
@@ -493,7 +502,7 @@ class Spiral:
 
         else:
             u_max_S = u_max
-            n_turns_max_S = 0
+            n_turns_max_S = self.turns_min
             S = 1
             outer_spiral_r_min = 0
             L = 0

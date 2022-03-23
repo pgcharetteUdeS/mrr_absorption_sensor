@@ -343,8 +343,8 @@ class Models:
             )
 
         # Determine dynamic range extrema of the bending loss data
-        self.u_domain_min: float = list(self.bending_loss_data.keys())[0]
-        self.u_domain_max: float = list(self.bending_loss_data.keys())[-1]
+        self.u_domain_min: float = float(list(self.bending_loss_data.keys())[0])
+        self.u_domain_max: float = float(list(self.bending_loss_data.keys())[-1])
         self.alpha_bend_data_min = np.exp(min(self.ln_alpha_bend_data))
         self.R_data_min = min(self.R_data)
         self.R_data_max = max(self.R_data)
@@ -804,7 +804,7 @@ class Models:
             elif r > self.r_max_for_u_search_lower_bound:
                 u_min = self.u_domain_min
             else:
-                u_min = min(self.u_lower_bound(r), self.u_domain_max)
+                u_min = min(float(self.u_lower_bound(r)), self.u_domain_max)
                 u_min = max(u_min, self.u_domain_min)
             u_max = self.u_domain_max
             return u_min, u_max
