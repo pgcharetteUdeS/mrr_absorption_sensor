@@ -352,7 +352,7 @@ class Spiral:
 
         # Spiral radii extrema
         outer_spiral_r_max: float = r
-        outer_spiral_r_min: float = a_spiral + b_spiral * theta_min
+        outer_spiral_r_min: float = a_spiral_outer + b_spiral * theta_min
         inner_spiral_r_max: float = outer_spiral_r_max - line_width / 2
         inner_spiral_r_min: float = outer_spiral_r_min - line_width / 2
 
