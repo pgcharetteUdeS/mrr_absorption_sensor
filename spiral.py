@@ -6,6 +6,10 @@ Exposed methods:
     - draw_spiral()
     - analyze()
 
+NOTES:
+    - KLUDGE in _find_max_sensitivity(): factor of 1.1 eliminates glitches in results
+      for spiral analysis at fixed height, needs looking into...
+
 """
 
 
@@ -283,7 +287,7 @@ class Spiral:
             + "".join([f"S = {S:.0f}", r" RIU$^{-1}$"])
             + "\n"
             + "".join([f"R = {r_outer:.1f} ", r"$\mu$m, "])
-            + "".join([r"R$_{min}$ = ", f"{a_spiral:.1f} ", r"$\mu$m, "])
+            + "".join([r"R$_{min}$ = ", f"{r_joint_inner[-1]:.1f} ", r"$\mu$m, "])
             + "".join(
                 [
                     r"S-bend radius = ",
@@ -477,10 +481,11 @@ class Spiral:
         n_turns_max = min(n_turns_max, self.turns_max)
 
         # Only proceed with the minimization if the radius at which the solution is
-        # sought is greater than the minimum allowed outer spiral radius and the number
-        # of turns solution dynamic range is not null.
-        # KLUDGE: the 1.1 factor skips glitches that sometimes appear just after r_min
-        if r > r_min * 1.1:
+        # sought is greater than the minimum allowed outer spiral radius.
+        #
+        # ** KLUDGE ** : the 1.1 factor skips glitches that sometimes appear just
+        # after r_min for fixed core height analyses. Should really fix this...
+        if r > r_min * (1.0 if self.models.core_v_name == "w" else 1.1):
             # If this is the first optimization, set the initial guesses for u at the
             # maximum value in the domain and the numbers of turns at the minimum
             # value (at small radii, bending losses are high, the optimal solution
