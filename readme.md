@@ -7,7 +7,13 @@ Purpose:
 	geometry parameter is allowed to vary over a specified range in the optimization
 	at each bending radius.
 
-Main interface methods:
+   1) Fixed height: supply a "core_width" field and dictionary of "h" keys/value
+                    pairs in the .toml file.
+
+   2) Fixed width:  supply a "core_height" field and dictionary of "w" keys/value
+                    pairs in the .toml file.
+
+Main interface method:
     - analyze.analyze()
 
 Classes:
@@ -15,7 +21,7 @@ Classes:
     - Mrr, Linear, Spiral: sensor-specific variables and methods
 
 Notes:
-   1) The problem specifications are normally read in from a .toml file containing
+   1) The problem specifications are read in from a .toml file containing
       the problem parameters and data, see "example.toml" for explanations
       of the key/value pairs and fileio.load_toml_file().
 
@@ -33,3 +39,11 @@ Known issues:
    1) "Auto-removal of grids by pcolor() and pcolormesh() is deprecated..."
       warnings caused by a bug in matplotlib can be suppressed
       by calling "warnings.filterwarnings("ignore", category=DeprecationWarning)"
+   2) KLUDGE in spiral._find_max_sensitivity(): factor of 1.1 eliminates glitches
+      in results for spiral analysis at fixed height, needs looking into.
+   3) The spiral lengths calculated with finite differences in spiral.draw_spiral()
+      and with numerical integration in spiral._calc_sensitivity() can be quite
+      different (> 10%), see the values in the .tif sequence frame titles. The
+      calculation in spiral.draw_spiral() is "correct" (the graphics look ok)
+      whereas the S-bend joint is approximated in spiral._calc_sensitivity(). 
+      This should be looked into...
