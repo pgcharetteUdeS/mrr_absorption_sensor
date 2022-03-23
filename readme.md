@@ -41,9 +41,3 @@ Known issues:
       by calling "warnings.filterwarnings("ignore", category=DeprecationWarning)"
    2) KLUDGE in spiral._find_max_sensitivity(): factor of 1.1 eliminates glitches
       in results for spiral analysis at fixed height, needs looking into.
-   3) The spiral lengths calculated with finite differences in spiral.draw_spiral()
-      and with numerical integration in spiral._calc_sensitivity() can be quite
-      different (> 10%), see the values in the .tif sequence frame titles. The
-      calculation in spiral.draw_spiral() is "correct" (the graphics look ok)
-      whereas the S-bend joint is approximated in spiral._calc_sensitivity(). 
-      This should be looked into...
