@@ -150,7 +150,7 @@ class Spiral:
             ax = fig.axes[0]
             ax.clear()
 
-        # Outer spiral (* VERIFY! *)
+        # Outer spiral
         theta_max: float = (r_outer - (a_spiral + self.spacing + w)) / b_spiral
         theta_min: float = max(theta_max - (n_turns * 2 * np.pi), 0)
         thetas_spiral: np.ndarray = np.linspace(theta_min, theta_max, 1000)
@@ -284,7 +284,13 @@ class Spiral:
             + "\n"
             + "".join([f"R = {r_outer:.1f} ", r"$\mu$m, "])
             + "".join([r"R$_{min}$ = ", f"{a_spiral:.1f} ", r"$\mu$m, "])
-            + "".join([r"S-bend radius = ", f"{a_spiral/2:.1f} ", r"$\mu$m, "])
+            + "".join(
+                [
+                    r"S-bend radius = ",
+                    f"{(r_joint_inner[-1] - w / 2) / 2:.1f} ",
+                    r"$\mu$m, ",
+                ]
+            )
             + "".join([f"L = {L:.1f} ({Lint:.2f} by finite diffs) ", r"$\mu$m"])
         )
         ax.set_xlabel(r"$\mu$m")
@@ -328,13 +334,16 @@ class Spiral:
 
         # Archimedes spiral: "r = a + b*theta", where "a" is the minimum radius of the
         # outer spiral and "2*pi*b" is the spacing between the lines pairs.
+        # Check that r is above the allowed minimum.
         line_width, a_spiral, b_spiral = self._calc_spiral_parameters(w=w)
-        r_min: float = a_spiral + self.spacing + w
-        theta_max: float = (r - r_min) / b_spiral
+        a_spiral_outer: float = a_spiral + self.spacing + w
+
+        # Spiral radii and angle extrema
+        theta_max: float = (r - a_spiral_outer) / b_spiral
         theta_min: float = theta_max - (n_turns * 2 * np.pi)
 
-        # Input parameter check
-        if r < r_min or theta_min < 0:
+        # Check input
+        if r < a_spiral_outer or theta_min < 0:
             return 1.0e-10, 0, 0, 0
 
         # Spiral radii extrema
@@ -463,13 +472,15 @@ class Spiral:
         r_min: float = (a_spiral_min + self.spacing + w_min) + theta_min * b_spiral_min
 
         # Determine search domain maximum for the numer of turns in the spiral
-        n_turns_max: float = (r - r_min) / line_width_min + 1
+        n_turns_max: float = (r - r_min) / line_width_min
+        n_turns_max = max(n_turns_max, self.turns_min)
         n_turns_max = min(n_turns_max, self.turns_max)
 
         # Only proceed with the minimization if the radius at which the solution is
         # sought is greater than the minimum allowed outer spiral radius and the number
         # of turns solution dynamic range is not null.
-        if r > r_min and n_turns_max > self.turns_min:
+        # KLUDGE: the 1.1 factor skips glitches that sometimes appear just after r_min
+        if r > r_min * 1.1:
             # If this is the first optimization, set the initial guesses for u at the
             # maximum value in the domain and the numbers of turns at the minimum
             # value (at small radii, bending losses are high, the optimal solution

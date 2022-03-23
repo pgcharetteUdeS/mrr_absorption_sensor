@@ -10,7 +10,9 @@ Exposed methods:
 
 # Standard library
 from colorama import Fore, Style
+import numpy as np
 from pathlib import Path
+import sys
 
 # Package modules
 from .models import Models
@@ -39,7 +41,7 @@ def analyze(
 
     """
     # Show the package version number
-    print(f"{Fore.YELLOW}mrr_absorption_sensor package {__version__}{Style.RESET_ALL}")
+    logger(f"{Fore.YELLOW}mrr_absorption_sensor package {__version__}{Style.RESET_ALL}")
 
     # Load the problem parameters from the input .toml file
     (parameters, modes_data, bending_loss_data,) = load_toml_file(
@@ -77,6 +79,11 @@ def analyze(
         disable_u_search_lower_bound=parameters["disable_u_search_lower_bound"],
         logger=logger,
     )
+
+    # Check that the array of radii to be analyzed is not empty
+    if np.size(models.R) == 0:
+        logger(f"{Fore.YELLOW}No radii to analyze!{Style.RESET_ALL}")
+        sys.exit()
 
     # If only model fitting was required, return
     if parameters["models_only"]:
