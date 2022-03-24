@@ -146,10 +146,5 @@ def mrr_absorption_sensor_vs_spiral(toml_input_filename: str):
 
 
 if __name__ == "__main__":
-    # TEMPORARY: suppress deprecation warnings caused by matplotlib bug, with message:
-    # "Auto-removal of grids by pcolor() and pcolormesh() is deprecated..."
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
-
-    # Do the analysis
 #    mrr_absorption_sensor_vs_spiral("example.toml")
     mrr_absorption_sensor_vs_spiral("Tableau_TE_h03.toml")
