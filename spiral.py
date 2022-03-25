@@ -161,19 +161,20 @@ class Spiral:
         r_outer_spiral_inner: np.ndarray = (a_spiral + self.spacing) + (
             b_spiral * thetas_spiral
         )
+        theta0: float = -theta_max + np.pi / 2
         L_spiral_outer_inner: float = self._plot_arc(
             ax=ax,
             thetas=thetas_spiral,
             r=r_outer_spiral_inner,
             color="red",
-            theta0=-theta_max,
+            theta0=theta0,
         )
         L_spiral_outer_outer: float = self._plot_arc(
             ax=ax,
             thetas=thetas_spiral,
             r=r_outer_spiral_inner + w,
             color="red",
-            theta0=-theta_max,
+            theta0=theta0,
         )
         L_spiral_outer: float = (L_spiral_outer_inner + L_spiral_outer_outer) / 2
 
@@ -184,14 +185,14 @@ class Spiral:
             thetas=thetas_spiral,
             r=r_inner_spiral_inner,
             color="blue",
-            theta0=-theta_max,
+            theta0=theta0,
         )
         L_spiral_inner_outer: float = self._plot_arc(
             ax=ax,
             thetas=thetas_spiral,
             r=r_inner_spiral_inner + w,
             color="blue",
-            theta0=-theta_max,
+            theta0=theta0,
         )
         L_spiral_inner: float = (L_spiral_inner_inner + L_spiral_inner_outer) / 2
 
@@ -205,14 +206,14 @@ class Spiral:
             thetas=thetas_joint,
             r=r_joint_inner,
             color="red",
-            theta0=-theta_max,
+            theta0=theta0,
         )
         L_half_circle_outer: float = self._plot_arc(
             ax=ax,
             thetas=thetas_joint,
             r=r_joint_inner + w,
             color="red",
-            theta0=-theta_max,
+            theta0=theta0,
         )
         L_half_circle: float = (L_half_circle_inner + L_half_circle_outer) / 2
 
@@ -227,7 +228,7 @@ class Spiral:
             color="red",
             x0=-((r_joint_inner[-1] + w / 2) / 2) * np.cos(thetas_joint[0]),
             y0=-((r_joint_inner[-1] + w / 2) / 2) * np.sin(thetas_joint[0]),
-            theta0=-theta_max,
+            theta0=theta0,
         )
         L_S_bend_left_outer: float = self._plot_arc(
             ax=ax,
@@ -236,7 +237,7 @@ class Spiral:
             color="red",
             x0=-((r_joint_inner[-1] + w / 2) / 2) * np.cos(thetas_joint[0]),
             y0=-((r_joint_inner[-1] + w / 2) / 2) * np.sin(thetas_joint[0]),
-            theta0=-theta_max,
+            theta0=theta0,
         )
         L_S_bend_left: float = (L_S_bend_left_outer + L_S_bend_left_inner) / 2
 
@@ -249,7 +250,7 @@ class Spiral:
             color="red",
             x0=((r_inner_spiral_inner[0] + w / 2) / 2) * np.cos(thetas_joint[0]),
             y0=((r_inner_spiral_inner[0] + w / 2) / 2) * np.sin(thetas_joint[0]),
-            theta0=-theta_max,
+            theta0=theta0,
         )
         L_S_bend_right_outer: float = self._plot_arc(
             ax=ax,
@@ -258,7 +259,7 @@ class Spiral:
             color="red",
             x0=((r_inner_spiral_inner[0] + w / 2) / 2) * np.cos(thetas_joint[0]),
             y0=((r_inner_spiral_inner[0] + w / 2) / 2) * np.sin(thetas_joint[0]),
-            theta0=-theta_max,
+            theta0=theta0,
         )
         L_S_bend_right: float = (L_S_bend_right_outer + L_S_bend_right_inner) / 2
 
