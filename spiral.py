@@ -346,9 +346,7 @@ class Spiral:
         # Spiral radii and angle extrema
         theta_max: float = (r - a_spiral_outer) / b_spiral
         theta_min: float = theta_max - (n_turns * 2 * np.pi)
-
-        # Check input
-        if r < a_spiral_outer or theta_min < 0:
+        if theta_min < 0:
             return 1.0e-10, 0, 0, 0
 
         # Spiral radii extrema
@@ -486,6 +484,7 @@ class Spiral:
         #
         # ** KLUDGE ** : the 1.1 factor skips glitches that sometimes appear just
         # after r_min for fixed core height analyses. Should really fix this...
+        disable_r_min_check: bool = True
         if r > r_min * (1.0 if self.models.core_v_name == "w" else 1.1):
             # If this is the first optimization, set the initial guesses for u at the
             # maximum value in the domain and the numbers of turns at the minimum
@@ -519,7 +518,7 @@ class Spiral:
 
         else:
             u_max_S = u_max
-            n_turns_max_S = self.turns_min
+            n_turns_max_S = 0
             S = 1
             outer_spiral_r_min = 0
             L = 0

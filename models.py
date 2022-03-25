@@ -634,6 +634,8 @@ class Models:
 
         # Assemble the "M" coefficient matrix, where each column holds the values of
         # the monomial terms in the model for each r & u value pair in the input data.
+        # NB: the model is actually alpha_bend(u,r) = exp(model(u,r)) because
+        # the model coefficients are fitted to the ln(alpha_bend(u,r)) data.
         M: np.nedarray = np.asarray(
             [
                 np.ones_like(self.u_data),
