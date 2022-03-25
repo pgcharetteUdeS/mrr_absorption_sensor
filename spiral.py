@@ -484,7 +484,6 @@ class Spiral:
         #
         # ** KLUDGE ** : the 1.1 factor skips glitches that sometimes appear just
         # after r_min for fixed core height analyses. Should really fix this...
-        disable_r_min_check: bool = True
         if r > r_min * (1.0 if self.models.core_v_name == "w" else 1.1):
             # If this is the first optimization, set the initial guesses for u at the
             # maximum value in the domain and the numbers of turns at the minimum
