@@ -9,6 +9,7 @@ Exposed methods:
 
 
 # Standard library
+import colorama as colorama
 from colorama import Fore, Style
 import matplotlib.pyplot as plt
 import numpy as np
@@ -41,6 +42,10 @@ def analyze(
     :return: None
 
     """
+
+    # Initialize the colorama package to print colored text to the Windows console
+    colorama.init()
+
     # Show the package version number
     logger(f"{Fore.YELLOW}mrr_absorption_sensor package {__version__}{Style.RESET_ALL}")
 
