@@ -1,6 +1,6 @@
 """
 
-FILENAME: mrr_absorption_sensor_vs_spiral.py
+FILENAME: example.py
 
 PURPOSE: Determine the maximum achievable sensitivity as a function of the waveguide
          core geometry free parameter (height or width) over a range of ring/spiral
