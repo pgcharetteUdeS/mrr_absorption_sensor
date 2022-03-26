@@ -81,6 +81,7 @@ def mrr_absorption_sensor_vs_spiral(toml_input_filename: str):
             "axes.linewidth": 0.5,
         },
     )
+    # plt.ion()
 
     # Required on Windows: initialize the colorama package to print colored text to the
     # console, else the logger will not print pretty color text.
