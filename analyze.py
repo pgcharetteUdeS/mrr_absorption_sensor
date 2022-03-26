@@ -25,7 +25,7 @@ from .version import __version__
 
 
 def analyze(
-    toml_input_file_path: Path,
+    toml_input_file: str,
     logger=print,
 ) -> tuple[Models, Mrr | None, Linear | None, Spiral | None]:
     """
@@ -35,7 +35,7 @@ def analyze(
     The waveguides core geometry has a fixed dimension "v", the other "u" is allowed
     to vary over a specified range to find the maximum sensitivity at each radius.
 
-    :param toml_input_file_path: input file containing the problem data (.toml format)
+    :param toml_input_file: input file containing the problem data (.toml format)
     :param logger: console logger (optional), for example from the "logging" package
     :return: None
 
@@ -44,6 +44,7 @@ def analyze(
     logger(f"{Fore.YELLOW}mrr_absorption_sensor package {__version__}{Style.RESET_ALL}")
 
     # Load the problem parameters from the input .toml file
+    toml_input_file_path: Path = Path(toml_input_file)
     (parameters, modes_data, bending_loss_data,) = load_toml_file(
         filename=toml_input_file_path,
         logger=logger,

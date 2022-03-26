@@ -58,7 +58,6 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import sys
 import time
-import warnings
 
 
 # mrr_absorption_sensor package
@@ -106,12 +105,12 @@ def mrr_absorption_sensor_vs_spiral(toml_input_filename: str):
 
     # Load input .toml file name from the command line if supplied, else use filename
     # passed as a parameter to the function. Verify that the file exists.
-    toml_input_file_path: Path = Path(
+    toml_input_file: str = (
         toml_input_filename if args.in_data_file is None else args.in_data_file
     )
-    if not toml_input_file_path.is_file():
+    if not Path(toml_input_file).is_file():
         print(
-            f"{Fore.YELLOW}File '{toml_input_file_path}' "
+            f"{Fore.YELLOW}File '{toml_input_file}' "
             + f"does not exist!{Style.RESET_ALL}"
         )
         sys.exit()
@@ -120,7 +119,7 @@ def mrr_absorption_sensor_vs_spiral(toml_input_filename: str):
     # IMPORTANT: the return value from analyze() MUST be stored in the local variable
     # memory space for the buttons to work in the 3D graph of alpha_bend(r, h)
     models, mrr, linear, spiral = analyze(
-        toml_input_file_path=toml_input_file_path, logger=logger.info
+        toml_input_file=toml_input_file, logger=logger.info
     )
 
     # Show execution time
@@ -146,6 +145,6 @@ def mrr_absorption_sensor_vs_spiral(toml_input_filename: str):
 
 
 if __name__ == "__main__":
-#    mrr_absorption_sensor_vs_spiral("example.toml")
-#    mrr_absorption_sensor_vs_spiral("Tableau_TE_h03.toml")
-    mrr_absorption_sensor_vs_spiral("Tableau_Theo_h03_TE.toml")
+    mrr_absorption_sensor_vs_spiral("example.toml")
+    #    mrr_absorption_sensor_vs_spiral("Tableau_TE_h03.toml")
+    #    mrr_absorption_sensor_vs_spiral("Tableau_Theo_h03_TE.toml")
