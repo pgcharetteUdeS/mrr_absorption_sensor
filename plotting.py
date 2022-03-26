@@ -128,13 +128,18 @@ def _write_spiral_sequence_to_file(
     # Calculate spiral sequence looping indices (min, max, index)
     biggest_spiral_index: int = int(np.argmax(spiral.n_turns))
     index_min: int = int(
-        np.argmax(spiral.n_turns[:biggest_spiral_index] > (spiral.turns_min * 1.01))
+        np.argmax(spiral.n_turns[:biggest_spiral_index] > spiral.turns_min)
     )
+    """
     index_max: int = (
         int(
             np.argmax(spiral.n_turns[biggest_spiral_index:] < (spiral.turns_min * 1.01))
         )
         + biggest_spiral_index
+    )
+    """
+    index_max: int = (
+        int(np.argmax(spiral.n_turns[biggest_spiral_index:] < 1)) + biggest_spiral_index
     )
     indices: range = range(index_min, index_max)
 
