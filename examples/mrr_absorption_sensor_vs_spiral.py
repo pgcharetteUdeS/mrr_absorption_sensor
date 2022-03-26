@@ -82,8 +82,6 @@ def mrr_absorption_sensor_vs_spiral(toml_input_filename: str):
         {
             "figure.dpi": 200,
             "font.size": 6,
-            "axes.grid": True,
-            "axes.grid.which": "both",
             "lines.linewidth": 0.5,
             "axes.linewidth": 0.5,
         },

@@ -155,9 +155,6 @@ class Models:
         self.u_lower_bound: interpolate.interp1d = interpolate.interp1d([0, 1], [0, 1])
         self._set_u_search_lower_bound()
 
-        # Display plots
-        plt.show()
-
     #
     # gamma(u), u(gamma), and neffs(u) modeling
     #

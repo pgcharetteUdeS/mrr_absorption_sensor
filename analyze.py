@@ -10,6 +10,7 @@ Exposed methods:
 
 # Standard library
 from colorama import Fore, Style
+import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 import sys
@@ -42,6 +43,14 @@ def analyze(
     """
     # Show the package version number
     logger(f"{Fore.YELLOW}mrr_absorption_sensor package {__version__}{Style.RESET_ALL}")
+
+    # matplotlib initializations
+    plt.rcParams.update(
+        {
+            "axes.grid": True,
+            "axes.grid.which": "both",
+        },
+    )
 
     # Load the problem parameters from the input .toml file
     toml_input_file_path: Path = Path(toml_input_file)
@@ -88,6 +97,7 @@ def analyze(
 
     # If only model fitting was required, return
     if parameters["models_only"]:
+        plt.show()
         return models, None, None, None
 
     # Define output Excel filename: if file is already open, halt with an exception
@@ -146,4 +156,5 @@ def analyze(
         ),
 
     # Return the instantiated models class
+    plt.show()
     return models, mrr, linear, spiral
