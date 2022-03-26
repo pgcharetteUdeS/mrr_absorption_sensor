@@ -49,6 +49,7 @@ IDEs issues/notes:
 
 # Standard library packages
 import argparse
+import colorama as colorama
 from colorama import Fore, Style
 import logging
 import matplotlib.pyplot as plt
@@ -81,6 +82,10 @@ def mrr_absorption_sensor_vs_spiral(toml_input_filename: str):
         },
     )
     plt.ion()
+
+    # Required on Windows: initialize the colorama package to print colored text to the
+    # console, else the logger will not print pretty color text.
+    colorama.init()
 
     # Define the logger for console information messages
     logger: logging.Logger = logging.getLogger(__name__)
