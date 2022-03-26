@@ -659,7 +659,8 @@ def plot_results(
     ax.plot(
         np.log10(mrr.Rw), mrr.gamma_resampled * 100, "g", label=r"Rw$(\Gamma_{fluid})$"
     )
-    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100)
+    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
+    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
     ax.legend(loc="lower right")
     filename = (
         filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_S_VS_GAMMA_and_R.png"
@@ -684,6 +685,8 @@ def plot_results(
     ax.set_xlabel(r"log(R) ($\mu$m)")
     ax.set_ylabel(r"$\Gamma_{fluid}$")
     fig.colorbar(cm, label=r"$S_{NR}$ (RIU$^{-1}$)")
+    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
+    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
     ax.legend(loc="lower right")
     filename = (
         filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_Snr_VS_GAMMA_and_R.png"
@@ -708,6 +711,8 @@ def plot_results(
     ax.set_xlabel(r"log(R) ($\mu$m)")
     ax.set_ylabel(r"$\Gamma_{fluid}$")
     fig.colorbar(cm, label=r"$S_e$")
+    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
+    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
     ax.legend(loc="lower right")
     filename = (
         filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_Se_VS_GAMMA_and_R.png"
@@ -739,6 +744,8 @@ def plot_results(
     ax.set_xlabel(r"log(R) ($\mu$m)")
     ax.set_ylabel(r"$\Gamma_{fluid}$")
     fig.colorbar(cm, label=r"$S_e \times a$")
+    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
+    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
     ax.legend(loc="lower right")
     filename = (
         filename_path.parent
@@ -763,7 +770,6 @@ def plot_results(
     ax.plot(
         np.log10(mrr.Rw), mrr.gamma_resampled * 100, "g", label=r"Rw$(\Gamma_{fluid})$"
     )
-    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100)
     ax.set_title(
         r"MRR $a^2$ as a function of $\Gamma_{fluid}$ and $R$"
         + f"\n{models.pol}"
@@ -774,6 +780,8 @@ def plot_results(
     ax.set_xlabel(r"log(R) ($\mu$m)")
     ax.set_ylabel(r"$\Gamma_{fluid}$")
     fig.colorbar(cm, label=r"$a^2$")
+    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
+    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
     ax.legend(loc="lower right")
     filename = (
         filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_a2_VS_GAMMA_and_R.png"
@@ -804,7 +812,6 @@ def plot_results(
     ax.plot(
         np.log10(mrr.Rw), mrr.gamma_resampled * 100, "g", label=r"Rw$(\Gamma_{fluid})$"
     )
-    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100)
     ax.set_title(
         r"MRR $\alpha L$ as a function of $\Gamma_{fluid}$ and $R$"
         + f"\n{models.pol}"
@@ -815,6 +822,8 @@ def plot_results(
     ax.set_xlabel(r"log(R) ($\mu$m)")
     ax.set_ylabel(r"$\Gamma_{fluid}$")
     fig.colorbar(cm, label=r"$\alpha L$ (dB)")
+    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
+    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
     ax.legend(loc="lower right")
     filename = (
         filename_path.parent
