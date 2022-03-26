@@ -6,10 +6,6 @@ Exposed methods:
     - draw_spiral()
     - analyze()
 
-NOTES:
-    - KLUDGE in _find_max_sensitivity(): factor of 1.1 eliminates glitches in results
-      for spiral analysis at fixed height, needs looking into...
-
 """
 
 
@@ -481,10 +477,7 @@ class Spiral:
 
         # Only proceed with the minimization if the radius at which the solution is
         # sought is greater than the minimum allowed outer spiral radius.
-        #
-        # ** KLUDGE ** : the 1.1 factor skips glitches that sometimes appear just
-        # after r_min for fixed core height analyses. Should really fix this...
-        if r > r_min * (1.0 if self.models.core_v_name == "w" else 1.1):
+        if r >= r_min + line_width_min * self.turns_min:
             # If this is the first optimization, set the initial guesses for u at the
             # maximum value in the domain and the numbers of turns at the minimum
             # value (at small radii, bending losses are high, the optimal solution

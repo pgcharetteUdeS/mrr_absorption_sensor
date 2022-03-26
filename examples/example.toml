@@ -19,7 +19,7 @@ output_sub_dir = "data"        		  # Subdirectory in which to write files, relat
 # Fitting parameters
 gamma_order = 4                       # Polynomial model order for interpolating gamma(h)
 neff_order = 3                        # Polynomial model order for interpolating neff(h)
-spiral_turns_min = 1.0			      # Minimum allowed turns in the spiral (default = 0.5)
+spiral_turns_min = 0.5			      # Minimum allowed turns in the spiral (default = 0.5)
 spiral_turns_max = 50                 # Maximum number of allowed turns in the spiral in the optimization (default = 25)
 colormap2D = "plasma"				  # matplotlib colormap for rendering 2D images
 

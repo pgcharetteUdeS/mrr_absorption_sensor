@@ -112,7 +112,7 @@ def load_toml_file(
         "Rmin": toml_data.get("Rmin", 25.0),
         "Rmax": toml_data.get("Rmax", 10000.0),
         "R_samples_per_decade": toml_data.get("R_samples_per_decade", 100),
-        "spiral_turns_min": toml_data.get("spiral_turns_min", 1.0),
+        "spiral_turns_min": toml_data.get("spiral_turns_min", 0.5),
         "spiral_turns_max": toml_data.get("spiral_turns_max", 25.0),
         "T_SNR": toml_data.get("T_SNR", 20.0),
         "min_delta_ni": toml_data.get("min_delta_ni", 1.0e-6),
