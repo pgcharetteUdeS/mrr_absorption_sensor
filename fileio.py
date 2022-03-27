@@ -123,9 +123,9 @@ def load_toml_file(
         "T_SNR": toml_data.get("T_SNR", 20.0),
         # Graphing and file I/O and parameters
         "map2D_colormap": toml_data.get("map2D_colormap", "viridis"),
-        "map2D_overlay_color_dark": toml_data.get("map2D_overlay_color_dark", "black"),
+        "map2D_overlay_color_dark": toml_data.get("map2D_overlay_color_dark", "white"),
         "map2D_overlay_color_light": toml_data.get(
-            "map2D_overlay_color_light", "white"
+            "map2D_overlay_color_light", "black"
         ),
         "map_line_profiles": toml_data.get("map_line_profiles", []),
         "output_sub_dir": toml_data.get("output_sub_dir", ""),
