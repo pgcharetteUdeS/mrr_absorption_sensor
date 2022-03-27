@@ -313,8 +313,19 @@ def write_excel_results_file(
 
     # Save the Re(gamma) & Rw(gamma) arrays to a sheet
     ReRw_sheet = wb.create_sheet("Re and Rw")
-    ReRw_sheet.append(["gamma (%)", "Re (um)", "Rw (um)", "A (um-1)", "B (um-1)"])
-    for line in zip(mrr.gamma_resampled * 100, mrr.Re, mrr.Rw, mrr.A, mrr.B):
+    ReRw_sheet.append(
+        [
+            "gamma (%)",
+            f"{models.core_u_name} (um)",
+            "Re (um)",
+            "Rw (um)",
+            "A (um-1)",
+            "B (um-1)",
+        ]
+    )
+    for line in zip(
+        mrr.gamma_resampled * 100, mrr.u_resampled, mrr.Re, mrr.Rw, mrr.A, mrr.B
+    ):
         ReRw_sheet.append(line)
 
     # Save the linear waveguide data to a sheet

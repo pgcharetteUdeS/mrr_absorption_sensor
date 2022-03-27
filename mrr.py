@@ -52,6 +52,7 @@ class Mrr:
         self.gamma: np.ndarray = np.ndarray([])
         self.gamma_resampled: np.ndarray = np.ndarray([])
         self.u: np.ndarray = np.ndarray([])
+        self.u_resampled: np.ndarray = np.ndarray([])
         self.max_S: float = 0
         self.max_S_radius: float = 0
         self.neff: np.ndarray = np.ndarray([])
@@ -302,6 +303,7 @@ class Mrr:
         gamma_min: float = list(self.models.modes_data.values())[-1]["gamma"]
         gamma_max: float = list(self.models.modes_data.values())[0]["gamma"]
         self.gamma_resampled = np.linspace(gamma_min, gamma_max, 500)
+        self.u_resampled = [self.models.u_of_gamma(g) for g in self.gamma_resampled]
         self.Re, self.Rw, self.A, self.B = zip(
             *[self._calc_Re_Rw(gamma=gamma) for gamma in self.gamma_resampled]
         )
