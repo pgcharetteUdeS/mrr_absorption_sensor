@@ -321,6 +321,7 @@ def plot_results(
     n_2D_grid_points: int = 500,
     write_excel_files: bool = False,
     colormap2D: str = "viridis",
+    map_line_profiles: list = None,
     no_spiral: bool = False,
     draw_largest_spiral: bool = False,
     write_spiral_sequence_to_file: bool = False,
@@ -337,6 +338,7 @@ def plot_results(
     :param filename_path:
     :param n_2D_grid_points:
     :param write_excel_files:
+    :param map_line_profiles:
     :param colormap2D:
     :param no_spiral:
     :param draw_largest_spiral:
@@ -664,6 +666,8 @@ def plot_results(
     ax.plot(
         np.log10(mrr.Rw), mrr.gamma_resampled * 100, "g", label=r"Rw$(\Gamma_{fluid})$"
     )
+    for line in map_line_profiles if map_line_profiles else []:
+        ax.plot([np.log10(r_plot_min), np.log10(r_plot_max)], [line, line], "w:")
     ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
     ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
     ax.legend(loc="lower right")

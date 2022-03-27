@@ -100,38 +100,41 @@ def load_toml_file(
 
     # Parse fields from .toml file into the parameters{} dictionary
     parameters: dict = {
-        # Physical parameters
+        # Waveguide physical parameters
         "alpha_wg": toml_data.get("alpha_wg", 1.0),
         "core_height": toml_data.get("core_height"),
         "core_width": toml_data.get("core_width"),
         "lambda_res": toml_data.get("lambda_res", 0.633),
         "ni_op": toml_data.get("ni_op", 1.0e-6),
         "pol": toml_data.get("pol", "TE"),
+        # Spiral physical parameters
         "spiral_spacing": toml_data.get("spiral_spacing", 5.0),
+        "spiral_turns_min": toml_data.get("spiral_turns_min", 0.5),
+        "spiral_turns_max": toml_data.get("spiral_turns_max", 25.0),
+        # Model fitting parameters
+        "gamma_order": toml_data.get("gamma_order", 4),
+        "neff_order": toml_data.get("neff_order", 3),
         # Analysis parameters
+        "alpha_bend_threshold": toml_data.get("alpha_bend_threshold", 0.01),
+        "min_delta_ni": toml_data.get("min_delta_ni", 1.0e-6),
         "Rmin": toml_data.get("Rmin", 25.0),
         "Rmax": toml_data.get("Rmax", 10000.0),
         "R_samples_per_decade": toml_data.get("R_samples_per_decade", 100),
-        "spiral_turns_min": toml_data.get("spiral_turns_min", 0.5),
-        "spiral_turns_max": toml_data.get("spiral_turns_max", 25.0),
         "T_SNR": toml_data.get("T_SNR", 20.0),
-        "min_delta_ni": toml_data.get("min_delta_ni", 1.0e-6),
+        # Graphing and file I/O and parameters
+        "colormap2D": toml_data.get("colormap2D", "viridis"),
+        "map_line_profiles": toml_data.get("map_line_profiles", []),
         "output_sub_dir": toml_data.get("output_sub_dir", ""),
-        "alpha_bend_threshold": toml_data.get("alpha_bend_threshold", 0.01),
         "write_excel_files": toml_data.get("write_excel_files", True),
         "write_spiral_sequence_to_file": toml_data.get(
             "write_spiral_sequence_to_file", True
         ),
-        # Fitting parameters
-        "gamma_order": toml_data.get("gamma_order", 4),
-        "neff_order": toml_data.get("neff_order", 3),
         # Debugging and other flags
-        "colormap2D": toml_data.get("colormap2D", "viridis"),
         "disable_u_search_lower_bound": toml_data.get(
             "disable_u_search_lower_bound", False
         ),
-        "models_only": toml_data.get("models_only", False),
         "disable_R_domain_check": toml_data.get("disable_R_domain_check", False),
+        "models_only": toml_data.get("models_only", False),
         "no_spiral": toml_data.get("no_spiral", False),
     }
 
