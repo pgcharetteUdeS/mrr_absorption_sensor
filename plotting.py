@@ -351,6 +351,23 @@ def plot_results(
     :return: None
     """
 
+    # Define extra line styles
+    # See "https://matplotlib.org/3.5.1/gallery/lines_bars_and_markers/linestyles.html"
+    linestyles = {
+        "loosely dotted": (0, (1, 10)),
+        "dotted": (0, (1, 1)),
+        "densely dotted": (0, (1, 1)),
+        "loosely dashed": (0, (5, 10)),
+        "dashed": (0, (5, 5)),
+        "densely dashed": (0, (5, 1)),
+        "loosely dashdotted": (0, (3, 10, 1, 10)),
+        "dashdotted": (0, (3, 5, 1, 5)),
+        "densely dashdotted": (0, (3, 1, 1, 1)),
+        "dashdotdotted": (0, (3, 5, 1, 5, 1, 5)),
+        "loosely dashdotdotted": (0, (3, 10, 1, 10, 1, 10)),
+        "densely dashdotdotted": (0, (3, 1, 1, 1, 1, 1)),
+    }
+
     # Calculate plotting extrema and max{S} vertical marker
     (
         r_plot_min,
@@ -606,6 +623,7 @@ def plot_results(
         [R_2D_map[0], np.log10(mrr.max_S_radius)],
         [R_max_Smrr_u, R_max_Smrr_u],
         color=map2D_overlay_color_light,
+        linestyle=linestyles["loosely dashdotted"],
         label="".join(
             [r"max$\{$max$\{S_{MRR}\}\}$", f" = {mrr.max_S:.0f} RIU", r"$^{-1}$"]
         )
@@ -678,6 +696,7 @@ def plot_results(
         [R_2D_map[0], np.log10(mrr.max_S_radius)],
         [R_max_Smrr_gamma, R_max_Smrr_gamma],
         color=map2D_overlay_color_light,
+        linestyle=linestyles["loosely dashdotted"],
         label="".join(
             [r"max$\{$max$\{S_{MRR}\}\}$", f" = {mrr.max_S:.0f} RIU", r"$^{-1}$"]
         )
@@ -703,7 +722,7 @@ def plot_results(
             [np.log10(r_plot_min), np.log10(r_plot_max)],
             [line, line],
             color=map2D_overlay_color_light,
-            linestyle=":",
+            linestyle=linestyles["loosely dotted"],
         )
     ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
     ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
@@ -898,7 +917,7 @@ def plot_results(
             [np.log10(r_plot_min), np.log10(r_plot_max)],
             [line, line],
             color=map2D_overlay_color_dark,
-            linestyle=":",
+            linestyle=linestyles["loosely dotted"],
         )
     ax.set_title(
         r"MRR $\alpha L$ as a function of $\Gamma_{fluid}$ and $R$"
