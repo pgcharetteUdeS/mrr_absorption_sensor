@@ -122,8 +122,11 @@ def load_toml_file(
         "R_samples_per_decade": toml_data.get("R_samples_per_decade", 100),
         "T_SNR": toml_data.get("T_SNR", 20.0),
         # Graphing and file I/O and parameters
-        "colormap2D": toml_data.get("colormap2D", "viridis"),
-        "R_overlay_color": toml_data.get("R_overlay_color", "red"),
+        "map2D_colormap": toml_data.get("map2D_colormap", "viridis"),
+        "map2D_overlay_color_dark": toml_data.get("map2D_overlay_color_dark", "black"),
+        "map2D_overlay_color_light": toml_data.get(
+            "map2D_overlay_color_light", "white"
+        ),
         "map_line_profiles": toml_data.get("map_line_profiles", []),
         "output_sub_dir": toml_data.get("output_sub_dir", ""),
         "write_excel_files": toml_data.get("write_excel_files", True),
