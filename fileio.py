@@ -123,6 +123,7 @@ def load_toml_file(
         "T_SNR": toml_data.get("T_SNR", 20.0),
         # Graphing and file I/O and parameters
         "colormap2D": toml_data.get("colormap2D", "viridis"),
+        "R_overlay_color": toml_data.get("R_overlay_color", "red"),
         "map_line_profiles": toml_data.get("map_line_profiles", []),
         "output_sub_dir": toml_data.get("output_sub_dir", ""),
         "write_excel_files": toml_data.get("write_excel_files", True),

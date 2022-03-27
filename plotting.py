@@ -321,6 +321,7 @@ def plot_results(
     n_2D_grid_points: int = 500,
     write_excel_files: bool = False,
     colormap2D: str = "viridis",
+    R_overlay_color: str = "red",
     map_line_profiles: list = None,
     no_spiral: bool = False,
     draw_largest_spiral: bool = False,
@@ -340,6 +341,7 @@ def plot_results(
     :param write_excel_files:
     :param map_line_profiles:
     :param colormap2D:
+    :param R_overlay_color:
     :param no_spiral:
     :param draw_largest_spiral:
     :param write_spiral_sequence_to_file:
@@ -585,7 +587,7 @@ def plot_results(
     ax.set_xlabel(r"log(R) ($\mu$m)")
     ax.set_ylabel(f"{models.core_u_name}" + r" ($\mu$m)")
     fig.colorbar(cm, label=r"S (RIU $^{-1}$)")
-    ax.plot(np.log10(models.R), mrr.u, color="black", label=r"max$\{S(h, R)\}$")
+    ax.plot(np.log10(models.R), mrr.u, color=R_overlay_color, label=r"max$\{S(h, R)\}$")
     ax.plot(
         [np.log10(mrr.max_S_radius), np.log10(mrr.max_S_radius)],
         [u_2D_map[-1], R_max_Smrr_u],
@@ -639,7 +641,7 @@ def plot_results(
     ax.plot(
         np.log10(models.R),
         mrr.gamma,
-        color="black",
+        color=R_overlay_color,
         label=r"max$\{S_{MRR}(\Gamma_{fluid}, R)\}$",
     )
     ax.plot(
@@ -660,11 +662,16 @@ def plot_results(
     ax.plot(
         np.log10(mrr.Re),
         mrr.gamma_resampled * 100,
-        "g--",
+        color=R_overlay_color,
+        linestyle="--",
         label=r"Re$(\Gamma_{fluid})$",
     )
     ax.plot(
-        np.log10(mrr.Rw), mrr.gamma_resampled * 100, "g", label=r"Rw$(\Gamma_{fluid})$"
+        np.log10(mrr.Rw),
+        mrr.gamma_resampled * 100,
+        color=R_overlay_color,
+        linestyle="-.",
+        label=r"Rw$(\Gamma_{fluid})$",
     )
     for line in map_line_profiles if map_line_profiles else []:
         ax.plot([np.log10(r_plot_min), np.log10(r_plot_max)], [line, line], "w:")
@@ -683,7 +690,9 @@ def plot_results(
     )
     fig, ax = plt.subplots()
     cm = ax.pcolormesh(R_2D_map, gamma_2D_map, Snr_2D_map, cmap=colormap2D)
-    ax.plot(np.log10(models.R), mrr.gamma, "r--", label=r"max$\{S_{MRR}\}$")
+    ax.plot(
+        np.log10(models.R), mrr.gamma, color=R_overlay_color, label=r"max$\{S_{MRR}\}$"
+    )
     ax.set_title(
         r"MRR $S_{NR}$ as a function of $\Gamma_{fluid}$ and $R$"
         + f"\n{models.pol}"
@@ -709,7 +718,9 @@ def plot_results(
     )
     fig, ax = plt.subplots()
     cm = ax.pcolormesh(R_2D_map, gamma_2D_map, Se_2D_map, cmap=colormap2D)
-    ax.plot(np.log10(models.R), mrr.gamma, "r--", label=r"max$\{S_{MRR}\}$")
+    ax.plot(
+        np.log10(models.R), mrr.gamma, color=R_overlay_color, label=r"max$\{S_{MRR}\}$"
+    )
     ax.set_title(
         r"MRR $S_e$ as a function of $\Gamma_{fluid}$ and $R$"
         + f"\n{models.pol}"
@@ -742,7 +753,9 @@ def plot_results(
     )
     fig, ax = plt.subplots()
     cm = ax.pcolormesh(R_2D_map, gamma_2D_map, Se_times_a_2D_map, cmap=colormap2D)
-    ax.plot(np.log10(models.R), mrr.gamma, "r--", label=r"max$\{S_{MRR}\}$")
+    ax.plot(
+        np.log10(models.R), mrr.gamma, color=R_overlay_color, label=r"max$\{S_{MRR}\}$"
+    )
     ax.set_title(
         r"MRR $S_e \times a$ as a function of $\Gamma_{fluid}$ and $R$"
         + f"\n{models.pol}"
@@ -769,15 +782,22 @@ def plot_results(
     )
     fig, ax = plt.subplots()
     cm = ax.pcolormesh(R_2D_map, gamma_2D_map, a2_2D_map, cmap=colormap2D)
-    ax.plot(np.log10(models.R), mrr.gamma, "r--", label=r"max$\{S_{MRR}\}$")
+    ax.plot(
+        np.log10(models.R), mrr.gamma, color=R_overlay_color, label=r"max$\{S_{MRR}\}$"
+    )
     ax.plot(
         np.log10(mrr.Re),
         mrr.gamma_resampled * 100,
-        "g--",
+        color=R_overlay_color,
+        linestyle="--",
         label=r"Re$(\Gamma_{fluid})$",
     )
     ax.plot(
-        np.log10(mrr.Rw), mrr.gamma_resampled * 100, "g", label=r"Rw$(\Gamma_{fluid})$"
+        np.log10(mrr.Rw),
+        mrr.gamma_resampled * 100,
+        color=R_overlay_color,
+        linestyle="-.",
+        label=r"Rw$(\Gamma_{fluid})$",
     )
     ax.set_title(
         r"MRR $a^2$ as a function of $\Gamma_{fluid}$ and $R$"
@@ -811,15 +831,22 @@ def plot_results(
     )
     fig, ax = plt.subplots()
     cm = ax.pcolormesh(R_2D_map, gamma_2D_map, alpha_L_2D_map, cmap=colormap2D)
-    ax.plot(np.log10(models.R), mrr.gamma, "r--", label=r"max$\{S_{MRR}\}$")
+    ax.plot(
+        np.log10(models.R), mrr.gamma, color=R_overlay_color, label=r"max$\{S_{MRR}\}$"
+    )
     ax.plot(
         np.log10(mrr.Re),
         mrr.gamma_resampled * 100,
-        "g--",
+        color=R_overlay_color,
+        linestyle="--",
         label=r"Re$(\Gamma_{fluid})$",
     )
     ax.plot(
-        np.log10(mrr.Rw), mrr.gamma_resampled * 100, "g", label=r"Rw$(\Gamma_{fluid})$"
+        np.log10(mrr.Rw),
+        mrr.gamma_resampled * 100,
+        color=R_overlay_color,
+        linestyle="-.",
+        label=r"Rw$(\Gamma_{fluid})$",
     )
     ax.set_title(
         r"MRR $\alpha L$ as a function of $\Gamma_{fluid}$ and $R$"
