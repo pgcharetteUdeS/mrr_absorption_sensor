@@ -354,7 +354,7 @@ def write_excel_results_file(
             "max(S) (RIU-1)": spiral.S,
             f"{models.core_u_name} (um)": spiral.u,
             "gamma (%)": spiral.gamma,
-            "n turns": spiral.n_turns,
+            "n revs (inner+outer)": spiral.n_turns*2,
             "Rmin (um)": spiral.outer_spiral_r_min,
             "L (um)": spiral.L,
             "a2": spiral.a2,
