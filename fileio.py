@@ -302,7 +302,7 @@ def write_excel_results_file(
         "tau": mrr.tau,
         "T max": mrr.T_max,
         "T min": mrr.T_min,
-        " (dB)": mrr.ER,
+        "ER (dB)": mrr.ER,
         "contrast": mrr.contrast,
         f"{models.core_u_name} (um)": mrr.u,
         "gamma (%)": mrr.gamma,
