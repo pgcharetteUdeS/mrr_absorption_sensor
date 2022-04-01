@@ -45,6 +45,9 @@ class Mrr:
         self.A: np.ndarray = np.ndarray([])
         self.a2: np.ndarray = np.ndarray([])
         self.B: np.ndarray = np.ndarray([])
+        self.T_max: np.ndarray = np.ndarray([])
+        self.T_min: np.ndarray = np.ndarray([])
+        self.ER: np.ndarray = np.ndarray([])
         self.contrast: np.ndarray = np.ndarray([])
         self.Finesse: np.ndarray = np.ndarray([])
         self.FSR: np.ndarray = np.ndarray([])
@@ -208,6 +211,9 @@ class Mrr:
         float,
         float,
         float,
+        float,
+        float,
+        float,
     ]:
         """
         Calculate maximum sensitivity at radius "r" over all u
@@ -247,9 +253,10 @@ class Mrr:
         Q: float = (neff * (2 * np.pi * r) / self.models.lambda_res) * finesse
         FWHM: float = self.models.lambda_res / Q
         FSR: float = finesse * FWHM
-        contrast: float = ((tau + a) / (1 + tau * a)) ** 2 - (
-            (tau - a) / (1 - tau * a)
-        ) ** 2
+        T_max: float = ((tau + a) / (1 + tau * a)) ** 2
+        T_min: float = ((tau - a) / (1 - tau * a)) ** 2
+        contrast: float = T_max - T_min
+        ER: float = 10 * np.log10(T_max / T_min)
 
         # Return results to calling program
         return (
@@ -260,6 +267,9 @@ class Mrr:
             Se,
             a2,
             tau,
+            T_max,
+            T_min,
+            ER,
             contrast,
             neff,
             Q,
@@ -287,6 +297,9 @@ class Mrr:
             self.Se,
             self.a2,
             self.tau,
+            self.T_max,
+            self.T_min,
+            self.ER,
             self.contrast,
             self.neff,
             self.Q,

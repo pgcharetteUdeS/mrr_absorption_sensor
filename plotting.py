@@ -254,7 +254,7 @@ def _plot_spiral_results(
     axs_index += 1
     n_turns_plot_max: float = np.ceil(np.amax(spiral.n_turns) * 1.1 / 10) * 10
     axs[axs_index].set_ylabel(r"n turns (inner+outer)")
-    axs[axs_index].semilogx(models.R, spiral.n_turns*2)
+    axs[axs_index].semilogx(models.R, spiral.n_turns * 2)
     axs[axs_index].plot(
         [spiral.max_S_radius, spiral.max_S_radius], [0, n_turns_plot_max], "--"
     )
@@ -479,7 +479,7 @@ def plot_results(
     logger(f"Wrote '{filename}'.")
 
     # max{S}, Q, Finesse, FWHM, FSR, contrast
-    fig, axs = plt.subplots(5)
+    fig, axs = plt.subplots(6)
     fig.suptitle(
         "MRR - Ring resonator parameters"
         + f"\n{models.pol}"
@@ -497,7 +497,7 @@ def plot_results(
     )
     # max{S}
     axs_index = 0
-    axs[axs_index].set_ylabel(r"max$\{S\}$ (RIU$^{-1}$)")
+    axs[axs_index].set_ylabel(r"max$\{S\}$")
     axs[axs_index].loglog(models.R, mrr.S)
     axs[axs_index].plot([mrr.max_S_radius, mrr.max_S_radius], [100, S_plot_max], "r--")
     axs[axs_index].set_xlim(r_plot_min, r_plot_max)
@@ -515,6 +515,16 @@ def plot_results(
     axs[axs_index].set_ylabel(r"Contrast, $a$, $\tau$")
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
     axs[axs_index].legend(loc="upper right")
+
+    # ER @ max{S}
+    axs_index += 1
+    axs[axs_index].semilogx(models.R, mrr.ER, label="Q")
+    axs[axs_index].plot(
+        [mrr.max_S_radius, mrr.max_S_radius], [0, np.amax(mrr.ER)], "r--"
+    )
+    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
+    axs[axs_index].set_ylabel("ER (dB)")
+    axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
     # Q @ max{S}
     axs_index += 1
