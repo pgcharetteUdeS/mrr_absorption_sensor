@@ -10,6 +10,7 @@ Exposed methods:
 
 # Standard library packages
 from colorama import Fore, Style
+from openpyxl.workbook import Workbook
 import io
 import matplotlib.pyplot as plt
 import numpy as np
@@ -130,14 +131,6 @@ def _write_spiral_sequence_to_file(
     index_min: int = int(
         np.argmax(spiral.n_turns[:biggest_spiral_index] > spiral.turns_min)
     )
-    """
-    index_max: int = (
-        int(
-            np.argmax(spiral.n_turns[biggest_spiral_index:] < (spiral.turns_min * 1.01))
-        )
-        + biggest_spiral_index
-    )
-    """
     index_max: int = (
         int(np.argmax(spiral.n_turns[biggest_spiral_index:] < 1)) + biggest_spiral_index
     )
@@ -157,7 +150,7 @@ def _write_spiral_sequence_to_file(
     fig, _ = plt.subplots()
     images: list = []
     for index in indices:
-        fig = spiral.draw_spiral(
+        fig, *_ = spiral.draw_spiral(
             r_outer=models.R[index],
             h=spiral.u[index] if models.core_v_name == "w" else models.core_v_value,
             w=models.core_v_value if models.core_v_name == "w" else spiral.u[index],
@@ -288,7 +281,17 @@ def _plot_spiral_results(
     # Draw the spiral with the greatest number of turns found in the optimization
     if draw_largest_spiral:
         largest_spiral_index: int = int(np.argmax(spiral.n_turns))
-        fig = spiral.draw_spiral(
+        (
+            fig,
+            outer_spiral_x_out,
+            outer_spiral_y_out,
+            outer_spiral_x_in,
+            outer_spiral_y_in,
+            inner_spiral_x_out,
+            inner_spiral_y_out,
+            inner_spiral_x_in,
+            inner_spiral_y_in,
+        ) = spiral.draw_spiral(
             r_outer=models.R[largest_spiral_index],
             h=spiral.u[largest_spiral_index]
             if models.core_v_name == "w"
@@ -299,8 +302,49 @@ def _plot_spiral_results(
             n_turns=spiral.n_turns[largest_spiral_index],
             r_window=(models.R[largest_spiral_index] // 25 + 1) * 25,
         )
+
+        # Save the figure
         filename = filename_path.parent / f"{filename_path.stem}_SPIRAL_SCHEMATIC.png"
         fig.savefig(fname=filename)
+        logger(f"Wrote '{filename}'.")
+
+        # Save the spiral inner and outer waveguide x/y coordinates to an Excel file
+        filename = filename_path.parent / f"{filename_path.stem}_SPIRAL_SCHEMATIC.xlsx"
+        wb = Workbook()
+        outer_spiral_sheet = wb["Sheet"]
+        outer_spiral_sheet.title = "Outer waveguide"
+        outer_spiral_sheet.append(
+            [
+                "Outer edge x (um)",
+                "Outer edge y (um)",
+                "Inner edge x (um)",
+                "Inner edge y (um)",
+            ]
+        )
+        for row in zip(
+            outer_spiral_x_out,
+            outer_spiral_y_out,
+            outer_spiral_x_in,
+            outer_spiral_y_in,
+        ):
+            outer_spiral_sheet.append(row)
+        inner_spiral_sheet = wb.create_sheet("Inner waveguide")
+        inner_spiral_sheet.append(
+            [
+                "Outer edge x (um)",
+                "Outer edge y (um)",
+                "Inner edge x (um)",
+                "Inner edge y (um)",
+            ]
+        )
+        for row in zip(
+            inner_spiral_x_out,
+            inner_spiral_y_out,
+            inner_spiral_x_in,
+            inner_spiral_y_in,
+        ):
+            inner_spiral_sheet.append(row)
+        wb.save(filename=filename)
         logger(f"Wrote '{filename}'.")
 
     # Write sequence of consecutive spirals with n turns > spiral.n_turns_min
