@@ -178,6 +178,7 @@ def _plot_spiral_results(
     filename_path: Path,
     draw_largest_spiral: bool = False,
     write_spiral_sequence_to_file: bool = False,
+    write_excel_files: bool = True,
     logger=print,
 ):
 
@@ -302,50 +303,51 @@ def _plot_spiral_results(
             n_turns=spiral.n_turns[largest_spiral_index],
             r_window=(models.R[largest_spiral_index] // 25 + 1) * 25,
         )
-
-        # Save the figure
         filename = filename_path.parent / f"{filename_path.stem}_SPIRAL_SCHEMATIC.png"
         fig.savefig(fname=filename)
         logger(f"Wrote '{filename}'.")
 
-        # Save the spiral inner and outer waveguide x/y coordinates to an Excel file
-        filename = filename_path.parent / f"{filename_path.stem}_SPIRAL_SCHEMATIC.xlsx"
-        wb = Workbook()
-        outer_spiral_sheet = wb["Sheet"]
-        outer_spiral_sheet.title = "Outer waveguide"
-        outer_spiral_sheet.append(
-            [
-                "Outer edge x (um)",
-                "Outer edge y (um)",
-                "Inner edge x (um)",
-                "Inner edge y (um)",
-            ]
-        )
-        for row in zip(
-            outer_spiral_x_out,
-            outer_spiral_y_out,
-            outer_spiral_x_in,
-            outer_spiral_y_in,
-        ):
-            outer_spiral_sheet.append(row)
-        inner_spiral_sheet = wb.create_sheet("Inner waveguide")
-        inner_spiral_sheet.append(
-            [
-                "Outer edge x (um)",
-                "Outer edge y (um)",
-                "Inner edge x (um)",
-                "Inner edge y (um)",
-            ]
-        )
-        for row in zip(
-            inner_spiral_x_out,
-            inner_spiral_y_out,
-            inner_spiral_x_in,
-            inner_spiral_y_in,
-        ):
-            inner_spiral_sheet.append(row)
-        wb.save(filename=filename)
-        logger(f"Wrote '{filename}'.")
+        # Write the spiral inner and outer waveguide x/y coordinates to an Excel file
+        if write_excel_files:
+            filename = (
+                filename_path.parent / f"{filename_path.stem}_SPIRAL_SCHEMATIC.xlsx"
+            )
+            wb = Workbook()
+            outer_spiral_sheet = wb["Sheet"]
+            outer_spiral_sheet.title = "Outer waveguide"
+            outer_spiral_sheet.append(
+                [
+                    "Outer edge x (um)",
+                    "Outer edge y (um)",
+                    "Inner edge x (um)",
+                    "Inner edge y (um)",
+                ]
+            )
+            for row in zip(
+                outer_spiral_x_out,
+                outer_spiral_y_out,
+                outer_spiral_x_in,
+                outer_spiral_y_in,
+            ):
+                outer_spiral_sheet.append(row)
+            inner_spiral_sheet = wb.create_sheet("Inner waveguide")
+            inner_spiral_sheet.append(
+                [
+                    "Outer edge x (um)",
+                    "Outer edge y (um)",
+                    "Inner edge x (um)",
+                    "Inner edge y (um)",
+                ]
+            )
+            for row in zip(
+                inner_spiral_x_out,
+                inner_spiral_y_out,
+                inner_spiral_x_in,
+                inner_spiral_y_in,
+            ):
+                inner_spiral_sheet.append(row)
+            wb.save(filename=filename)
+            logger(f"Wrote '{filename}'.")
 
     # Write sequence of consecutive spirals with n turns > spiral.n_turns_min
     if write_spiral_sequence_to_file:
@@ -1059,6 +1061,7 @@ def plot_results(
             filename_path=filename_path,
             draw_largest_spiral=draw_largest_spiral,
             write_spiral_sequence_to_file=write_spiral_sequence_to_file,
+            write_excel_files=write_excel_files,
             logger=logger,
         )
 
