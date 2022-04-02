@@ -107,9 +107,10 @@ class Spiral:
         theta0: float = 0,
         spiral_x: np.ndarray = np.asarray([]),
         spiral_y: np.ndarray = np.asarray([]),
-    ) -> tuple[float, np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
-        Calculate parametric arc, theta(n) & r(n) centered at [x0,y0], return arc length
+        Calculate parametric arc theta(n) & r(n) centered at [x0,y0] and rotated by
+        theta0, append arc x[n]/y[n] arc sample coordinates to x/y spiral arrays
         """
 
         # Build array of radii by duplication if r is a float
@@ -121,11 +122,8 @@ class Spiral:
         x: np.ndarray = x_rot * np.cos(theta0) - y_rot * np.sin(theta0)
         y: np.ndarray = y_rot * np.cos(theta0) + x_rot * np.sin(theta0)
 
-        # Calculate the total length of the arc
-        L: float = np.abs(np.sum(np.diff(thetas) * rs[:-1]))
-
         # return length and updated x,y arrays
-        return L, np.append(spiral_x, x), np.append(spiral_y, y)
+        return np.append(spiral_x, x), np.append(spiral_y, y)
 
     def draw_spiral(
         self,
@@ -179,66 +177,63 @@ class Spiral:
             b_spiral * thetas_spiral
         )
         theta0: float = -theta_max + np.pi / 2
-        L_spiral_outer_in, outer_spiral_x_in, outer_spiral_y_in = self._plot_arc(
+        outer_spiral_x_in, outer_spiral_y_in = self._plot_arc(
             thetas=thetas_spiral,
             r=r_outer_spiral_inner,
             theta0=theta0,
             spiral_x=outer_spiral_x_in,
             spiral_y=outer_spiral_y_in,
         )
-        L_spiral_outer_out, outer_spiral_x_out, outer_spiral_y_out = self._plot_arc(
+        outer_spiral_x_out, outer_spiral_y_out = self._plot_arc(
             thetas=thetas_spiral,
             r=r_outer_spiral_inner + w,
             theta0=theta0,
             spiral_x=outer_spiral_x_out,
             spiral_y=outer_spiral_y_out,
         )
-        L_spiral_outer: float = (L_spiral_outer_in + L_spiral_outer_out) / 2
 
         # Inner spiral
         r_inner_spiral_inner: np.ndarray = a_spiral + (b_spiral * thetas_spiral)
-        L_spiral_inner_in, inner_spiral_x_in, inner_spiral_y_in = self._plot_arc(
+        inner_spiral_x_in, inner_spiral_y_in = self._plot_arc(
             thetas=thetas_spiral,
             r=r_inner_spiral_inner,
             theta0=theta0,
             spiral_x=inner_spiral_x_in,
             spiral_y=inner_spiral_y_in,
         )
-        L_spiral_inner_out, inner_spiral_x_out, inner_spiral_y_out = self._plot_arc(
+        inner_spiral_x_out, inner_spiral_y_out = self._plot_arc(
             thetas=thetas_spiral,
             r=r_inner_spiral_inner + w,
             theta0=theta0,
             spiral_x=inner_spiral_x_out,
             spiral_y=inner_spiral_y_out,
         )
-        L_spiral_inner: float = (L_spiral_inner_in + L_spiral_inner_out) / 2
 
         # Joint: half circle between outer waveguide and S-bend
         thetas_half_circle: np.ndarray = np.linspace(theta_min, theta_min - np.pi, 100)
         r_joint_inner: np.ndarray = (a_spiral + self.spacing) + (
             b_spiral * thetas_half_circle
         )
-        L_half_circle_in, outer_spiral_x_in, outer_spiral_y_in = self._plot_arc(
+        outer_spiral_x_in, outer_spiral_y_in = self._plot_arc(
             thetas=thetas_half_circle,
             r=r_joint_inner,
             theta0=theta0,
             spiral_x=outer_spiral_x_in,
             spiral_y=outer_spiral_y_in,
         )
-        L_half_circle_out, outer_spiral_x_out, outer_spiral_y_out = self._plot_arc(
+        outer_spiral_x_out, outer_spiral_y_out = self._plot_arc(
             thetas=thetas_half_circle,
             r=r_joint_inner + w,
             theta0=theta0,
             spiral_x=outer_spiral_x_out,
             spiral_y=outer_spiral_y_out,
         )
-        L_half_circle: float = (L_half_circle_in + L_half_circle_out) / 2
 
         # Joint: half S-bend between outer waveguide half-circle and origin
         thetas_S_bend_outer: np.ndarray = np.linspace(
             thetas_half_circle[-1], thetas_half_circle[-1] - np.pi, 100
         )
-        L_S_bend_left_in, outer_spiral_x_in, outer_spiral_y_in = self._plot_arc(
+        outer_spiral_x_in, outer_spiral_y_in = self._plot_arc(
             thetas=thetas_S_bend_outer,
             r=(r_joint_inner[-1] - w / 2) / 2,
             x0=-((r_joint_inner[-1] + w / 2) / 2) * np.cos(thetas_half_circle[0]),
@@ -247,7 +242,7 @@ class Spiral:
             spiral_x=outer_spiral_x_in,
             spiral_y=outer_spiral_y_in,
         )
-        L_S_bend_left_out, outer_spiral_x_out, outer_spiral_y_out = self._plot_arc(
+        outer_spiral_x_out, outer_spiral_y_out = self._plot_arc(
             thetas=thetas_S_bend_outer,
             r=(r_joint_inner[-1] + 3 * w / 2) / 2,
             x0=-((r_joint_inner[-1] + w / 2) / 2) * np.cos(thetas_half_circle[0]),
@@ -256,13 +251,12 @@ class Spiral:
             spiral_x=outer_spiral_x_out,
             spiral_y=outer_spiral_y_out,
         )
-        L_S_bend_left: float = (L_S_bend_left_out + L_S_bend_left_in) / 2
 
         # Joint: half S-bend between inner waveguide and origin
         thetas_S_bend_inner = np.linspace(
             thetas_spiral[-1], thetas_spiral[-1] - np.pi, 100
         )
-        L_S_bend_right_in, inner_spiral_x_in, inner_spiral_y_in = self._plot_arc(
+        inner_spiral_x_in, inner_spiral_y_in = self._plot_arc(
             thetas=thetas_S_bend_inner,
             r=(r_inner_spiral_inner[-1] - w / 2) / 2,
             x0=((r_inner_spiral_inner[-1] + w / 2) / 2) * np.cos(thetas_half_circle[0]),
@@ -271,7 +265,7 @@ class Spiral:
             spiral_x=inner_spiral_x_in,
             spiral_y=inner_spiral_y_in,
         )
-        L_S_bend_right_out, inner_spiral_x_out, inner_spiral_y_out = self._plot_arc(
+        inner_spiral_x_out, inner_spiral_y_out = self._plot_arc(
             thetas=thetas_S_bend_inner,
             r=(r_inner_spiral_inner[-1] + 3 * w / 2) / 2,
             x0=((r_inner_spiral_inner[-1] + w / 2) / 2) * np.cos(thetas_half_circle[0]),
@@ -280,16 +274,34 @@ class Spiral:
             spiral_x=inner_spiral_x_out,
             spiral_y=inner_spiral_y_out,
         )
-        L_S_bend_right: float = (L_S_bend_right_out + L_S_bend_right_in) / 2
 
-        # Total spiral length calculated by finite differences
-        Lint: float = (
-            L_spiral_outer
-            + L_spiral_inner
-            + L_half_circle
-            + L_S_bend_left
-            + L_S_bend_right
-        )
+        # Total spiral length (inner + outer spirals) calculated by finite differences
+        # (sum of averaged outer/inner edges for both spirals)
+        outer_spiral_length: float = (
+            np.sum(
+                np.sqrt(
+                    np.diff(outer_spiral_x_out) ** 2 + np.diff(outer_spiral_y_out) ** 2
+                )
+            )
+            + np.sum(
+                np.sqrt(
+                    np.diff(outer_spiral_x_in) ** 2 + np.diff(outer_spiral_y_in) ** 2
+                )
+            )
+        ) / 2
+        inner_spiral_length: float = (
+            np.sum(
+                np.sqrt(
+                    np.diff(inner_spiral_x_out) ** 2 + np.diff(inner_spiral_y_out) ** 2
+                )
+            )
+            + np.sum(
+                np.sqrt(
+                    np.diff(inner_spiral_x_in) ** 2 + np.diff(inner_spiral_y_in) ** 2
+                )
+            )
+        ) / 2
+        spiral_length: float = outer_spiral_length + inner_spiral_length
 
         # Plot info & formatting
         S, _, L, _ = self._calc_sensitivity(
@@ -315,7 +327,9 @@ class Spiral:
                     r"$\mu$m, ",
                 ]
             )
-            + "".join([f"L = {L:.1f} ({Lint:.2f} by finite diffs) ", r"$\mu$m"])
+            + "".join(
+                [f"L = {L:.1f} ({spiral_length:.2f} by finite diffs) ", r"$\mu$m"]
+            )
         )
         ax.plot(outer_spiral_x_in, outer_spiral_y_in, color="red")
         ax.plot(outer_spiral_x_out, outer_spiral_y_out, color="red")
