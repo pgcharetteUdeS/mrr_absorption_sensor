@@ -245,7 +245,7 @@ def _plot_spiral_results(
 
     # n turns @ max{S}
     axs_index += 1
-    n_turns_plot_max: float = np.ceil(np.amax(spiral.n_turns) * 1.1 / 10) * 10
+    n_turns_plot_max: float = np.ceil(np.amax(spiral.n_turns) * 1.1 / 10) * 10 * 2
     axs[axs_index].set_ylabel(r"n turns (inner+outer)")
     axs[axs_index].semilogx(models.R, spiral.n_turns * 2)
     axs[axs_index].plot(
