@@ -169,6 +169,7 @@ def _write_spiral_sequence_to_file(
         append_images=images[1:],
         duration=40,
     )
+    logger(f"Wrote '{filename}'.")
 
 
 def _plot_spiral_results(

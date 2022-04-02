@@ -27,7 +27,7 @@ map2D_overlay_color_dark = "white"		# color for overlay plots on "mainly dark" 2
 map2D_overlay_color_light = "white"		# color for overlay plots on "mainly light" 2D maps (default = "black")
 map_line_profiles = [20, 45, 65, 75]	# gamma values for line profiles in 2D maps (default = [])
 output_sub_dir = "data"					# Subdirectory in which to write files, relative (default = "", use "/" or "\\" for delimiters on Windows)
-write_excel_files = true				# Enable/disable writing of results to Excel files (default = true)
+write_excel_files = false				# Enable/disable writing of results to Excel files (default = true)
 write_spiral_sequence_to_file = true	# Enable/disable writing of spiral sequence to TIFF multi-image file (default = true)
 
 # Debugging flags						# NB: "true and "false" MUST be lower-case in .toml format
