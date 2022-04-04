@@ -716,7 +716,7 @@ class Models:
         R_alpha_bend_threshold: np.ndarray = R_alpha_bend_threshold[max_indx:]
         if len(R_alpha_bend_threshold) <= 1:
             self.logger(
-                f"{Fore.YELLOW}'alpha_bend_threshold' value us too high!"
+                f"{Fore.YELLOW}'ERROR: alpha_bend_threshold' value us too high!"
                 + f"{Style.RESET_ALL}"
             )
             sys.exit()
@@ -784,9 +784,20 @@ class Models:
                 )
             )
         )
-
         fig.savefig(out_filename)
         self.logger(f"Wrote '{out_filename}'.")
+
+        # If the R values used for interpolation of the h domain lower bound are not
+        # in monotonically increasing oder, exit with an error.
+        if np.any(np.diff(R_alpha_bend_threshold) > 0):
+            self.logger(
+                f"{Fore.YELLOW}ERROR! Search domain lower bound fit:"
+                + "R values are not monotonically decreasing "
+                + f"(see {out_filename})! "
+                + "Decrease value of 'alpha_bend_threshold' in .toml file."
+                + f"{Style.RESET_ALL}"
+            )
+            sys.exit()
 
     def u_search_domain(self, r: float) -> tuple[float, float]:
         # sourcery skip: remove-unnecessary-else, swap-if-else-branches

@@ -357,6 +357,469 @@ def _plot_spiral_results(
         )
 
 
+def _plot_2D_maps(
+    models: Models,
+    mrr: Mrr,
+    r_plot_min: float,
+    r_plot_max: float,
+    filename_path: Path,
+    n_2D_grid_points: int = 500,
+    write_excel_files: bool = False,
+    map2D_colormap: str = "viridis",
+    map2D_overlay_color_dark: str = "black",
+    map2D_overlay_color_light: str = "black",
+    map_line_profiles: list = None,
+    logger=print,
+):
+
+    # Define extra line styles
+    # See "https://matplotlib.org/3.5.1/gallery/lines_bars_and_markers/linestyles.html"
+    linestyles: dict = {
+        "loosely dotted": (0, (1, 10)),
+        "dotted": (0, (1, 1)),
+        "densely dotted": (0, (1, 1)),
+        "loosely dashed": (0, (5, 10)),
+        "dashed": (0, (5, 5)),
+        "densely dashed": (0, (5, 1)),
+        "loosely dashdotted": (0, (3, 10, 1, 10)),
+        "dashdotted": (0, (3, 5, 1, 5)),
+        "densely dashdotted": (0, (3, 1, 1, 1)),
+        "dashdotdotted": (0, (3, 5, 1, 5, 1, 5)),
+        "loosely dashdotdotted": (0, (3, 10, 1, 10, 1, 10)),
+        "densely dashdotdotted": (0, (3, 1, 1, 1, 1, 1)),
+    }
+
+    #
+    # MRR 2D maps
+    #
+
+    # Generate 2D map data X,Y data arrays
+    R_2D_map = np.linspace(
+        np.log10(models.R[0]), np.log10(models.R[-1]), n_2D_grid_points
+    )
+    u_2D_map = np.linspace(
+        list(models.bending_loss_data)[0],
+        list(models.bending_loss_data)[-1],
+        n_2D_grid_points,
+    )
+    gamma_2D_map = np.asarray([models.gamma_of_u(u) * 100 for u in u_2D_map])
+
+    # Indices for dashed lines at radii for max(Smrr)
+    R_max_Smrr_index: int = int((np.abs(models.R - mrr.max_S_radius)).argmin())
+    R_max_Smrr_u: float = mrr.u[R_max_Smrr_index]
+    R_max_Smrr_gamma: float = mrr.gamma[R_max_Smrr_index]
+
+    # 2D map of S(u, R)
+    S_2D_map = np.asarray(
+        [
+            [mrr.calc_sensitivity(r=10**log10_R, u=u)[0] for log10_R in R_2D_map]
+            for u in u_2D_map
+        ]
+    )
+    fig, ax = plt.subplots()
+    cm = ax.pcolormesh(R_2D_map, u_2D_map, S_2D_map, cmap=map2D_colormap)
+    ax.invert_yaxis()
+    ax.set_title(
+        f"MRR sensitivity as a function of {models.core_u_name} and R"
+        + f"\n{models.pol}"
+        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
+        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
+        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
+    )
+    ax.set_xlabel(r"log(R) ($\mu$m)")
+    ax.set_ylabel(f"{models.core_u_name}" + r" ($\mu$m)")
+    fig.colorbar(cm, label=r"S (RIU $^{-1}$)")
+    ax.plot(
+        np.log10(models.R),
+        mrr.u,
+        color=map2D_overlay_color_light,
+        label=r"max$\{S(h, R)\}$",
+    )
+    """
+    ax.plot(
+        [np.log10(mrr.max_S_radius), np.log10(mrr.max_S_radius)],
+        [u_2D_map[-1], R_max_Smrr_u],
+        color=map2D_overlay_color_dark,
+    )
+    """
+    ax.plot(
+        [R_2D_map[0], np.log10(mrr.max_S_radius)],
+        [R_max_Smrr_u, R_max_Smrr_u],
+        color=map2D_overlay_color_light,
+        linestyle=linestyles["loosely dashdotted"],
+        label="".join(
+            [r"max$\{$max$\{S_{MRR}\}\}$", f" = {mrr.max_S:.0f} RIU", r"$^{-1}$"]
+        )
+        + "".join([f" @ R = {mrr.max_S_radius:.0f} ", r"$\mu$", "m"])
+        + "".join([f", {models.core_u_name} = {R_max_Smrr_u:.3f} ", r"$\mu$m"]),
+    )
+    ax.plot(
+        np.log10(mrr.Re),
+        mrr.u_resampled,
+        color=map2D_overlay_color_light,
+        linestyle="--",
+        label=r"Re$(\Gamma_{fluid})$",
+    )
+    ax.plot(
+        np.log10(mrr.Rw),
+        mrr.u_resampled,
+        color=map2D_overlay_color_light,
+        linestyle="-.",
+        label=r"Rw$(\Gamma_{fluid})$",
+    )
+    ax.legend(loc="lower right")
+    filename = (
+        filename_path.parent
+        / f"{filename_path.stem}_MRR_2DMAP_S_VS_{models.core_u_name}_and_R.png"
+    )
+    fig.savefig(filename)
+    logger(f"Wrote '{filename}'.")
+    if write_excel_files:
+        write_image_data_to_Excel(
+            filename=str(
+                filename_path.parent
+                / f"{filename_path.stem}_MRR_2DMAPS_VS_{models.core_u_name}_and_R.xlsx"
+            ),
+            X=10**R_2D_map,
+            x_label="R (um)",
+            Y=u_2D_map,
+            y_label=f"{models.core_u_name} (um)",
+            Zs=[S_2D_map],
+            z_labels=["S (RIU-1)"],
+        )
+        logger(f"Wrote '{filename.with_suffix('.xlsx')}'.")
+
+    # 2D map of Smrr(gamma, R)
+    fig, ax = plt.subplots()
+    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, S_2D_map, cmap=map2D_colormap)
+    ax.set_title(
+        r"MRR sensitivity, $S_{MRR}$, as a function of $\Gamma_{fluid}$ and $R$"
+        + f"\n{models.pol}"
+        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
+        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
+        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
+    )
+    ax.set_xlabel(r"log(R) ($\mu$m)")
+    ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
+    fig.colorbar(cm, label=r"$S_{MRR}$ (RIU $^{-1}$)")
+    ax.plot(
+        np.log10(models.R),
+        mrr.gamma,
+        color=map2D_overlay_color_light,
+        label=r"max$\{S_{MRR}(\Gamma_{fluid}, R)\}$",
+    )
+    """
+    ax.plot(
+        [np.log10(mrr.max_S_radius), np.log10(mrr.max_S_radius)],
+        [gamma_2D_map[-1], R_max_Smrr_gamma],
+        color=map2D_overlay_color_light,
+    )
+    """
+    ax.plot(
+        [R_2D_map[0], np.log10(mrr.max_S_radius)],
+        [R_max_Smrr_gamma, R_max_Smrr_gamma],
+        color=map2D_overlay_color_light,
+        linestyle=linestyles["loosely dashdotted"],
+        label="".join(
+            [r"max$\{$max$\{S_{MRR}\}\}$", f" = {mrr.max_S:.0f} RIU", r"$^{-1}$"]
+        )
+        + "".join([f" @ R = {mrr.max_S_radius:.0f} ", r"$\mu$", "m"])
+        + "".join([r", $\Gamma$ = ", f"{R_max_Smrr_gamma:.0f}", r"$\%$"]),
+    )
+    ax.plot(
+        np.log10(mrr.Re),
+        mrr.gamma_resampled * 100,
+        color=map2D_overlay_color_light,
+        linestyle="--",
+        label=r"Re$(\Gamma_{fluid})$",
+    )
+    ax.plot(
+        np.log10(mrr.Rw),
+        mrr.gamma_resampled * 100,
+        color=map2D_overlay_color_light,
+        linestyle="-.",
+        label=r"Rw$(\Gamma_{fluid})$",
+    )
+    for line in map_line_profiles or []:
+        ax.plot(
+            [np.log10(r_plot_min), np.log10(r_plot_max)],
+            [line, line],
+            color=map2D_overlay_color_light,
+            linestyle=linestyles["loosely dotted"],
+        )
+    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
+    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
+    ax.legend(loc="lower right")
+    filename = (
+        filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_S_VS_GAMMA_and_R.png"
+    )
+    fig.savefig(filename)
+    logger(f"Wrote '{filename}'.")
+
+    # 2D map of Snr(gamma, R)
+    Snr_2D_map = np.asarray(
+        [[mrr.calc_Snr(r=10**log10_R, u=u) for log10_R in R_2D_map] for u in u_2D_map]
+    )
+    fig, ax = plt.subplots()
+    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, Snr_2D_map, cmap=map2D_colormap)
+    ax.plot(
+        np.log10(models.R),
+        mrr.gamma,
+        color=map2D_overlay_color_dark,
+        label=r"max$\{S_{MRR}\}$",
+    )
+    ax.set_title(
+        r"MRR $S_{NR}$ as a function of $\Gamma_{fluid}$ and $R$"
+        + f"\n{models.pol}"
+        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
+        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
+        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
+    )
+    ax.set_xlabel(r"log(R) ($\mu$m)")
+    ax.set_ylabel(r"$\Gamma_{fluid}$")
+    fig.colorbar(cm, label=r"$S_{NR}$ (RIU$^{-1}$)")
+    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
+    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
+    ax.legend(loc="lower right")
+    filename = (
+        filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_Snr_VS_GAMMA_and_R.png"
+    )
+    fig.savefig(filename)
+    logger(f"Wrote '{filename}'.")
+
+    # 2D map of Se(gamma, R)
+    Se_2D_map = np.asarray(
+        [[mrr.calc_Se(r=10**log10_R, u=u) for log10_R in R_2D_map] for u in u_2D_map]
+    )
+    fig, ax = plt.subplots()
+    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, Se_2D_map, cmap=map2D_colormap)
+    ax.plot(
+        np.log10(models.R),
+        mrr.gamma,
+        color=map2D_overlay_color_dark,
+        label=r"max$\{S_{MRR}\}$",
+    )
+    ax.set_title(
+        r"MRR $S_e$ as a function of $\Gamma_{fluid}$ and $R$"
+        + f"\n{models.pol}"
+        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
+        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
+        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
+    )
+    ax.set_xlabel(r"log(R) ($\mu$m)")
+    ax.set_ylabel(r"$\Gamma_{fluid}$")
+    fig.colorbar(cm, label=r"$S_e$")
+    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
+    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
+    ax.legend(loc="lower right")
+    filename = (
+        filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_Se_VS_GAMMA_and_R.png"
+    )
+    fig.savefig(filename)
+    logger(f"Wrote '{filename}'.")
+
+    # 2D map of Se*a(gamma, R)
+    Se_times_a_2D_map = np.asarray(
+        [
+            [
+                mrr.calc_Se(r=10**log10_R, u=u)
+                * np.sqrt(mrr.calc_a2(r=10**log10_R, u=u))
+                for log10_R in R_2D_map
+            ]
+            for u in u_2D_map
+        ]
+    )
+    fig, ax = plt.subplots()
+    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, Se_times_a_2D_map, cmap=map2D_colormap)
+    ax.plot(
+        np.log10(models.R),
+        mrr.gamma,
+        color=map2D_overlay_color_dark,
+        label=r"max$\{S_{MRR}\}$",
+    )
+    ax.set_title(
+        r"MRR $S_e \times a$ as a function of $\Gamma_{fluid}$ and $R$"
+        + f"\n{models.pol}"
+        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
+        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
+        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
+    )
+    ax.set_xlabel(r"log(R) ($\mu$m)")
+    ax.set_ylabel(r"$\Gamma_{fluid}$")
+    fig.colorbar(cm, label=r"$S_e \times a$")
+    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
+    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
+    ax.legend(loc="lower right")
+    filename = (
+        filename_path.parent
+        / f"{filename_path.stem}_MRR_2DMAP_Se_x_a_VS_GAMMA_and_R.png"
+    )
+    fig.savefig(filename)
+    logger(f"Wrote '{filename}'.")
+
+    # 2D map of a2(gamma, R)
+    a2_2D_map = np.asarray(
+        [[mrr.calc_a2(r=10**log10_R, u=u) for log10_R in R_2D_map] for u in u_2D_map]
+    )
+    fig, ax = plt.subplots()
+    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, a2_2D_map, cmap=map2D_colormap)
+    ax.plot(
+        np.log10(models.R),
+        mrr.gamma,
+        color=map2D_overlay_color_light,
+        label=r"max$\{S_{MRR}\}$",
+    )
+    ax.plot(
+        np.log10(mrr.Re),
+        mrr.gamma_resampled * 100,
+        color=map2D_overlay_color_light,
+        linestyle="--",
+        label=r"Re$(\Gamma_{fluid})$",
+    )
+    ax.plot(
+        np.log10(mrr.Rw),
+        mrr.gamma_resampled * 100,
+        color=map2D_overlay_color_light,
+        linestyle="-.",
+        label=r"Rw$(\Gamma_{fluid})$",
+    )
+    ax.set_title(
+        r"MRR $a^2$ as a function of $\Gamma_{fluid}$ and $R$"
+        + f"\n{models.pol}"
+        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
+        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
+        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
+    )
+    ax.set_xlabel(r"log(R) ($\mu$m)")
+    ax.set_ylabel(r"$\Gamma_{fluid}$")
+    fig.colorbar(cm, label=r"$a^2$")
+    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
+    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
+    ax.legend(loc="lower right")
+    filename = (
+        filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_a2_VS_GAMMA_and_R.png"
+    )
+    fig.savefig(filename)
+    logger(f"Wrote '{filename}'.")
+
+    # 2D map of alpha*L(gamma, R)
+    dB_per_cm_to_per_cm: float = 1.0 / 4.34
+    alpha_L_2D_map = (
+        np.asarray(
+            [
+                [mrr.calc_alpha_L(r=10**log10_R, u=u) for log10_R in R_2D_map]
+                for u in u_2D_map
+            ]
+        )
+        / dB_per_cm_to_per_cm
+    )
+    fig, ax = plt.subplots()
+    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, alpha_L_2D_map, cmap=map2D_colormap)
+    ax.plot(
+        np.log10(models.R),
+        mrr.gamma,
+        color=map2D_overlay_color_dark,
+        label=r"max$\{S_{MRR}\}$",
+    )
+    ax.plot(
+        np.log10(mrr.Re),
+        mrr.gamma_resampled * 100,
+        color=map2D_overlay_color_dark,
+        linestyle="--",
+        label=r"Re$(\Gamma_{fluid})$",
+    )
+    ax.plot(
+        np.log10(mrr.Rw),
+        mrr.gamma_resampled * 100,
+        color=map2D_overlay_color_dark,
+        linestyle="-.",
+        label=r"Rw$(\Gamma_{fluid})$",
+    )
+    for line in map_line_profiles or []:
+        ax.plot(
+            [np.log10(r_plot_min), np.log10(r_plot_max)],
+            [line, line],
+            color=map2D_overlay_color_dark,
+            linestyle=linestyles["loosely dotted"],
+        )
+    ax.set_title(
+        r"MRR $\alpha L$ as a function of $\Gamma_{fluid}$ and $R$"
+        + f"\n{models.pol}"
+        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
+        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
+        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
+    )
+    ax.set_xlabel(r"log(R) ($\mu$m)")
+    ax.set_ylabel(r"$\Gamma_{fluid}$")
+    fig.colorbar(cm, label=r"$\alpha L$ (dB)")
+    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
+    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
+    ax.legend(loc="lower right")
+    filename = (
+        filename_path.parent
+        / f"{filename_path.stem}_MRR_2DMAP_alphaL_VS_GAMMA_and_R.png"
+    )
+    fig.savefig(filename)
+    logger(f"Wrote '{filename}'.")
+
+    # Save 2D map data as a function of gamma and R to output Excel file, if required
+    if write_excel_files:
+        # In addition to alpha*L, calculate 2D maps of alpha_prop*L and alpha_bend*L
+        alpha_prop_L_2D_map = (
+            np.asarray(
+                [
+                    [
+                        mrr.calc_alpha_prop_L(r=10**log10_R, u=u)
+                        for log10_R in R_2D_map
+                    ]
+                    for u in u_2D_map
+                ]
+            )
+            / dB_per_cm_to_per_cm
+        )
+        alpha_bend_L_2D_map = (
+            np.asarray(
+                [
+                    [
+                        mrr.calc_alpha_bend_L(r=10**log10_R, u=u)
+                        for log10_R in R_2D_map
+                    ]
+                    for u in u_2D_map
+                ]
+            )
+            / dB_per_cm_to_per_cm
+        )
+
+        # Write all 2D maps to single Excel file
+        write_image_data_to_Excel(
+            filename=str(
+                filename_path.parent
+                / f"{filename_path.stem}_MRR_2DMAPS_VS_GAMMA_and_R.xlsx"
+            ),
+            X=10**R_2D_map,
+            x_label="R (um)",
+            Y=gamma_2D_map,
+            y_label="gamma (%)",
+            Zs=[
+                S_2D_map,
+                Snr_2D_map,
+                Se_2D_map,
+                alpha_L_2D_map,
+                alpha_bend_L_2D_map,
+                alpha_prop_L_2D_map,
+            ],
+            z_labels=[
+                "S (RIU-1)",
+                "Snr (RIU-1)",
+                "Se",
+                "alpha x L (dB)",
+                "alpha_bend x L (dB)",
+                "alpha_prop x L (dB)",
+            ],
+        )
+        logger(f"Wrote '{filename.with_suffix('.xlsx')}'.")
+
+
 def plot_results(
     models: Models,
     mrr: Mrr,
@@ -397,23 +860,6 @@ def plot_results(
     :param logger:
     :return: None
     """
-
-    # Define extra line styles
-    # See "https://matplotlib.org/3.5.1/gallery/lines_bars_and_markers/linestyles.html"
-    linestyles = {
-        "loosely dotted": (0, (1, 10)),
-        "dotted": (0, (1, 1)),
-        "densely dotted": (0, (1, 1)),
-        "loosely dashed": (0, (5, 10)),
-        "dashed": (0, (5, 5)),
-        "densely dashed": (0, (5, 1)),
-        "loosely dashdotted": (0, (3, 10, 1, 10)),
-        "dashdotted": (0, (3, 5, 1, 5)),
-        "densely dashdotted": (0, (3, 1, 1, 1)),
-        "dashdotdotted": (0, (3, 5, 1, 5, 1, 5)),
-        "loosely dashdotdotted": (0, (3, 10, 1, 10, 1, 10)),
-        "densely dashdotdotted": (0, (3, 1, 1, 1, 1, 1)),
-    }
 
     # Calculate plotting extrema and max{S} vertical marker
     (
@@ -623,435 +1069,21 @@ def plot_results(
     fig.savefig(filename)
     logger(f"Wrote '{filename}'.")
 
-    #
-    # MRR 2D maps
-    #
-
-    # Generate 2D map data X,Y data arrays
-    R_2D_map = np.linspace(
-        np.log10(models.R[0]), np.log10(models.R[-1]), n_2D_grid_points
+    # Plot/save 2D maps
+    _plot_2D_maps(
+        models=models,
+        mrr=mrr,
+        r_plot_min=r_plot_min,
+        r_plot_max=r_plot_max,
+        filename_path=filename_path,
+        n_2D_grid_points=n_2D_grid_points,
+        write_excel_files=write_excel_files,
+        map2D_colormap=map2D_colormap,
+        map2D_overlay_color_dark=map2D_overlay_color_dark,
+        map2D_overlay_color_light=map2D_overlay_color_light,
+        map_line_profiles=map_line_profiles,
+        logger=logger,
     )
-    u_2D_map = np.linspace(
-        list(models.bending_loss_data)[0],
-        list(models.bending_loss_data)[-1],
-        n_2D_grid_points,
-    )
-    gamma_2D_map = np.asarray([models.gamma_of_u(u) * 100 for u in u_2D_map])
-
-    # Indices for dashed lines at radii for max(Smrr)
-    R_max_Smrr_index: int = int((np.abs(models.R - mrr.max_S_radius)).argmin())
-    R_max_Smrr_u: float = mrr.u[R_max_Smrr_index]
-    R_max_Smrr_gamma: float = mrr.gamma[R_max_Smrr_index]
-
-    # 2D map of S(u, R)
-    S_2D_map = np.asarray(
-        [
-            [mrr.calc_sensitivity(r=10**log10_R, u=u)[0] for log10_R in R_2D_map]
-            for u in u_2D_map
-        ]
-    )
-    fig, ax = plt.subplots()
-    cm = ax.pcolormesh(R_2D_map, u_2D_map, S_2D_map, cmap=map2D_colormap)
-    ax.invert_yaxis()
-    ax.set_title(
-        f"MRR sensitivity as a function of {models.core_u_name} and R"
-        + f"\n{models.pol}"
-        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
-        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
-        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
-    )
-    ax.set_xlabel(r"log(R) ($\mu$m)")
-    ax.set_ylabel(f"{models.core_u_name}" + r" ($\mu$m)")
-    fig.colorbar(cm, label=r"S (RIU $^{-1}$)")
-    ax.plot(
-        np.log10(models.R),
-        mrr.u,
-        color=map2D_overlay_color_light,
-        label=r"max$\{S(h, R)\}$",
-    )
-    """
-    ax.plot(
-        [np.log10(mrr.max_S_radius), np.log10(mrr.max_S_radius)],
-        [u_2D_map[-1], R_max_Smrr_u],
-        color=map2D_overlay_color_dark,
-    )
-    """
-    ax.plot(
-        [R_2D_map[0], np.log10(mrr.max_S_radius)],
-        [R_max_Smrr_u, R_max_Smrr_u],
-        color=map2D_overlay_color_light,
-        linestyle=linestyles["loosely dashdotted"],
-        label="".join(
-            [r"max$\{$max$\{S_{MRR}\}\}$", f" = {mrr.max_S:.0f} RIU", r"$^{-1}$"]
-        )
-        + "".join([f" @ R = {mrr.max_S_radius:.0f} ", r"$\mu$", "m"])
-        + "".join([f", {models.core_u_name} = {R_max_Smrr_u:.3f} ", r"$\mu$m"]),
-    )
-    ax.plot(
-        np.log10(mrr.Re),
-        mrr.u_resampled,
-        color=map2D_overlay_color_light,
-        linestyle="--",
-        label=r"Re$(\Gamma_{fluid})$",
-    )
-    ax.plot(
-        np.log10(mrr.Rw),
-        mrr.u_resampled,
-        color=map2D_overlay_color_light,
-        linestyle="-.",
-        label=r"Rw$(\Gamma_{fluid})$",
-    )
-    ax.legend(loc="lower right")
-    filename = (
-        filename_path.parent
-        / f"{filename_path.stem}_MRR_2DMAP_S_VS_{models.core_u_name}_and_R.png"
-    )
-    fig.savefig(filename)
-    logger(f"Wrote '{filename}'.")
-    if write_excel_files:
-        write_image_data_to_Excel(
-            filename=str(
-                filename_path.parent
-                / f"{filename_path.stem}_MRR_2DMAPS_VS_{models.core_u_name}_and_R.xlsx"
-            ),
-            X=10**R_2D_map,
-            x_label="R (um)",
-            Y=u_2D_map,
-            y_label=f"{models.core_u_name} (um)",
-            Zs=[S_2D_map],
-            z_labels=["S (RIU-1)"],
-        )
-        logger(f"Wrote '{filename.with_suffix('.xlsx')}'.")
-
-    # 2D map of Smrr(gamma, R)
-    fig, ax = plt.subplots()
-    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, S_2D_map, cmap=map2D_colormap)
-    ax.set_title(
-        r"MRR sensitivity, $S_{MRR}$, as a function of $\Gamma_{fluid}$ and $R$"
-        + f"\n{models.pol}"
-        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
-        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
-        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
-    )
-    ax.set_xlabel(r"log(R) ($\mu$m)")
-    ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
-    fig.colorbar(cm, label=r"$S_{MRR}$ (RIU $^{-1}$)")
-    ax.plot(
-        np.log10(models.R),
-        mrr.gamma,
-        color=map2D_overlay_color_light,
-        label=r"max$\{S_{MRR}(\Gamma_{fluid}, R)\}$",
-    )
-    """
-    ax.plot(
-        [np.log10(mrr.max_S_radius), np.log10(mrr.max_S_radius)],
-        [gamma_2D_map[-1], R_max_Smrr_gamma],
-        color=map2D_overlay_color_light,
-    )
-    """
-    ax.plot(
-        [R_2D_map[0], np.log10(mrr.max_S_radius)],
-        [R_max_Smrr_gamma, R_max_Smrr_gamma],
-        color=map2D_overlay_color_light,
-        linestyle=linestyles["loosely dashdotted"],
-        label="".join(
-            [r"max$\{$max$\{S_{MRR}\}\}$", f" = {mrr.max_S:.0f} RIU", r"$^{-1}$"]
-        )
-        + "".join([f" @ R = {mrr.max_S_radius:.0f} ", r"$\mu$", "m"])
-        + "".join([r", $\Gamma$ = ", f"{R_max_Smrr_gamma:.0f}", r"$\%$"]),
-    )
-    ax.plot(
-        np.log10(mrr.Re),
-        mrr.gamma_resampled * 100,
-        color=map2D_overlay_color_light,
-        linestyle="--",
-        label=r"Re$(\Gamma_{fluid})$",
-    )
-    ax.plot(
-        np.log10(mrr.Rw),
-        mrr.gamma_resampled * 100,
-        color=map2D_overlay_color_light,
-        linestyle="-.",
-        label=r"Rw$(\Gamma_{fluid})$",
-    )
-    for line in map_line_profiles if map_line_profiles else []:
-        ax.plot(
-            [np.log10(r_plot_min), np.log10(r_plot_max)],
-            [line, line],
-            color=map2D_overlay_color_light,
-            linestyle=linestyles["loosely dotted"],
-        )
-    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
-    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
-    ax.legend(loc="lower right")
-    filename = (
-        filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_S_VS_GAMMA_and_R.png"
-    )
-    fig.savefig(filename)
-    logger(f"Wrote '{filename}'.")
-
-    # 2D map of Snr(gamma, R)
-    Snr_2D_map = np.asarray(
-        [[mrr.calc_Snr(r=10**log10_R, u=u) for log10_R in R_2D_map] for u in u_2D_map]
-    )
-    fig, ax = plt.subplots()
-    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, Snr_2D_map, cmap=map2D_colormap)
-    ax.plot(
-        np.log10(models.R),
-        mrr.gamma,
-        color=map2D_overlay_color_dark,
-        label=r"max$\{S_{MRR}\}$",
-    )
-    ax.set_title(
-        r"MRR $S_{NR}$ as a function of $\Gamma_{fluid}$ and $R$"
-        + f"\n{models.pol}"
-        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
-        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
-        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
-    )
-    ax.set_xlabel(r"log(R) ($\mu$m)")
-    ax.set_ylabel(r"$\Gamma_{fluid}$")
-    fig.colorbar(cm, label=r"$S_{NR}$ (RIU$^{-1}$)")
-    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
-    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
-    ax.legend(loc="lower right")
-    filename = (
-        filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_Snr_VS_GAMMA_and_R.png"
-    )
-    fig.savefig(filename)
-    logger(f"Wrote '{filename}'.")
-
-    # 2D map of Se(gamma, R)
-    Se_2D_map = np.asarray(
-        [[mrr.calc_Se(r=10**log10_R, u=u) for log10_R in R_2D_map] for u in u_2D_map]
-    )
-    fig, ax = plt.subplots()
-    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, Se_2D_map, cmap=map2D_colormap)
-    ax.plot(
-        np.log10(models.R),
-        mrr.gamma,
-        color=map2D_overlay_color_dark,
-        label=r"max$\{S_{MRR}\}$",
-    )
-    ax.set_title(
-        r"MRR $S_e$ as a function of $\Gamma_{fluid}$ and $R$"
-        + f"\n{models.pol}"
-        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
-        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
-        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
-    )
-    ax.set_xlabel(r"log(R) ($\mu$m)")
-    ax.set_ylabel(r"$\Gamma_{fluid}$")
-    fig.colorbar(cm, label=r"$S_e$")
-    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
-    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
-    ax.legend(loc="lower right")
-    filename = (
-        filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_Se_VS_GAMMA_and_R.png"
-    )
-    fig.savefig(filename)
-    logger(f"Wrote '{filename}'.")
-
-    # 2D map of Se*a(gamma, R)
-    Se_times_a_2D_map = np.asarray(
-        [
-            [
-                mrr.calc_Se(r=10**log10_R, u=u)
-                * np.sqrt(mrr.calc_a2(r=10**log10_R, u=u))
-                for log10_R in R_2D_map
-            ]
-            for u in u_2D_map
-        ]
-    )
-    fig, ax = plt.subplots()
-    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, Se_times_a_2D_map, cmap=map2D_colormap)
-    ax.plot(
-        np.log10(models.R),
-        mrr.gamma,
-        color=map2D_overlay_color_dark,
-        label=r"max$\{S_{MRR}\}$",
-    )
-    ax.set_title(
-        r"MRR $S_e \times a$ as a function of $\Gamma_{fluid}$ and $R$"
-        + f"\n{models.pol}"
-        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
-        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
-        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
-    )
-    ax.set_xlabel(r"log(R) ($\mu$m)")
-    ax.set_ylabel(r"$\Gamma_{fluid}$")
-    fig.colorbar(cm, label=r"$S_e \times a$")
-    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
-    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
-    ax.legend(loc="lower right")
-    filename = (
-        filename_path.parent
-        / f"{filename_path.stem}_MRR_2DMAP_Se_x_a_VS_GAMMA_and_R.png"
-    )
-    fig.savefig(filename)
-    logger(f"Wrote '{filename}'.")
-
-    # 2D map of a2(gamma, R)
-    a2_2D_map = np.asarray(
-        [[mrr.calc_a2(r=10**log10_R, u=u) for log10_R in R_2D_map] for u in u_2D_map]
-    )
-    fig, ax = plt.subplots()
-    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, a2_2D_map, cmap=map2D_colormap)
-    ax.plot(
-        np.log10(models.R),
-        mrr.gamma,
-        color=map2D_overlay_color_light,
-        label=r"max$\{S_{MRR}\}$",
-    )
-    ax.plot(
-        np.log10(mrr.Re),
-        mrr.gamma_resampled * 100,
-        color=map2D_overlay_color_light,
-        linestyle="--",
-        label=r"Re$(\Gamma_{fluid})$",
-    )
-    ax.plot(
-        np.log10(mrr.Rw),
-        mrr.gamma_resampled * 100,
-        color=map2D_overlay_color_light,
-        linestyle="-.",
-        label=r"Rw$(\Gamma_{fluid})$",
-    )
-    ax.set_title(
-        r"MRR $a^2$ as a function of $\Gamma_{fluid}$ and $R$"
-        + f"\n{models.pol}"
-        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
-        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
-        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
-    )
-    ax.set_xlabel(r"log(R) ($\mu$m)")
-    ax.set_ylabel(r"$\Gamma_{fluid}$")
-    fig.colorbar(cm, label=r"$a^2$")
-    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
-    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
-    ax.legend(loc="lower right")
-    filename = (
-        filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_a2_VS_GAMMA_and_R.png"
-    )
-    fig.savefig(filename)
-    logger(f"Wrote '{filename}'.")
-
-    # 2D map of alpha*L(gamma, R)
-    dB_per_cm_to_per_cm: float = 1.0 / 4.34
-    alpha_L_2D_map = (
-        np.asarray(
-            [
-                [mrr.calc_alpha_L(r=10**log10_R, u=u) for log10_R in R_2D_map]
-                for u in u_2D_map
-            ]
-        )
-        / dB_per_cm_to_per_cm
-    )
-    fig, ax = plt.subplots()
-    cm = ax.pcolormesh(R_2D_map, gamma_2D_map, alpha_L_2D_map, cmap=map2D_colormap)
-    ax.plot(
-        np.log10(models.R),
-        mrr.gamma,
-        color=map2D_overlay_color_dark,
-        label=r"max$\{S_{MRR}\}$",
-    )
-    ax.plot(
-        np.log10(mrr.Re),
-        mrr.gamma_resampled * 100,
-        color=map2D_overlay_color_dark,
-        linestyle="--",
-        label=r"Re$(\Gamma_{fluid})$",
-    )
-    ax.plot(
-        np.log10(mrr.Rw),
-        mrr.gamma_resampled * 100,
-        color=map2D_overlay_color_dark,
-        linestyle="-.",
-        label=r"Rw$(\Gamma_{fluid})$",
-    )
-    for line in map_line_profiles if map_line_profiles else []:
-        ax.plot(
-            [np.log10(r_plot_min), np.log10(r_plot_max)],
-            [line, line],
-            color=map2D_overlay_color_dark,
-            linestyle=linestyles["loosely dotted"],
-        )
-    ax.set_title(
-        r"MRR $\alpha L$ as a function of $\Gamma_{fluid}$ and $R$"
-        + f"\n{models.pol}"
-        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
-        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
-        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
-    )
-    ax.set_xlabel(r"log(R) ($\mu$m)")
-    ax.set_ylabel(r"$\Gamma_{fluid}$")
-    fig.colorbar(cm, label=r"$\alpha L$ (dB)")
-    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
-    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
-    ax.legend(loc="lower right")
-    filename = (
-        filename_path.parent
-        / f"{filename_path.stem}_MRR_2DMAP_alphaL_VS_GAMMA_and_R.png"
-    )
-    fig.savefig(filename)
-    logger(f"Wrote '{filename}'.")
-
-    # Save 2D map data as a function of gamma and R to output Excel file, if required
-    if write_excel_files:
-        # In addition to alpha*L, calculate 2D maps of alpha_prop*L and alpha_bend*L
-        alpha_prop_L_2D_map = (
-            np.asarray(
-                [
-                    [
-                        mrr.calc_alpha_prop_L(r=10**log10_R, u=u)
-                        for log10_R in R_2D_map
-                    ]
-                    for u in u_2D_map
-                ]
-            )
-            / dB_per_cm_to_per_cm
-        )
-        alpha_bend_L_2D_map = (
-            np.asarray(
-                [
-                    [
-                        mrr.calc_alpha_bend_L(r=10**log10_R, u=u)
-                        for log10_R in R_2D_map
-                    ]
-                    for u in u_2D_map
-                ]
-            )
-            / dB_per_cm_to_per_cm
-        )
-
-        # Write all 2D maps to single Excel file
-        write_image_data_to_Excel(
-            filename=str(
-                filename_path.parent
-                / f"{filename_path.stem}_MRR_2DMAPS_VS_GAMMA_and_R.xlsx"
-            ),
-            X=10**R_2D_map,
-            x_label="R (um)",
-            Y=gamma_2D_map,
-            y_label="gamma (%)",
-            Zs=[
-                S_2D_map,
-                Snr_2D_map,
-                Se_2D_map,
-                alpha_L_2D_map,
-                alpha_bend_L_2D_map,
-                alpha_prop_L_2D_map,
-            ],
-            z_labels=[
-                "S (RIU-1)",
-                "Snr (RIU-1)",
-                "Se",
-                "alpha x L (dB)",
-                "alpha_bend x L (dB)",
-                "alpha_prop x L (dB)",
-            ],
-        )
-        logger(f"Wrote '{filename.with_suffix('.xlsx')}'.")
 
     # Plot spiral results, if required
     if not no_spiral:
@@ -1077,13 +1109,17 @@ def plot_results(
     # Plot...
     fig, ax = plt.subplots()
     ax.set_title(
-        "Maximum sensitivity for MRR, spiral, and linear sensors"
-        if not no_spiral
-        else "Maximum sensitivity for MRR and linear sensors"
+        "Maximum sensitivity for MRR and linear sensors"
         + f"\n{models.pol}"
         + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
-        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
-        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
+        + "".join(
+            [r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"]
+        )
+        + "".join(
+            [f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"]
+        )
+        if no_spiral
+        else "Maximum sensitivity for MRR, spiral, and linear sensors"
     )
 
     # MRR

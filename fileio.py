@@ -43,13 +43,27 @@ def _check_mode_solver_data(
 
     # Check that the mode solver data dictionary is not empty
     if not bending_loss_data:
-        logger(f"No bending loss data loaded from '{filename}'!")
+        logger(
+            f"{Fore.YELLOW}No bending loss data loaded from "
+            + f"'{filename}'!{Style.RESET_ALL}"
+        )
         return False
 
     # Check that u values are in ascending order and positive
     u_bending_loss: np.ndarray = np.asarray(list(bending_loss_data.keys()))
     if not np.all(u_bending_loss[:-1] < u_bending_loss[1:]) or u_bending_loss[0] <= 0:
-        logger(f"Bending loss data in '{filename}' are not in ascending h order!")
+        logger(
+            f"{Fore.YELLOW}Bending loss data in '{filename}' are not "
+            + f"in ascending h order!{Style.RESET_ALL}"
+        )
+        return False
+
+    # Check that gamma values are in monotonically descending order
+    if np.any(np.diff(np.asarray([v.get("gamma") for v in modes_data.values()])) > 0):
+        logger(
+            f"{Fore.YELLOW}Gamma values are not in monotonically "
+            + f"decreasing order!{Style.RESET_ALL}"
+        )
         return False
 
     # Check radii and alpha_bend arrays are ordered, positive, and without duplicates
@@ -57,23 +71,35 @@ def _check_mode_solver_data(
         Rs: np.ndarray = np.asarray(value["R"])
         ABs: np.ndarray = np.asarray(value["alpha_bend"])
         if len(Rs) != len(ABs) or len(Rs) < 3:
-            logger(f"Invalid R/alpha_bend arrays for u = {u:.3f} in '{filename}'!")
+            logger(
+                f"{Fore.YELLOW}Invalid R/alpha_bend arrays for u = {u:.3f} in "
+                + f"'{filename}'!{Style.RESET_ALL}"
+            )
             return False
         if len(np.unique(Rs)) != len(Rs) or not np.all(Rs[:-1] < Rs[1:]) or Rs[0] <= 0:
-            logger(f"Invalid R array for u {u:.3f} in '{filename}'!!")
+            logger(
+                f"{Fore.YELLOW}Invalid R array for u {u:.3f} in "
+                + f"'{filename}'!!{Style.RESET_ALL}"
+            )
             return False
         if (
             len(np.unique(ABs)) != len(ABs)
             or not np.all(ABs[:-1] > ABs[1:])
             or ABs[-1] <= 0
         ):
-            logger(f"Invalid alpha_bend array for u = {u:.3f} in '{filename}'!")
+            logger(
+                f"{Fore.YELLOW}Invalid alpha_bend array for u = {u:.3f} in "
+                + f"'{filename}'!{Style.RESET_ALL}"
+            )
             return False
 
     # Check that neff and gamma values are reasonable
     for mode in modes_data.values():
         if mode["neff"] < 1 or mode["gamma"] > 1:
-            logger(f"Invalid 'modes' data in '{filename}'!")
+            logger(
+                f"{Fore.YELLOW}Invalid 'modes' data in '{filename}'!"
+                + f"{Style.RESET_ALL}"
+            )
             return False
 
     # Return success
