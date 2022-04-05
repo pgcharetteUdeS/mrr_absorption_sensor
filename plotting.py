@@ -389,11 +389,7 @@ def _plot_2D_maps(
         "densely dashdotdotted": (0, (3, 1, 1, 1, 1, 1)),
     }
 
-    #
-    # MRR 2D maps
-    #
-
-    # Generate 2D map data X,Y data arrays
+    # Generate 2D map data R,u arrays (x/y)
     R_2D_map = np.linspace(
         np.log10(models.R[0]), np.log10(models.R[-1]), n_2D_grid_points
     )
@@ -402,17 +398,14 @@ def _plot_2D_maps(
         list(models.bending_loss_data)[-1],
         n_2D_grid_points,
     )
-    gamma_2D_map = np.asarray([models.gamma_of_u(u) * 100 for u in u_2D_map])
-    if np.any(np.diff(gamma_2D_map) > 0):
-        logger(
-            f"{Fore.YELLOW}WARNING! Interpolated Gamma({models.core_u_name}) values are"
-            + f" not monotonically decreasing, check 1D models!{Style.RESET_ALL}"
-        )
 
     # Indices for dashed lines at radii for max(Smrr)
     R_max_Smrr_index: int = int((np.abs(models.R - mrr.max_S_radius)).argmin())
     R_max_Smrr_u: float = mrr.u[R_max_Smrr_index]
-    R_max_Smrr_gamma: float = mrr.gamma[R_max_Smrr_index]
+
+    #
+    # 2D maps as a function of R/u
+    #
 
     # 2D map of S(u, R)
     S_2D_map = np.asarray(
@@ -494,6 +487,26 @@ def _plot_2D_maps(
         )
         logger(f"Wrote '{filename.with_suffix('.xlsx')}'.")
 
+    #
+    # 2D maps as a function of R/gamma
+    #
+
+    # Generate gamma(u) array matching u array. If the values are not monotonically
+    # decreasing due to positive curvature of the modeled values at the beginning of
+    # the array, flag as warning and replace values, else pcolormesh() complains.
+    gamma_2D_map = np.asarray([models.gamma_of_u(u) * 100 for u in u_2D_map])
+    if np.any(np.diff(gamma_2D_map) > 0):
+        gamma_2D_map[: int(np.argmax(gamma_2D_map))] = gamma_2D_map[
+            int(np.argmax(gamma_2D_map))
+        ]
+        logger(
+            f"{Fore.YELLOW}WARNING! Gamma({models.core_u_name}) is not monotonically "
+            + f"decreasing, first values replaced with gamma max!{Style.RESET_ALL}"
+        )
+
+    # Indices for dashed lines at radii for max(Smrr)
+    R_max_Smrr_gamma: float = mrr.gamma[R_max_Smrr_index]
+
     # 2D map of Smrr(gamma, R)
     fig, ax = plt.subplots()
     cm = ax.pcolormesh(R_2D_map, gamma_2D_map, S_2D_map, cmap=map2D_colormap)
@@ -553,7 +566,7 @@ def _plot_2D_maps(
             linestyle=linestyles["loosely dotted"],
         )
     ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
-    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
+    ax.set_ylim(bottom=gamma_2D_map[-1], top=gamma_2D_map[0])
     ax.legend(loc="lower right")
     filename = (
         filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_S_VS_GAMMA_and_R.png"
@@ -584,7 +597,7 @@ def _plot_2D_maps(
     ax.set_ylabel(r"$\Gamma_{fluid}$")
     fig.colorbar(cm, label=r"$S_{NR}$ (RIU$^{-1}$)")
     ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
-    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
+    ax.set_ylim(bottom=gamma_2D_map[-1], top=gamma_2D_map[0])
     ax.legend(loc="lower right")
     filename = (
         filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_Snr_VS_GAMMA_and_R.png"
@@ -615,7 +628,7 @@ def _plot_2D_maps(
     ax.set_ylabel(r"$\Gamma_{fluid}$")
     fig.colorbar(cm, label=r"$S_e$")
     ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
-    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
+    ax.set_ylim(bottom=gamma_2D_map[-1], top=gamma_2D_map[0])
     ax.legend(loc="lower right")
     filename = (
         filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_Se_VS_GAMMA_and_R.png"
@@ -653,7 +666,7 @@ def _plot_2D_maps(
     ax.set_ylabel(r"$\Gamma_{fluid}$")
     fig.colorbar(cm, label=r"$S_e \times a$")
     ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
-    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
+    ax.set_ylim(bottom=gamma_2D_map[-1], top=gamma_2D_map[0])
     ax.legend(loc="lower right")
     filename = (
         filename_path.parent
@@ -699,7 +712,7 @@ def _plot_2D_maps(
     ax.set_ylabel(r"$\Gamma_{fluid}$")
     fig.colorbar(cm, label=r"$a^2$")
     ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
-    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
+    ax.set_ylim(bottom=gamma_2D_map[-1], top=gamma_2D_map[0])
     ax.legend(loc="lower right")
     filename = (
         filename_path.parent / f"{filename_path.stem}_MRR_2DMAP_a2_VS_GAMMA_and_R.png"
@@ -758,7 +771,7 @@ def _plot_2D_maps(
     ax.set_ylabel(r"$\Gamma_{fluid}$")
     fig.colorbar(cm, label=r"$\alpha L$ (dB)")
     ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
-    ax.set_ylim(bottom=mrr.gamma_resampled[0] * 100, top=mrr.gamma_resampled[-1] * 100)
+    ax.set_ylim(bottom=gamma_2D_map[-1], top=gamma_2D_map[0])
     ax.legend(loc="lower right")
     filename = (
         filename_path.parent
