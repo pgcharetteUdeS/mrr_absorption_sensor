@@ -403,6 +403,11 @@ def _plot_2D_maps(
         n_2D_grid_points,
     )
     gamma_2D_map = np.asarray([models.gamma_of_u(u) * 100 for u in u_2D_map])
+    if np.any(np.diff(gamma_2D_map) > 0):
+        logger(
+            f"{Fore.YELLOW}WARNING! Interpolated Gamma({models.core_u_name}) values are"
+            + f" not monotonically decreasing, check 1D models!{Style.RESET_ALL}"
+        )
 
     # Indices for dashed lines at radii for max(Smrr)
     R_max_Smrr_index: int = int((np.abs(models.R - mrr.max_S_radius)).argmin())
@@ -1112,12 +1117,8 @@ def plot_results(
         "Maximum sensitivity for MRR and linear sensors"
         + f"\n{models.pol}"
         + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
-        + "".join(
-            [r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"]
-        )
-        + "".join(
-            [f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"]
-        )
+        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
+        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
         if no_spiral
         else "Maximum sensitivity for MRR, spiral, and linear sensors"
     )
