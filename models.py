@@ -252,9 +252,9 @@ class Models:
         fig.suptitle(
             "1D model fits\n"
             + f"{self.pol}"
-            + "".join([r", $\lambda$", f" = {self.lambda_res:.3f} ", r"$\mu$m"])
-            + "".join([r", $\alpha_{wg}$", f" = {self.alpha_wg_dB_per_cm:.1f} dB/cm"])
-            + "".join([f", {self.core_v_name} = {self.core_v_value:.3f} ", r"$\mu$m"])
+            + f", λ = {self.lambda_res:.3f} μm"
+            + rf", α$_{{wg}}$ = {self.alpha_wg_dB_per_cm:.1f} dB/cm"
+            + f", {self.core_v_name} = {self.core_v_value:.3f} μm"
         )
         axs_index: int = 0
 
@@ -267,7 +267,7 @@ class Models:
             + f"({self.core_u_name})"
             + f", polynomial model order: {self.gamma_order}"
         )
-        axs[axs_index].set_xlabel("".join([f"{self.core_u_name}", r"($\mu$m)"]))
+        axs[axs_index].set_xlabel("".join([f"{self.core_u_name}", "(μm)"]))
         axs[axs_index].set_ylabel(r"$\Gamma_{fluide}$ (%)")
         axs_index += 1
 
@@ -281,7 +281,7 @@ class Models:
             + f", polynomial model order: {self.gamma_order}"
         )
         axs[axs_index].set_xlabel(r"$\Gamma_{fluide}$")
-        axs[axs_index].set_ylabel("".join([f"{self.core_u_name}", r"($\mu$m)"]))
+        axs[axs_index].set_ylabel("".join([f"{self.core_u_name}", "(μm)"]))
         axs_index += 1
 
         # plot of neff(u)
@@ -294,7 +294,7 @@ class Models:
             + f", polynomial model order: {self.neff_order}"
         )
         axs[axs_index].set_ylabel(r"n$_{eff}$ (RIU)")
-        axs[axs_index].set_xlabel("".join([f"{self.core_u_name}", r"($\mu$m)"]))
+        axs[axs_index].set_xlabel("".join([f"{self.core_u_name} (μm)"]))
         fig.tight_layout()
 
         # Save graph to file
@@ -390,9 +390,7 @@ class Models:
         ax = self._alpha_bend_model_fig["fig"].add_subplot(projection="3d")
         self._alpha_bend_model_fig["ax"] = ax
         ax.set_title(
-            "".join(
-                [r"$\alpha_{bend}$", f"(r, u) = {str(self.alpha_bend_model_symbolic)}"]
-            )
+            rf"α$_{{bend}}$(r, u) = {str(self.alpha_bend_model_symbolic)}"
             + "".join(
                 [
                     "\nWireframes: ",
@@ -441,8 +439,8 @@ class Models:
             ),
             y=1.02,
         )
-        ax.set_xlabel("".join([f"{self.core_u_name}", r" ($\mu$m)"]))
-        ax.set_ylabel(r"log($R$) ($\mu$m)")
+        ax.set_xlabel("".join([f"{self.core_u_name} (μm)"]))
+        ax.set_ylabel("log($R$) (μm)")
         ax.set_zlabel(r"log$_{10}$($\alpha_{BEND}$) ($\mu$m$^{-1}$)")
         raw_points = ax.scatter(
             self.u_data,

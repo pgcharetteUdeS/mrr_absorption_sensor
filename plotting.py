@@ -196,23 +196,15 @@ def _plot_spiral_results(
     # Plot max{S}, u, gamma, n turns mas, L
     fig, axs = plt.subplots(6)
     fig.suptitle(
-        "Archimedes spiral "
-        + f" ({models.pol}"
-        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
-        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
-        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
-        + "".join([f", spacing = {spiral.spacing:.0f} ", r"$\mu$m"])
-        + f", min turns = {spiral.turns_min:.2}"
-        + ")"
-        + "\n"
-        + "".join(
-            [
-                r"max$\{$max$\{S\}\}$ = ",
-                f"{spiral.max_S:.0f}",
-                r" (RIU$^{-1}$)",
-            ]
-        )
-        + "".join([" @ $R$ = ", f"{spiral.max_S_radius:.0f}", r" $\mu$m"])
+        "Archimedes spiral\n"
+        + f"{models.pol}"
+        + f", λ = {models.lambda_res:.3f} μm"
+        + rf", α$_{{wg}}$ = {models.alpha_wg_dB_per_cm:.1f} dB/cm"
+        + f", {models.core_v_name} = {models.core_v_value:.3f} μm"
+        + f", spacing = {spiral.spacing:.0f} μm"
+        + f", min turns = {spiral.turns_min:.2}\n"
+        + rf"max{{max{{$S$}}}} = {spiral.max_S:.0f} (RIU$^{{-1}}$)"
+        + rf" @ $R$ = {spiral.max_S_radius:.0f} μm"
     )
     # max{S}
     axs_index = 0
@@ -227,7 +219,7 @@ def _plot_spiral_results(
 
     # u @ max{S}
     axs_index += 1
-    axs[axs_index].set_ylabel("".join([f"{models.core_u_name}", r" ($\mu$m)"]))
+    axs[axs_index].set_ylabel(f"{models.core_u_name} (μm)")
     axs[axs_index].semilogx(models.R, spiral.u)
     axs[axs_index].plot(
         [spiral.max_S_radius, spiral.max_S_radius], [u_plot_min, u_plot_max], "--"
@@ -268,14 +260,14 @@ def _plot_spiral_results(
 
     # L @ max{S}
     axs_index += 1
-    axs[axs_index].set_ylabel(r"L ($\mu$m)")
+    axs[axs_index].set_ylabel("L (μm)")
     axs[axs_index].loglog(models.R, spiral.L)
     axs[axs_index].plot(
         [spiral.max_S_radius, spiral.max_S_radius], [100, S_plot_max], "--"
     )
     axs[axs_index].set_xlim(r_plot_min, r_plot_max)
     axs[axs_index].set_ylim(100, S_plot_max)
-    axs[axs_index].set_xlabel(r"Ring radius ($\mu$m)")
+    axs[axs_index].set_xlabel("Ring radius (μm)")
     filename = filename_path.parent / f"{filename_path.stem}_SPIRAL.png"
     fig.savefig(filename)
     logger(f"Wrote '{filename}'.")
@@ -418,14 +410,14 @@ def _plot_2D_maps(
     cm = ax.pcolormesh(R_2D_map, u_2D_map, S_2D_map, cmap=map2D_colormap)
     ax.invert_yaxis()
     ax.set_title(
-        f"MRR sensitivity as a function of {models.core_u_name} and R"
-        + f"\n{models.pol}"
-        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
-        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
-        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
+        f"MRR sensitivity as a function of {models.core_u_name} and R\n"
+        + f"{models.pol}"
+        + f", λ = {models.lambda_res:.3f} μm"
+        + rf", α$_{{wg}}$ = {models.alpha_wg_dB_per_cm:.1f} dB/cm"
+        + f", {models.core_v_name} = {models.core_v_value:.3f} μm"
     )
-    ax.set_xlabel(r"log(R) ($\mu$m)")
-    ax.set_ylabel(f"{models.core_u_name}" + r" ($\mu$m)")
+    ax.set_xlabel("log(R) (μm)")
+    ax.set_ylabel(f"{models.core_u_name} (μm)")
     fig.colorbar(cm, label=r"S (RIU $^{-1}$)")
     ax.plot(
         np.log10(models.R),
@@ -445,11 +437,9 @@ def _plot_2D_maps(
         [R_max_Smrr_u, R_max_Smrr_u],
         color=map2D_overlay_color_light,
         linestyle=linestyles["loosely dashdotted"],
-        label="".join(
-            [r"max$\{$max$\{S_{MRR}\}\}$", f" = {mrr.max_S:.0f} RIU", r"$^{-1}$"]
-        )
-        + "".join([f" @ R = {mrr.max_S_radius:.0f} ", r"$\mu$", "m"])
-        + "".join([f", {models.core_u_name} = {R_max_Smrr_u:.3f} ", r"$\mu$m"]),
+        label=rf"max{{max{{$S_{{MRR}}$}}}} = {mrr.max_S:.0f} RIU $^{{-1}}$"
+        + f" @ R = {mrr.max_S_radius:.0f} μm"
+        + f", {models.core_u_name} = {R_max_Smrr_u:.3f} μm",
     )
     ax.plot(
         np.log10(mrr.Re),
@@ -513,11 +503,11 @@ def _plot_2D_maps(
     ax.set_title(
         r"MRR sensitivity, $S_{MRR}$, as a function of $\Gamma_{fluid}$ and $R$"
         + f"\n{models.pol}"
-        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
-        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
-        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
+        + f", λ = {models.lambda_res:.3f} μm"
+        + rf", $\alpha_{{wg}}$ = {models.alpha_wg_dB_per_cm:.1f} dB/cm"
+        + f", {models.core_v_name} = {models.core_v_value:.3f} μm"
     )
-    ax.set_xlabel(r"log(R) ($\mu$m)")
+    ax.set_xlabel("log(R) (μm)")
     ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
     fig.colorbar(cm, label=r"$S_{MRR}$ (RIU $^{-1}$)")
     ax.plot(
@@ -538,11 +528,9 @@ def _plot_2D_maps(
         [R_max_Smrr_gamma, R_max_Smrr_gamma],
         color=map2D_overlay_color_light,
         linestyle=linestyles["loosely dashdotted"],
-        label="".join(
-            [r"max$\{$max$\{S_{MRR}\}\}$", f" = {mrr.max_S:.0f} RIU", r"$^{-1}$"]
-        )
-        + "".join([f" @ R = {mrr.max_S_radius:.0f} ", r"$\mu$", "m"])
-        + "".join([r", $\Gamma$ = ", f"{R_max_Smrr_gamma:.0f}", r"$\%$"]),
+        label=rf"max{{max{{$S_{{MRR}}$}}}} = {mrr.max_S:.0f} RIU$^{{-1}}$"
+        + f" @ R = {mrr.max_S_radius:.0f} μm"
+        + rf", $\Gamma$ = {R_max_Smrr_gamma:.0f}$\%$",
     )
     ax.plot(
         np.log10(mrr.Re),
@@ -589,11 +577,11 @@ def _plot_2D_maps(
     ax.set_title(
         r"MRR $S_{NR}$ as a function of $\Gamma_{fluid}$ and $R$"
         + f"\n{models.pol}"
-        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
-        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
-        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
+        + f", λ = {models.lambda_res:.3f} μm"
+        + rf", α$_{{wg}}$ = {models.alpha_wg_dB_per_cm:.1f} dB/cm"
+        + f", {models.core_v_name} = {models.core_v_value:.3f} μm"
     )
-    ax.set_xlabel(r"log(R) ($\mu$m)")
+    ax.set_xlabel("log(R) (μm)")
     ax.set_ylabel(r"$\Gamma_{fluid}$")
     fig.colorbar(cm, label=r"$S_{NR}$ (RIU$^{-1}$)")
     ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
@@ -620,11 +608,11 @@ def _plot_2D_maps(
     ax.set_title(
         r"MRR $S_e$ as a function of $\Gamma_{fluid}$ and $R$"
         + f"\n{models.pol}"
-        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
-        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
-        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
+        + f", λ = {models.lambda_res:.3f} μm"
+        + rf", $\alpha_{{wg}}$ = {models.alpha_wg_dB_per_cm:.1f} dB/cm"
+        + f", {models.core_v_name} = {models.core_v_value:.3f} μm"
     )
-    ax.set_xlabel(r"log(R) ($\mu$m)")
+    ax.set_xlabel("log(R) (μm)")
     ax.set_ylabel(r"$\Gamma_{fluid}$")
     fig.colorbar(cm, label=r"$S_e$")
     ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
@@ -658,11 +646,11 @@ def _plot_2D_maps(
     ax.set_title(
         r"MRR $S_e \times a$ as a function of $\Gamma_{fluid}$ and $R$"
         + f"\n{models.pol}"
-        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
-        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
-        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
+        + f", λ = {models.lambda_res:.3f} μm"
+        + rf", α$_{{wg}}$ = {models.alpha_wg_dB_per_cm:.1f} dB/cm"
+        + f", {models.core_v_name} = {models.core_v_value:.3f}μm"
     )
-    ax.set_xlabel(r"log(R) ($\mu$m)")
+    ax.set_xlabel("log(R) (μm)")
     ax.set_ylabel(r"$\Gamma_{fluid}$")
     fig.colorbar(cm, label=r"$S_e \times a$")
     ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
@@ -704,11 +692,11 @@ def _plot_2D_maps(
     ax.set_title(
         r"MRR $a^2$ as a function of $\Gamma_{fluid}$ and $R$"
         + f"\n{models.pol}"
-        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
-        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
-        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
+        + f", λ = {models.lambda_res:.3f} μm"
+        + rf", α$_{{wg}}$ = {models.alpha_wg_dB_per_cm:.1f} dB/cm"
+        + f", {models.core_v_name} = {models.core_v_value:.3f} μm"
     )
-    ax.set_xlabel(r"log(R) ($\mu$m)")
+    ax.set_xlabel("log(R) (μm)")
     ax.set_ylabel(r"$\Gamma_{fluid}$")
     fig.colorbar(cm, label=r"$a^2$")
     ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
@@ -763,11 +751,11 @@ def _plot_2D_maps(
     ax.set_title(
         r"MRR $\alpha L$ as a function of $\Gamma_{fluid}$ and $R$"
         + f"\n{models.pol}"
-        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
-        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
-        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
+        + f", λ = {models.lambda_res:.3f} μm"
+        + rf", α$_{{wg}}$ = {models.alpha_wg_dB_per_cm:.1f} dB/cm"
+        + f", {models.core_v_name} = {models.core_v_value:.3f} μm"
     )
-    ax.set_xlabel(r"log(R) ($\mu$m)")
+    ax.set_xlabel("log(R) (μm)")
     ax.set_ylabel(r"$\Gamma_{fluid}$")
     fig.colorbar(cm, label=r"$\alpha L$ (dB)")
     ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
@@ -899,21 +887,13 @@ def plot_results(
     # max{S}, S_NR, Se, a, u, gamma, Finesse
     fig, axs = plt.subplots(7)
     fig.suptitle(
-        "Micro-ring resonator "
-        + f"({models.pol}"
-        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
-        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
-        + "".join(
-            [f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m", ")\n"]
-        )
-        + "".join(
-            [
-                r"max$\{$max$\{S\}\}$ = ",
-                f"{mrr.max_S:.0f}",
-                r" (RIU$^{-1}$)",
-            ]
-        )
-        + "".join([r" @ $R$ = ", f"{mrr.max_S_radius:.0f}", r" $\mu$m"])
+        "MRR - Sensing parameters\n"
+        + f"{models.pol}"
+        + f", λ = {models.lambda_res:.3f} μm"
+        + rf", α$_{{wg}}$ = {models.alpha_wg_dB_per_cm:.1f} dB/cm"
+        + f", {models.core_v_name} = {models.core_v_value:.3f} μm\n"
+        + rf"max{{max{{$S$}}}} = {mrr.max_S:.0f} (RIU$^{{-1}}$)"
+        + rf" @ $R$ = {mrr.max_S_radius:.0f} μm"
     )
 
     # max{S}
@@ -952,13 +932,13 @@ def plot_results(
     axs[axs_index].set_ylim(0, 1)
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
-    # u @ max{S}
+    # u (h or w) @ max{S}
     axs_index += 1
     axs[axs_index].semilogx(models.R, mrr.u)
     axs[axs_index].plot(
         [mrr.max_S_radius, mrr.max_S_radius], [u_plot_min, u_plot_max], "r--"
     )
-    axs[axs_index].set_ylabel(f"{models.core_u_name}" + r" ($\mu$m)")
+    axs[axs_index].set_ylabel(f"{models.core_u_name} (μm)")
     axs[axs_index].set_xlim(r_plot_min, r_plot_max)
     axs[axs_index].set_ylim(u_plot_min, u_plot_max)
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
@@ -980,31 +960,25 @@ def plot_results(
     axs[axs_index].plot(
         [mrr.max_S_radius, mrr.max_S_radius], [0, Finesse_plot_max], "r--"
     )
-    axs[axs_index].set_ylabel(r"Finesse/$2\pi$")
+    axs[axs_index].set_ylabel("Finesse/2π")
     axs[axs_index].set_xlim(r_plot_min, r_plot_max)
     axs[axs_index].set_ylim(0, Finesse_plot_max)
 
-    axs[axs_index].set_xlabel(r"Ring radius ($\mu$m)")
-    filename: Path = filename_path.parent / f"{filename_path.stem}_MRR_ALL.png"
+    axs[axs_index].set_xlabel("Ring radius (μm)")
+    filename: Path = filename_path.parent / f"{filename_path.stem}_MRR_sens_parms.png"
     fig.savefig(filename)
     logger(f"Wrote '{filename}'.")
 
     # max{S}, Q, Finesse, FWHM, FSR, contrast
     fig, axs = plt.subplots(6)
     fig.suptitle(
-        "MRR - Ring resonator parameters"
+        "MRR - Ring parameters"
         + f"\n{models.pol}"
-        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
-        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
-        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
-        + "".join(
-            [
-                "\n" r"max$\{$max$\{S\}\}$ = ",
-                f"{mrr.max_S:.0f}",
-                r" (RIU$^{-1}$)",
-            ]
-        )
-        + "".join([r" @ $R$ = ", f"{mrr.max_S_radius:.0f}", r" $\mu$m"])
+        + f", λ = {models.lambda_res:.3f} μm"
+        + rf", α$_{{wg}}$ = {models.alpha_wg_dB_per_cm:.1f} dB/cm"
+        + f", {models.core_v_name} = {models.core_v_value:.3f} μm\n"
+        + rf"max{{max{{$S$}}}} = {mrr.max_S:.0f} (RIU$^{{-1}}$)"
+        + rf" @ $R$ = {mrr.max_S_radius:.0f} μm"
     )
     # max{S}
     axs_index = 0
@@ -1017,7 +991,7 @@ def plot_results(
 
     # Contrast, tau & a @ max{S}
     axs_index += 1
-    axs[axs_index].semilogx(models.R, mrr.tau, color="blue", label=r"$\tau$")
+    axs[axs_index].semilogx(models.R, mrr.tau, color="blue", label="τ")
     axs[axs_index].semilogx(models.R, np.sqrt(mrr.a2), color="green", label="a")
     axs[axs_index].semilogx(models.R, mrr.contrast, color="red", label="contrast")
     axs[axs_index].plot([mrr.max_S_radius, mrr.max_S_radius], [0, 1], "r--")
@@ -1064,10 +1038,10 @@ def plot_results(
     axs[axs_index].loglog(models.R, mrr.FSR * 1e6, "g", label="FSR")
     axs[axs_index].set_xlim(r_plot_min, r_plot_max)
     axs[axs_index].set_ylabel("FWHM and FSR (pm)")
-    axs[axs_index].set_xlabel(r"Ring radius ($\mu$m)")
+    axs[axs_index].set_xlabel("Ring radius (μm)")
     axR = axs[axs_index].twinx()
-    axR.semilogx(models.R, mrr.Finesse / (2 * np.pi), "k--", label=r"Finesse/2$\pi$")
-    axR.set_ylabel(r"Finesse/2$\pi$")
+    axR.semilogx(models.R, mrr.Finesse / (2 * np.pi), "k--", label="Finesse/2π")
+    axR.set_ylabel("Finesse/2π")
     axR.grid(visible=False)
     ax_lines = (
         axs[axs_index].get_legend_handles_labels()[0]
@@ -1129,16 +1103,16 @@ def plot_results(
     ax.set_title(
         "Maximum sensitivity for MRR and linear sensors"
         + f"\n{models.pol}"
-        + "".join([r", $\lambda$", f" = {models.lambda_res:.3f} ", r"$\mu$m"])
-        + "".join([r", $\alpha_{wg}$", f" = {models.alpha_wg_dB_per_cm:.1f} dB/cm"])
-        + "".join([f", {models.core_v_name} = {models.core_v_value:.3f} ", r"$\mu$m"])
+        + f", λ = {models.lambda_res:.3f} μm"
+        + rf", α$_{{wg}}$ = {models.alpha_wg_dB_per_cm:.1f} dB/cm"
+        + f", {models.core_v_name} = {models.core_v_value:.3f} μ"
         if no_spiral
         else "Maximum sensitivity for MRR, spiral, and linear sensors"
     )
 
     # MRR
-    ax.set_xlabel(r"Ring radius ($\mu$m)")
-    ax.set_ylabel(r"Maximum sensitivity ($RIU^{-1}$)")
+    ax.set_xlabel("Ring radius (μm)")
+    ax.set_ylabel(r"Maximum sensitivity (RIU$^{-1}$)")
     ax.loglog(models.R, mrr.S, color="b", label="MRR")
 
     # Linear waveguide
@@ -1163,8 +1137,7 @@ def plot_results(
             models.R[spiral.S > 1],
             spiral.S[spiral.S > 1],
             color="k",
-            label=f"Spiral (spacing = {spiral.spacing:.0f}"
-            + r" $\mu$m"
+            label=f"Spiral (spacing = {spiral.spacing:.0f} μm"
             + f", min turns = {spiral.turns_min:.2f})",
         )
         axR = ax.twinx()

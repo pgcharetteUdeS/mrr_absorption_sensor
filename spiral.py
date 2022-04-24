@@ -313,23 +313,14 @@ class Spiral:
         ax.set_title(
             "Archimedes spiral : "
             + f"{n_turns: .2f} turns, "
-            + "".join([f"w = {self.models.core_v_value:.3f} ", r"$\mu$m, "])
-            + "".join([f"spacing = {self.spacing:.1f} ", r"$\mu$m, "])
-            + "".join([f"h = {h:.3f} ", r"$\mu$m, "])
-            + "".join([f"S = {S:.0f}", r" RIU$^{-1}$"])
-            + "\n"
-            + "".join([f"R = {r_outer:.1f} ", r"$\mu$m, "])
-            + "".join([r"R$_{min}$ = ", f"{r_joint_inner[-1]:.1f} ", r"$\mu$m, "])
-            + "".join(
-                [
-                    r"S-bend radius = ",
-                    f"{(r_joint_inner[-1] - w / 2) / 2:.1f} ",
-                    r"$\mu$m, ",
-                ]
-            )
-            + "".join(
-                [f"L = {L:.1f} ({spiral_length:.2f} by finite diffs) ", r"$\mu$m"]
-            )
+            + f"w = {self.models.core_v_value:.3f} μm, "
+            + f"spacing = {self.spacing:.1f} μm, "
+            + f"h = {h:.3f} μm, "
+            + rf"S = {S:.0f} RIU$^{{-1}}$"
+            + f"\nR = {r_outer:.1f} μm, "
+            + rf"R$_{{min}}$ = {r_joint_inner[-1]:.1f} μm, "
+            + f"S-bend radius = {(r_joint_inner[-1] - w / 2) / 2:.1f} μm, "
+            + f"L = {L:.1f} ({spiral_length:.2f} by finite diffs) μm"
         )
         ax.plot(outer_spiral_x_in, outer_spiral_y_in, color="red")
         ax.plot(outer_spiral_x_out, outer_spiral_y_out, color="red")

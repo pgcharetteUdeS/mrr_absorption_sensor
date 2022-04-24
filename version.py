@@ -5,4 +5,4 @@ Package versioning
 """
 
 
-__version__: str = "V20220404_17H00"
+__version__: str = "V20220424_11H30"
