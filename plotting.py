@@ -179,8 +179,7 @@ def _plot_spiral_optimization_results(
     filename_path: Path,
     logger=print,
 ):
-    """
-    """
+    """ """
 
     # Calculate plotting extrema and max{S} vertical marker
     (
@@ -849,63 +848,22 @@ def _plot_2D_maps(
         logger(f"Wrote '{filename.with_suffix('.xlsx')}'.")
 
 
-def plot_results(
+def _plot_mrr_optimization_results(
     models: Models,
     mrr: Mrr,
-    linear: Linear,
-    spiral: Spiral,
-    T_SNR: float,
-    min_delta_ni: float,
+    r_plot_min: float,
+    r_plot_max: float,
+    S_plot_max: float,
+    Se_plot_max: float,
+    u_plot_min: float,
+    u_plot_max: float,
+    gamma_plot_min: float,
+    gamma_plot_max: float,
+    Finesse_plot_max: float,
     filename_path: Path,
-    n_2D_grid_points: int = 500,
-    write_excel_files: bool = False,
-    map2D_colormap: str = "viridis",
-    map2D_overlay_color_dark: str = "black",
-    map2D_overlay_color_light: str = "black",
-    map_line_profiles: list = None,
-    no_spiral: bool = False,
-    draw_largest_spiral: bool = False,
-    write_spiral_sequence_to_file: bool = False,
     logger=print,
 ):
-    """
-
-    :param models:
-    :param mrr:
-    :param linear:
-    :param spiral:
-    :param T_SNR:
-    :param min_delta_ni:
-    :param filename_path:
-    :param n_2D_grid_points:
-    :param write_excel_files:
-    :param map_line_profiles:
-    :param map2D_colormap:
-    :param map2D_overlay_color_dark:
-    :param map2D_overlay_color_light:
-    :param no_spiral:
-    :param draw_largest_spiral:
-    :param write_spiral_sequence_to_file:
-    :param logger:
-    :return: None
-    """
-
-    # Calculate plotting extrema and max{S} vertical marker
-    (
-        r_plot_min,
-        r_plot_max,
-        u_plot_min,
-        u_plot_max,
-        S_plot_max,
-        Se_plot_max,
-        Finesse_plot_max,
-        gamma_plot_min,
-        gamma_plot_max,
-    ) = _calc_plotting_extrema(models=models, mrr=mrr)
-
-    #
-    # MRR results
-    #
+    """ """
 
     # max{S}, S_NR, Se, a, u, gamma, Finesse
     fig, axs = plt.subplots(7)
@@ -1084,38 +1042,24 @@ def plot_results(
     fig.savefig(filename)
     logger(f"Wrote '{filename}'.")
 
-    # Plot/save 2D maps
-    _plot_2D_maps(
-        models=models,
-        mrr=mrr,
-        r_plot_min=r_plot_min,
-        r_plot_max=r_plot_max,
-        filename_path=filename_path,
-        n_2D_grid_points=n_2D_grid_points,
-        write_excel_files=write_excel_files,
-        map2D_colormap=map2D_colormap,
-        map2D_overlay_color_dark=map2D_overlay_color_dark,
-        map2D_overlay_color_light=map2D_overlay_color_light,
-        map_line_profiles=map_line_profiles,
-        logger=logger,
-    )
 
-    # Plot spiral results, if required
-    if not no_spiral:
-        _plot_spiral_results(
-            models=models,
-            mrr=mrr,
-            spiral=spiral,
-            filename_path=filename_path,
-            draw_largest_spiral=draw_largest_spiral,
-            write_spiral_sequence_to_file=write_spiral_sequence_to_file,
-            write_excel_files=write_excel_files,
-            logger=logger,
-        )
-
-    #
-    # Overlaid plots of linear, spiral and MRR waveguide sensitivity as function of R
-    #
+def _plot_combined_linear_spiral_mrr_results(
+    models: Models,
+    mrr: Mrr,
+    linear: Linear,
+    spiral: Spiral,
+    r_plot_min: float,
+    r_plot_max: float,
+    S_plot_max: float,
+    T_SNR: float,
+    min_delta_ni: float,
+    filename_path: Path,
+    no_spiral: bool = False,
+    logger=print,
+):
+    """
+    Overlaid plots of linear, spiral and MRR waveguide sensitivity as function of R
+    """
 
     # Calculate minimum sensitivity required to detect the minimum resolvable
     # change in ni for a given transmission measurement SNR
@@ -1190,3 +1134,120 @@ def plot_results(
     filename = filename_path.parent / f"{filename_path.stem}_MRR_VS_SPIRAL_VS_SWGD.png"
     fig.savefig(filename)
     logger(f"Wrote '{filename}'.")
+
+
+def plot_results(
+    models: Models,
+    mrr: Mrr,
+    linear: Linear,
+    spiral: Spiral,
+    T_SNR: float,
+    min_delta_ni: float,
+    filename_path: Path,
+    n_2D_grid_points: int = 500,
+    write_excel_files: bool = False,
+    map2D_colormap: str = "viridis",
+    map2D_overlay_color_dark: str = "black",
+    map2D_overlay_color_light: str = "black",
+    map_line_profiles: list = None,
+    no_spiral: bool = False,
+    draw_largest_spiral: bool = False,
+    write_spiral_sequence_to_file: bool = False,
+    logger=print,
+):
+    """
+
+    :param models:
+    :param mrr:
+    :param linear:
+    :param spiral:
+    :param T_SNR:
+    :param min_delta_ni:
+    :param filename_path:
+    :param n_2D_grid_points:
+    :param write_excel_files:
+    :param map_line_profiles:
+    :param map2D_colormap:
+    :param map2D_overlay_color_dark:
+    :param map2D_overlay_color_light:
+    :param no_spiral:
+    :param draw_largest_spiral:
+    :param write_spiral_sequence_to_file:
+    :param logger:
+    :return: None
+    """
+
+    # Calculate plotting extrema and max{S} vertical marker position
+    (
+        r_plot_min,
+        r_plot_max,
+        u_plot_min,
+        u_plot_max,
+        S_plot_max,
+        Se_plot_max,
+        Finesse_plot_max,
+        gamma_plot_min,
+        gamma_plot_max,
+    ) = _calc_plotting_extrema(models=models, mrr=mrr)
+
+    # Plot/save MRR optimization results
+    _plot_mrr_optimization_results(
+        models=models,
+        mrr=mrr,
+        r_plot_min=r_plot_min,
+        r_plot_max=r_plot_max,
+        S_plot_max=S_plot_max,
+        Se_plot_max=Se_plot_max,
+        u_plot_min=u_plot_min,
+        u_plot_max=u_plot_max,
+        gamma_plot_min=gamma_plot_min,
+        gamma_plot_max=gamma_plot_max,
+        Finesse_plot_max=Finesse_plot_max,
+        filename_path=filename_path,
+        logger=logger,
+    )
+
+    # Plot/save MRR 2D result maps
+    _plot_2D_maps(
+        models=models,
+        mrr=mrr,
+        r_plot_min=r_plot_min,
+        r_plot_max=r_plot_max,
+        filename_path=filename_path,
+        n_2D_grid_points=n_2D_grid_points,
+        write_excel_files=write_excel_files,
+        map2D_colormap=map2D_colormap,
+        map2D_overlay_color_dark=map2D_overlay_color_dark,
+        map2D_overlay_color_light=map2D_overlay_color_light,
+        map_line_profiles=map_line_profiles,
+        logger=logger,
+    )
+
+    # Plot/save spiral results, if required
+    if not no_spiral:
+        _plot_spiral_results(
+            models=models,
+            mrr=mrr,
+            spiral=spiral,
+            filename_path=filename_path,
+            draw_largest_spiral=draw_largest_spiral,
+            write_spiral_sequence_to_file=write_spiral_sequence_to_file,
+            write_excel_files=write_excel_files,
+            logger=logger,
+        )
+
+    # Plot/save overlaid graphs of linear, spiral and MRR sensitivity as function of R
+    _plot_combined_linear_spiral_mrr_results(
+        models=models,
+        mrr=mrr,
+        linear=linear,
+        spiral=spiral,
+        r_plot_min=r_plot_min,
+        r_plot_max=r_plot_max,
+        S_plot_max=S_plot_max,
+        T_SNR=T_SNR,
+        min_delta_ni=min_delta_ni,
+        filename_path=filename_path,
+        no_spiral=no_spiral,
+        logger=logger,
+    )
