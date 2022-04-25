@@ -133,17 +133,7 @@ class Spiral:
         n_turns: float,
         r_window: float,
         figure: plt.Figure = None,
-    ) -> tuple[
-        plt.Figure,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-    ]:
+    ) -> tuple[plt.Figure, dict,]:
         """
         This function actually draws a spiral!
         """
@@ -159,16 +149,6 @@ class Spiral:
             ax = fig.axes[0]
             ax.clear()
 
-        # Initialise the spiral coordinate arrays
-        outer_spiral_x_out: np.ndarray = np.asarray([])
-        outer_spiral_y_out: np.ndarray = np.asarray([])
-        outer_spiral_x_in: np.ndarray = np.asarray([])
-        outer_spiral_y_in: np.ndarray = np.asarray([])
-        inner_spiral_x_out: np.ndarray = np.asarray([])
-        inner_spiral_y_out: np.ndarray = np.asarray([])
-        inner_spiral_x_in: np.ndarray = np.asarray([])
-        inner_spiral_y_in: np.ndarray = np.asarray([])
-
         # Outer spiral
         theta_max: float = (r_outer - (a_spiral + self.spacing + w)) / b_spiral
         theta_min: float = max(theta_max - (n_turns * 2 * np.pi), 0)
@@ -181,15 +161,11 @@ class Spiral:
             thetas=thetas_spiral,
             r=r_outer_spiral_inner,
             theta0=theta0,
-            spiral_x=outer_spiral_x_in,
-            spiral_y=outer_spiral_y_in,
         )
         outer_spiral_x_out, outer_spiral_y_out = self._plot_arc(
             thetas=thetas_spiral,
             r=r_outer_spiral_inner + w,
             theta0=theta0,
-            spiral_x=outer_spiral_x_out,
-            spiral_y=outer_spiral_y_out,
         )
 
         # Inner spiral
@@ -198,15 +174,11 @@ class Spiral:
             thetas=thetas_spiral,
             r=r_inner_spiral_inner,
             theta0=theta0,
-            spiral_x=inner_spiral_x_in,
-            spiral_y=inner_spiral_y_in,
         )
         inner_spiral_x_out, inner_spiral_y_out = self._plot_arc(
             thetas=thetas_spiral,
             r=r_inner_spiral_inner + w,
             theta0=theta0,
-            spiral_x=inner_spiral_x_out,
-            spiral_y=inner_spiral_y_out,
         )
 
         # Joint: half circle between outer waveguide and S-bend
@@ -303,6 +275,18 @@ class Spiral:
         ) / 2
         spiral_length: float = outer_spiral_length + inner_spiral_length
 
+        # Build dictionary of spiral waveguide vertex coordinates
+        spiral_waveguide_coordinates = {
+            "outer_spiral_x_out": outer_spiral_x_out,
+            "outer_spiral_y_out": outer_spiral_y_out,
+            "outer_spiral_x_in": outer_spiral_x_in,
+            "outer_spiral_y_in": outer_spiral_y_in,
+            "inner_spiral_x_out": inner_spiral_x_out,
+            "inner_spiral_y_out": inner_spiral_y_out,
+            "inner_spiral_x_in": inner_spiral_x_in,
+            "inner_spiral_y_in": inner_spiral_y_in,
+        }
+
         # Plot info & formatting
         S, _, L, _ = self._calc_sensitivity(
             r=r_outer, u=h if self.models.core_v_name == "w" else w, n_turns=n_turns
@@ -331,14 +315,7 @@ class Spiral:
 
         return (
             fig,
-            outer_spiral_x_out,
-            outer_spiral_y_out,
-            outer_spiral_x_in,
-            outer_spiral_y_in,
-            inner_spiral_x_out,
-            inner_spiral_y_out,
-            inner_spiral_x_in,
-            inner_spiral_y_in,
+            spiral_waveguide_coordinates,
         )
 
     def _line_element(self, r: float, w: float) -> float:
