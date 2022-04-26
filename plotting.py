@@ -604,7 +604,7 @@ def _plot_2D_maps(
         + f", {models.core_v_name} = {models.core_v_value:.3f} μm"
     )
     ax.set_xlabel("log(R) (μm)")
-    ax.set_ylabel(r"$\Gamma_{fluid}$")
+    ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
     fig.colorbar(cm, label=r"$S_{NR}$ (RIU$^{-1}$)")
     ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
     ax.set_ylim(bottom=gamma_2D_map[-1], top=gamma_2D_map[0])
@@ -635,7 +635,7 @@ def _plot_2D_maps(
         + f", {models.core_v_name} = {models.core_v_value:.3f} μm"
     )
     ax.set_xlabel("log(R) (μm)")
-    ax.set_ylabel(r"$\Gamma_{fluid}$")
+    ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
     fig.colorbar(cm, label=r"$S_e$")
     ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
     ax.set_ylim(bottom=gamma_2D_map[-1], top=gamma_2D_map[0])
@@ -673,7 +673,7 @@ def _plot_2D_maps(
         + f", {models.core_v_name} = {models.core_v_value:.3f}μm"
     )
     ax.set_xlabel("log(R) (μm)")
-    ax.set_ylabel(r"$\Gamma_{fluid}$")
+    ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
     fig.colorbar(cm, label=r"$S_e \times a$")
     ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
     ax.set_ylim(bottom=gamma_2D_map[-1], top=gamma_2D_map[0])
@@ -719,7 +719,7 @@ def _plot_2D_maps(
         + f", {models.core_v_name} = {models.core_v_value:.3f} μm"
     )
     ax.set_xlabel("log(R) (μm)")
-    ax.set_ylabel(r"$\Gamma_{fluid}$")
+    ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
     fig.colorbar(cm, label=r"$a^2$")
     ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
     ax.set_ylim(bottom=gamma_2D_map[-1], top=gamma_2D_map[0])
@@ -778,7 +778,7 @@ def _plot_2D_maps(
         + f", {models.core_v_name} = {models.core_v_value:.3f} μm"
     )
     ax.set_xlabel("log(R) (μm)")
-    ax.set_ylabel(r"$\Gamma_{fluid}$")
+    ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
     fig.colorbar(cm, label=r"$\alpha L$ (dB)")
     ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
     ax.set_ylim(bottom=gamma_2D_map[-1], top=gamma_2D_map[0])
@@ -989,7 +989,7 @@ def _plot_mrr_optimization_results(
         [mrr.max_S_radius, mrr.max_S_radius], [0, np.amax(mrr.ER)], "r--"
     )
     axs[axs_index].set_xlim(r_plot_min, r_plot_max)
-    axs[axs_index].set_ylabel("ER (dB)")
+    axs[axs_index].set_ylabel("Extinction\nratio\n(dB)")
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
     # Q @ max{S}
@@ -1018,7 +1018,7 @@ def _plot_mrr_optimization_results(
     axs[axs_index].loglog(models.R, mrr.FWHM * 1e6, "b", label="FWHM")
     axs[axs_index].loglog(models.R, mrr.FSR * 1e6, "g", label="FSR")
     axs[axs_index].set_xlim(r_plot_min, r_plot_max)
-    axs[axs_index].set_ylabel("FWHM and FSR (pm)")
+    axs[axs_index].set_ylabel("FWHM and FSR\n(pm)")
     axs[axs_index].set_xlabel("Ring radius (μm)")
     axR = axs[axs_index].twinx()
     axR.semilogx(models.R, mrr.Finesse / (2 * np.pi), "k--", label="Finesse/2π")
