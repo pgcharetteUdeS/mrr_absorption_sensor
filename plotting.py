@@ -47,41 +47,33 @@ def _calc_5X_10X_comp_data(
     return R_5X_index, R_5X, R_5X_S, R_10X_index, R_10X, R_10X_S
 
 
-def _calc_plotting_extrema(
-    models: Models, mrr: Mrr
-) -> tuple[float, float, float, float, float, float, float, float, float]:
+def _calc_plotting_extrema(models: Models, mrr: Mrr) -> dict:
 
     # R domain extrema (complete decades)
-    r_plot_min: float = 10 ** (np.floor(np.log10(models.Rmin)))
-    r_plot_max: float = 10 ** (np.ceil(np.log10(models.Rmax)))
+    plotting_extrema: dict = {
+        "r_plot_min": 10 ** (np.floor(np.log10(models.Rmin))),
+        "r_plot_max": 10 ** (np.ceil(np.log10(models.Rmax))),
+    }
 
     # u domain extrema
     u: np.ndarray = np.asarray(list(models.bending_loss_data.keys()))
-    u_plot_min: float = u[0] * 0.9
-    u_plot_max: float = u[-1] * 1.1
+    plotting_extrema["u_plot_min"] = u[0] * 0.9
+    plotting_extrema["u_plot_max"] = u[-1] * 1.1
 
     # max{S} vertical marker
-    S_plot_max: float = 10 ** np.ceil(np.log10(mrr.max_S))
+    plotting_extrema["S_plot_max"] = 10 ** np.ceil(np.log10(mrr.max_S))
 
     # Other extrema for Mrr plots
-    Se_plot_max: float = np.ceil(np.amax(mrr.Se * np.sqrt(mrr.a2)) * 1.1 / 10) * 10
-    Finesse_plot_max: float = (
+    plotting_extrema["Se_plot_max"] = (
+        np.ceil(np.amax(mrr.Se * np.sqrt(mrr.a2)) * 1.1 / 10) * 10
+    )
+    plotting_extrema["Finesse_plot_max"] = (
         np.ceil(np.amax(mrr.Finesse / (2 * np.pi)) * 1.1 / 10) * 10
     )
-    gamma_plot_min: float = np.floor(np.amin(mrr.gamma) * 0.9 / 10) * 10
-    gamma_plot_max: float = np.ceil(np.amax(mrr.gamma) * 1.1 / 10) * 10
+    plotting_extrema["gamma_plot_min"] = np.floor(np.amin(mrr.gamma) * 0.9 / 10) * 10
+    plotting_extrema["gamma_plot_max"] = np.ceil(np.amax(mrr.gamma) * 1.1 / 10) * 10
 
-    return (
-        r_plot_min,
-        r_plot_max,
-        u_plot_min,
-        u_plot_max,
-        S_plot_max,
-        Se_plot_max,
-        Finesse_plot_max,
-        gamma_plot_min,
-        gamma_plot_max,
-    )
+    return plotting_extrema
 
 
 def _append_image_to_seq(images: list, fig: plt.Figure):
@@ -174,22 +166,12 @@ def _write_spiral_sequence_to_file(
 
 def _plot_spiral_optimization_results(
     models: Models,
-    mrr: Mrr,
     spiral: Spiral,
+    plotting_extrema: dict,
     filename_path: Path,
     logger=print,
 ):
     """ """
-
-    # Calculate plotting extrema and max{S} vertical marker
-    (
-        r_plot_min,
-        r_plot_max,
-        u_plot_min,
-        u_plot_max,
-        S_plot_max,
-        *_,
-    ) = _calc_plotting_extrema(models=models, mrr=mrr)
 
     # Plot max{S}, u, gamma, n turns mas, L
     fig, axs = plt.subplots(6)
@@ -209,10 +191,14 @@ def _plot_spiral_optimization_results(
     axs[axs_index].set_ylabel(r"max$\{S\}$" + "\n" + r"(RIU$^{-1}$)")
     axs[axs_index].loglog(models.R, spiral.S)
     axs[axs_index].plot(
-        [spiral.max_S_radius, spiral.max_S_radius], [100, S_plot_max], "--"
+        [spiral.max_S_radius, spiral.max_S_radius],
+        [100, plotting_extrema["S_plot_max"]],
+        "--",
     )
-    axs[axs_index].set_ylim(100, S_plot_max)
-    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
+    axs[axs_index].set_ylim(100, plotting_extrema["S_plot_max"])
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
     # u @ max{S}
@@ -220,10 +206,16 @@ def _plot_spiral_optimization_results(
     axs[axs_index].set_ylabel(f"{models.core_u_name} (μm)")
     axs[axs_index].semilogx(models.R, spiral.u)
     axs[axs_index].plot(
-        [spiral.max_S_radius, spiral.max_S_radius], [u_plot_min, u_plot_max], "--"
+        [spiral.max_S_radius, spiral.max_S_radius],
+        [plotting_extrema["u_plot_min"], plotting_extrema["u_plot_max"]],
+        "--",
     )
-    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
-    axs[axs_index].set_ylim(u_plot_min, u_plot_max)
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
+    axs[axs_index].set_ylim(
+        plotting_extrema["u_plot_min"], plotting_extrema["u_plot_max"]
+    )
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
     # gamma_fluid @ max{S}
@@ -231,7 +223,9 @@ def _plot_spiral_optimization_results(
     axs[axs_index].set_ylabel(r"$\Gamma_{fluide}$ ($\%$)")
     axs[axs_index].semilogx(models.R, spiral.gamma)
     axs[axs_index].plot([spiral.max_S_radius, spiral.max_S_radius], [0, 100], "--")
-    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
     axs[axs_index].set_ylim(0, 100)
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
@@ -243,7 +237,9 @@ def _plot_spiral_optimization_results(
     axs[axs_index].plot(
         [spiral.max_S_radius, spiral.max_S_radius], [0, n_turns_plot_max], "--"
     )
-    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
     axs[axs_index].set_ylim(0, n_turns_plot_max)
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
@@ -252,7 +248,9 @@ def _plot_spiral_optimization_results(
     axs[axs_index].set_ylabel(r"$a^2$")
     axs[axs_index].semilogx(models.R, spiral.a2)
     axs[axs_index].plot([spiral.max_S_radius, spiral.max_S_radius], [0, 1], "--")
-    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
     axs[axs_index].set_ylim(0, 1)
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
@@ -261,10 +259,14 @@ def _plot_spiral_optimization_results(
     axs[axs_index].set_ylabel("L (μm)")
     axs[axs_index].loglog(models.R, spiral.L)
     axs[axs_index].plot(
-        [spiral.max_S_radius, spiral.max_S_radius], [100, S_plot_max], "--"
+        [spiral.max_S_radius, spiral.max_S_radius],
+        [100, plotting_extrema["S_plot_max"]],
+        "--",
     )
-    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
-    axs[axs_index].set_ylim(100, S_plot_max)
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
+    axs[axs_index].set_ylim(100, plotting_extrema["S_plot_max"])
     axs[axs_index].set_xlabel("Ring radius (μm)")
     filename = filename_path.parent / f"{filename_path.stem}_SPIRAL.png"
     fig.savefig(filename)
@@ -319,8 +321,8 @@ def _write_spiral_waveguide_coordinates_to_Excel_file(
 
 def _plot_spiral_results(
     models: Models,
-    mrr: Mrr,
     spiral: Spiral,
+    plotting_extrema: dict,
     filename_path: Path,
     draw_largest_spiral: bool = False,
     write_spiral_sequence_to_file: bool = False,
@@ -332,8 +334,8 @@ def _plot_spiral_results(
     # Plot spiral optimization results: u, gamma, n turns, a2, L @max(S)
     _plot_spiral_optimization_results(
         models=models,
-        mrr=mrr,
         spiral=spiral,
+        plotting_extrema=plotting_extrema,
         filename_path=filename_path,
         logger=logger,
     )
@@ -374,8 +376,7 @@ def _plot_spiral_results(
 def _plot_2D_maps(
     models: Models,
     mrr: Mrr,
-    r_plot_min: float,
-    r_plot_max: float,
+    plotting_extrema: dict,
     filename_path: Path,
     n_2D_grid_points: int = 500,
     write_excel_files: bool = False,
@@ -570,12 +571,18 @@ def _plot_2D_maps(
     )
     for line in map_line_profiles or []:
         ax.plot(
-            [np.log10(r_plot_min), np.log10(r_plot_max)],
+            [
+                np.log10(plotting_extrema["r_plot_min"]),
+                np.log10(plotting_extrema["r_plot_max"]),
+            ],
             [line, line],
             color=map2D_overlay_color_light,
             linestyle=linestyles["loosely dotted"],
         )
-    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
+    ax.set_xlim(
+        left=np.log10(plotting_extrema["r_plot_min"]),
+        right=np.log10(plotting_extrema["r_plot_max"]),
+    )
     ax.set_ylim(bottom=gamma_2D_map[-1], top=gamma_2D_map[0])
     ax.legend(loc="lower right")
     filename = (
@@ -606,7 +613,10 @@ def _plot_2D_maps(
     ax.set_xlabel("log(R) (μm)")
     ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
     fig.colorbar(cm, label=r"$S_{NR}$ (RIU$^{-1}$)")
-    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
+    ax.set_xlim(
+        left=np.log10(plotting_extrema["r_plot_min"]),
+        right=np.log10(plotting_extrema["r_plot_max"]),
+    )
     ax.set_ylim(bottom=gamma_2D_map[-1], top=gamma_2D_map[0])
     ax.legend(loc="lower right")
     filename = (
@@ -637,7 +647,10 @@ def _plot_2D_maps(
     ax.set_xlabel("log(R) (μm)")
     ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
     fig.colorbar(cm, label=r"$S_e$")
-    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
+    ax.set_xlim(
+        left=np.log10(plotting_extrema["r_plot_min"]),
+        right=np.log10(plotting_extrema["r_plot_max"]),
+    )
     ax.set_ylim(bottom=gamma_2D_map[-1], top=gamma_2D_map[0])
     ax.legend(loc="lower right")
     filename = (
@@ -675,7 +688,10 @@ def _plot_2D_maps(
     ax.set_xlabel("log(R) (μm)")
     ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
     fig.colorbar(cm, label=r"$S_e \times a$")
-    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
+    ax.set_xlim(
+        left=np.log10(plotting_extrema["r_plot_min"]),
+        right=np.log10(plotting_extrema["r_plot_max"]),
+    )
     ax.set_ylim(bottom=gamma_2D_map[-1], top=gamma_2D_map[0])
     ax.legend(loc="lower right")
     filename = (
@@ -721,7 +737,10 @@ def _plot_2D_maps(
     ax.set_xlabel("log(R) (μm)")
     ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
     fig.colorbar(cm, label=r"$a^2$")
-    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
+    ax.set_xlim(
+        left=np.log10(plotting_extrema["r_plot_min"]),
+        right=np.log10(plotting_extrema["r_plot_max"]),
+    )
     ax.set_ylim(bottom=gamma_2D_map[-1], top=gamma_2D_map[0])
     ax.legend(loc="lower right")
     filename = (
@@ -765,7 +784,10 @@ def _plot_2D_maps(
     )
     for line in map_line_profiles or []:
         ax.plot(
-            [np.log10(r_plot_min), np.log10(r_plot_max)],
+            [
+                np.log10(plotting_extrema["r_plot_min"]),
+                np.log10(plotting_extrema["r_plot_max"]),
+            ],
             [line, line],
             color=map2D_overlay_color_dark,
             linestyle=linestyles["loosely dotted"],
@@ -780,7 +802,10 @@ def _plot_2D_maps(
     ax.set_xlabel("log(R) (μm)")
     ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
     fig.colorbar(cm, label=r"$\alpha L$ (dB)")
-    ax.set_xlim(left=np.log10(r_plot_min), right=np.log10(r_plot_max))
+    ax.set_xlim(
+        left=np.log10(plotting_extrema["r_plot_min"]),
+        right=np.log10(plotting_extrema["r_plot_max"]),
+    )
     ax.set_ylim(bottom=gamma_2D_map[-1], top=gamma_2D_map[0])
     ax.legend(loc="lower right")
     filename = (
@@ -851,15 +876,7 @@ def _plot_2D_maps(
 def _plot_mrr_optimization_results(
     models: Models,
     mrr: Mrr,
-    r_plot_min: float,
-    r_plot_max: float,
-    S_plot_max: float,
-    Se_plot_max: float,
-    u_plot_min: float,
-    u_plot_max: float,
-    gamma_plot_min: float,
-    gamma_plot_max: float,
-    Finesse_plot_max: float,
+    plotting_extrema: dict,
     filename_path: Path,
     logger=print,
 ):
@@ -881,27 +898,45 @@ def _plot_mrr_optimization_results(
     axs_index: int = 0
     axs[axs_index].set_ylabel(r"max$\{S\}$" + "\n" + r"(RIU$^{-1}$)")
     axs[axs_index].loglog(models.R, mrr.S)
-    axs[axs_index].plot([mrr.max_S_radius, mrr.max_S_radius], [100, S_plot_max], "r--")
-    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
-    axs[axs_index].set_ylim(100, S_plot_max)
+    axs[axs_index].plot(
+        [mrr.max_S_radius, mrr.max_S_radius],
+        [100, plotting_extrema["S_plot_max"]],
+        "r--",
+    )
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
+    axs[axs_index].set_ylim(100, plotting_extrema["S_plot_max"])
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
     # S_NR @ max{S}
     axs_index += 1
     axs[axs_index].loglog(models.R, mrr.Snr)
-    axs[axs_index].plot([mrr.max_S_radius, mrr.max_S_radius], [10, S_plot_max], "r--")
+    axs[axs_index].plot(
+        [mrr.max_S_radius, mrr.max_S_radius],
+        [10, plotting_extrema["S_plot_max"]],
+        "r--",
+    )
     axs[axs_index].set_ylabel(r"S$_{NR}$" + "\n" + r"(RIU $^{-1}$)")
-    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
-    axs[axs_index].set_ylim(10, S_plot_max)
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
+    axs[axs_index].set_ylim(10, plotting_extrema["S_plot_max"])
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
     # Se @ max{S}
     axs_index += 1
     axs[axs_index].semilogx(models.R, mrr.Se * np.sqrt(mrr.a2))
-    axs[axs_index].plot([mrr.max_S_radius, mrr.max_S_radius], [0, Se_plot_max], "r--")
+    axs[axs_index].plot(
+        [mrr.max_S_radius, mrr.max_S_radius],
+        [0, plotting_extrema["Se_plot_max"]],
+        "r--",
+    )
     axs[axs_index].set_ylabel(r"S$_e \times a$")
-    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
-    axs[axs_index].set_ylim(0, Se_plot_max)
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
+    axs[axs_index].set_ylim(0, plotting_extrema["Se_plot_max"])
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
     # a @ max{S}
@@ -909,7 +944,9 @@ def _plot_mrr_optimization_results(
     axs[axs_index].semilogx(models.R, np.sqrt(mrr.a2))
     axs[axs_index].plot([mrr.max_S_radius, mrr.max_S_radius], [0, 1], "r--")
     axs[axs_index].set_ylabel(r"$a$")
-    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
     axs[axs_index].set_ylim(0, 1)
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
@@ -917,33 +954,49 @@ def _plot_mrr_optimization_results(
     axs_index += 1
     axs[axs_index].semilogx(models.R, mrr.u)
     axs[axs_index].plot(
-        [mrr.max_S_radius, mrr.max_S_radius], [u_plot_min, u_plot_max], "r--"
+        [mrr.max_S_radius, mrr.max_S_radius],
+        [plotting_extrema["u_plot_min"], plotting_extrema["u_plot_max"]],
+        "r--",
     )
     axs[axs_index].set_ylabel(f"{models.core_u_name} (μm)")
-    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
-    axs[axs_index].set_ylim(u_plot_min, u_plot_max)
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
+    axs[axs_index].set_ylim(
+        plotting_extrema["u_plot_min"], plotting_extrema["u_plot_max"]
+    )
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
     # Gamma_fluid @ max{S}
     axs_index += 1
     axs[axs_index].semilogx(models.R, mrr.gamma)
     axs[axs_index].plot(
-        [mrr.max_S_radius, mrr.max_S_radius], [gamma_plot_min, gamma_plot_max], "r--"
+        [mrr.max_S_radius, mrr.max_S_radius],
+        [plotting_extrema["gamma_plot_min"], plotting_extrema["gamma_plot_max"]],
+        "r--",
     )
     axs[axs_index].set_ylabel(r"$\Gamma_{fluide}$ ($\%$)")
-    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
-    axs[axs_index].set_ylim(gamma_plot_min, gamma_plot_max)
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
+    axs[axs_index].set_ylim(
+        plotting_extrema["gamma_plot_min"], plotting_extrema["gamma_plot_max"]
+    )
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
     # Finesse/2pi (number of turns in the ring) @ max{S}
     axs_index += 1
     axs[axs_index].semilogx(models.R, mrr.Finesse / (2 * np.pi))
     axs[axs_index].plot(
-        [mrr.max_S_radius, mrr.max_S_radius], [0, Finesse_plot_max], "r--"
+        [mrr.max_S_radius, mrr.max_S_radius],
+        [0, plotting_extrema["Finesse_plot_max"]],
+        "r--",
     )
     axs[axs_index].set_ylabel("Finesse/2π")
-    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
-    axs[axs_index].set_ylim(0, Finesse_plot_max)
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
+    axs[axs_index].set_ylim(0, plotting_extrema["Finesse_plot_max"])
 
     axs[axs_index].set_xlabel("Ring radius (μm)")
     filename: Path = filename_path.parent / f"{filename_path.stem}_MRR_sens_parms.png"
@@ -965,9 +1018,15 @@ def _plot_mrr_optimization_results(
     axs_index = 0
     axs[axs_index].set_ylabel(r"max$\{S\}$")
     axs[axs_index].loglog(models.R, mrr.S)
-    axs[axs_index].plot([mrr.max_S_radius, mrr.max_S_radius], [100, S_plot_max], "r--")
-    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
-    axs[axs_index].set_ylim(100, S_plot_max)
+    axs[axs_index].plot(
+        [mrr.max_S_radius, mrr.max_S_radius],
+        [100, plotting_extrema["S_plot_max"]],
+        "r--",
+    )
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
+    axs[axs_index].set_ylim(100, plotting_extrema["S_plot_max"])
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
     # Contrast, tau & a @ max{S}
@@ -977,7 +1036,9 @@ def _plot_mrr_optimization_results(
     axs[axs_index].semilogx(models.R, mrr.contrast, color="red", label="contrast")
     axs[axs_index].plot([mrr.max_S_radius, mrr.max_S_radius], [0, 1], "r--")
     axs[axs_index].set_ylim(0, 1)
-    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
     axs[axs_index].set_ylabel(r"Contrast, $a$, $\tau$")
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
     axs[axs_index].legend(loc="upper right")
@@ -988,7 +1049,9 @@ def _plot_mrr_optimization_results(
     axs[axs_index].plot(
         [mrr.max_S_radius, mrr.max_S_radius], [0, np.amax(mrr.ER)], "r--"
     )
-    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
     axs[axs_index].set_ylabel("Extinction\nratio\n(dB)")
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
@@ -998,7 +1061,9 @@ def _plot_mrr_optimization_results(
     axs[axs_index].plot(
         [mrr.max_S_radius, mrr.max_S_radius], [0, np.amax(mrr.Q)], "r--"
     )
-    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
     axs[axs_index].set_ylabel("Q")
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
@@ -1009,7 +1074,9 @@ def _plot_mrr_optimization_results(
         mrr.Finesse / (2 * np.pi) / (mrr.Se * np.sqrt(mrr.a2)),
     )
     axs[axs_index].set_ylim(0, 2.5)
-    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
     axs[axs_index].set_ylabel(r"$\frac{Finesse/2\pi}{S_e\times a}$")
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
@@ -1017,7 +1084,9 @@ def _plot_mrr_optimization_results(
     axs_index += 1
     axs[axs_index].loglog(models.R, mrr.FWHM * 1e6, "b", label="FWHM")
     axs[axs_index].loglog(models.R, mrr.FSR * 1e6, "g", label="FSR")
-    axs[axs_index].set_xlim(r_plot_min, r_plot_max)
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
     axs[axs_index].set_ylabel("FWHM and FSR\n(pm)")
     axs[axs_index].set_xlabel("Ring radius (μm)")
     axR = axs[axs_index].twinx()
@@ -1048,9 +1117,7 @@ def _plot_combined_linear_spiral_mrr_results(
     mrr: Mrr,
     linear: Linear,
     spiral: Spiral,
-    r_plot_min: float,
-    r_plot_max: float,
-    S_plot_max: float,
+    plotting_extrema: dict,
     T_SNR: float,
     min_delta_ni: float,
     filename_path: Path,
@@ -1085,7 +1152,7 @@ def _plot_combined_linear_spiral_mrr_results(
     # Linear waveguide
     ax.loglog(models.R, linear.S, color="g", label=r"Linear waveguide ($L = 2R$)")
     ax.loglog(
-        [r_plot_min, r_plot_max],
+        [plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]],
         [S_min, S_min],
         "r--",
         label="".join(
@@ -1095,8 +1162,8 @@ def _plot_combined_linear_spiral_mrr_results(
             ]
         ),
     )
-    ax.set_xlim(r_plot_min, r_plot_max)
-    ax.set_ylim(100, S_plot_max)
+    ax.set_xlim(plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"])
+    ax.set_ylim(100, plotting_extrema["S_plot_max"])
 
     # Spiral and MRR/spiral sensitivity ratio, if required
     if not no_spiral:
@@ -1178,31 +1245,13 @@ def plot_results(
     """
 
     # Calculate plotting extrema and max{S} vertical marker position
-    (
-        r_plot_min,
-        r_plot_max,
-        u_plot_min,
-        u_plot_max,
-        S_plot_max,
-        Se_plot_max,
-        Finesse_plot_max,
-        gamma_plot_min,
-        gamma_plot_max,
-    ) = _calc_plotting_extrema(models=models, mrr=mrr)
+    plotting_extrema: dict = _calc_plotting_extrema(models=models, mrr=mrr)
 
     # Plot/save MRR optimization results
     _plot_mrr_optimization_results(
         models=models,
         mrr=mrr,
-        r_plot_min=r_plot_min,
-        r_plot_max=r_plot_max,
-        S_plot_max=S_plot_max,
-        Se_plot_max=Se_plot_max,
-        u_plot_min=u_plot_min,
-        u_plot_max=u_plot_max,
-        gamma_plot_min=gamma_plot_min,
-        gamma_plot_max=gamma_plot_max,
-        Finesse_plot_max=Finesse_plot_max,
+        plotting_extrema=plotting_extrema,
         filename_path=filename_path,
         logger=logger,
     )
@@ -1211,8 +1260,7 @@ def plot_results(
     _plot_2D_maps(
         models=models,
         mrr=mrr,
-        r_plot_min=r_plot_min,
-        r_plot_max=r_plot_max,
+        plotting_extrema=plotting_extrema,
         filename_path=filename_path,
         n_2D_grid_points=n_2D_grid_points,
         write_excel_files=write_excel_files,
@@ -1227,8 +1275,8 @@ def plot_results(
     if not no_spiral:
         _plot_spiral_results(
             models=models,
-            mrr=mrr,
             spiral=spiral,
+            plotting_extrema=plotting_extrema,
             filename_path=filename_path,
             draw_largest_spiral=draw_largest_spiral,
             write_spiral_sequence_to_file=write_spiral_sequence_to_file,
@@ -1242,9 +1290,7 @@ def plot_results(
         mrr=mrr,
         linear=linear,
         spiral=spiral,
-        r_plot_min=r_plot_min,
-        r_plot_max=r_plot_max,
-        S_plot_max=S_plot_max,
+        plotting_extrema=plotting_extrema,
         T_SNR=T_SNR,
         min_delta_ni=min_delta_ni,
         filename_path=filename_path,
