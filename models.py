@@ -30,7 +30,6 @@ from pathlib import Path
 from scipy import interpolate
 from scipy.linalg import lstsq
 from sympy import functions, lambdify, symbols
-import sys
 from typing import Callable
 
 
@@ -119,14 +118,14 @@ class Models:
                 + f"{Style.RESET_ALL}"
             )
             if not parameters["disable_R_domain_check"]:
-                sys.exit()
+                raise ValueError
         if self.R_data_min > self.Rmin:
             self.logger(
                 f"{Fore.YELLOW}WARNING! Mode solver arrays must contain data"
                 + f" at radii < Rmin!{Style.RESET_ALL}"
             )
             if not parameters["disable_R_domain_check"]:
-                sys.exit()
+                raise ValueError
 
         # Fit alpha_bend(r, u) 2D polynomial model to the mode solver data
         self.alpha_bend = lambda *args, **kwargs: 0
@@ -702,11 +701,10 @@ class Models:
         max_indx: int = int(np.argmax(R_alpha_bend_threshold))
         R_alpha_bend_threshold: np.ndarray = R_alpha_bend_threshold[max_indx:]
         if len(R_alpha_bend_threshold) <= 1:
-            self.logger(
+            raise ValueError(
                 f"{Fore.YELLOW}'ERROR: alpha_bend_threshold' value us too high!"
                 + f"{Style.RESET_ALL}"
             )
-            sys.exit()
         u_alpha_bend_threshold: np.ndarray = np.asarray(u[max_indx:])
         self.r_min_for_u_search_lower_bound = R_alpha_bend_threshold[-1]
         self.r_max_for_u_search_lower_bound = R_alpha_bend_threshold[0]
@@ -777,14 +775,13 @@ class Models:
         # If the R values used for interpolation of the h domain lower bound are not
         # in monotonically increasing oder, exit with an error.
         if np.any(np.diff(R_alpha_bend_threshold) > 0):
-            self.logger(
+            raise ValueError(
                 f"{Fore.YELLOW}ERROR! Search domain lower bound fit:"
                 + "R values are not monotonically decreasing "
                 + f"(see {out_filename})! "
                 + "Decrease value of 'alpha_bend_threshold' in .toml file."
                 + f"{Style.RESET_ALL}"
             )
-            sys.exit()
 
     def u_search_domain(self, r: float) -> tuple[float, float]:
         # sourcery skip: remove-unnecessary-else, swap-if-else-branches

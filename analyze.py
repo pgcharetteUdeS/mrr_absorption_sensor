@@ -83,8 +83,7 @@ def analyze(
 
     # Check that the array of radii to be analyzed is not empty
     if np.size(models.R) == 0:
-        logger(f"{Fore.YELLOW}No radii to analyze!{Style.RESET_ALL}")
-        sys.exit()
+        raise ValueError(f"{Fore.YELLOW}No radii to analyze!{Style.RESET_ALL}")
 
     # If only model fitting was required, return
     if parameters["models_only"]:

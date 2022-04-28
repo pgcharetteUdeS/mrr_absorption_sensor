@@ -30,12 +30,7 @@ from .spiral import Spiral
 from .version import __version__
 
 
-def _check_mode_solver_data(
-    modes_data: dict,
-    bending_loss_data: dict,
-    filename: Path,
-    logger=print,
-) -> bool:
+def _check_mode_solver_data(modes_data: dict, bending_loss_data: dict, filename: Path):
     """
     For each u entry in the dictionary, check that the mode solver data are ordered,
     positive, and without duplicates.
@@ -43,67 +38,57 @@ def _check_mode_solver_data(
 
     # Check that the mode solver data dictionary is not empty
     if not bending_loss_data:
-        logger(
+        raise ValueError(
             f"{Fore.YELLOW}No bending loss data loaded from "
             + f"'{filename}'!{Style.RESET_ALL}"
         )
-        return False
 
     # Check that u values are in ascending order and positive
     u_bending_loss: np.ndarray = np.asarray(list(bending_loss_data.keys()))
     if not np.all(u_bending_loss[:-1] < u_bending_loss[1:]) or u_bending_loss[0] <= 0:
-        logger(
+        raise ValueError(
             f"{Fore.YELLOW}Bending loss data in '{filename}' are not "
             + f"in ascending h order!{Style.RESET_ALL}"
         )
-        return False
 
     # Check that gamma values are in monotonically descending order
     if np.any(np.diff(np.asarray([v.get("gamma") for v in modes_data.values()])) > 0):
-        logger(
+        raise ValueError(
             f"{Fore.YELLOW}Gamma values are not in monotonically "
             + f"decreasing order!{Style.RESET_ALL}"
         )
-        return False
 
     # Check radii and alpha_bend arrays are ordered, positive, and without duplicates
     for u, value in bending_loss_data.items():
         Rs: np.ndarray = np.asarray(value["R"])
         ABs: np.ndarray = np.asarray(value["alpha_bend"])
         if len(Rs) != len(ABs) or len(Rs) < 3:
-            logger(
+            raise ValueError(
                 f"{Fore.YELLOW}Invalid R/alpha_bend arrays for u = {u:.3f} in "
                 + f"'{filename}'!{Style.RESET_ALL}"
             )
-            return False
         if len(np.unique(Rs)) != len(Rs) or not np.all(Rs[:-1] < Rs[1:]) or Rs[0] <= 0:
-            logger(
+            raise ValueError(
                 f"{Fore.YELLOW}Invalid R array for u {u:.3f} in "
                 + f"'{filename}'!!{Style.RESET_ALL}"
             )
-            return False
         if (
             len(np.unique(ABs)) != len(ABs)
             or not np.all(ABs[:-1] > ABs[1:])
             or ABs[-1] <= 0
         ):
-            logger(
+            raise ValueError(
                 f"{Fore.YELLOW}Invalid alpha_bend array for u = {u:.3f} in "
                 + f"'{filename}'!{Style.RESET_ALL}"
             )
-            return False
 
     # Check that neff and gamma values are reasonable
     for mode in modes_data.values():
         if mode["neff"] < 1 or mode["gamma"] > 1:
-            logger(
+            raise ValueError(
                 f"{Fore.YELLOW}Invalid 'modes' data in '{filename}'!"
                 + f"{Style.RESET_ALL}"
             )
-            return False
-
-    # Return success
-    return True
 
 
 def load_toml_file(
@@ -175,46 +160,41 @@ def load_toml_file(
     invalid_keys: list = [key for key in toml_data.keys() if key not in valid_keys]
     if invalid_keys:
         valid_keys.sort(key=lambda x: x.lower())
-        logger(
+        raise ValueError(
             f"{Fore.YELLOW}File '{filename}' contains unsupported keys: "
             + f"{invalid_keys} - Valid keys are : {valid_keys}{Style.RESET_ALL}"
         )
-        sys.exit()
 
     # Determine if this is a "fixed core height" or "fixed core width" analysis
     if (
         toml_data.get("core_width") is not None
         and toml_data.get("core_height") is not None
     ) or (toml_data.get("core_width") is None and toml_data.get("core_height") is None):
-        logger(
+        raise ValueError(
             f"{Fore.YELLOW}EITHER 'core_width' or 'core_height' fields "
             + f"nust be specified!{Style.RESET_ALL}"
         )
-        sys.exit()
     if toml_data.get("core_width") is not None:
         logger("Fixed waveguide core width analysis.")
         parameters["core_u_name"] = "h"
         parameters["core_v_name"] = "w"
         parameters["core_v_value"] = toml_data.get("core_width")
         if toml_data.get("h") is None:
-            logger(f"{Fore.YELLOW}No 'h' fields specified!{Style.RESET_ALL}")
-            sys.exit()
+            raise ValueError(f"{Fore.YELLOW}No 'h' fields specified!{Style.RESET_ALL}")
     else:
         logger("Fixed waveguide core height analysis.")
         parameters["core_u_name"] = "w"
         parameters["core_v_name"] = "h"
         parameters["core_v_value"] = toml_data.get("core_height")
         if toml_data.get("w") is None:
-            logger(f"{Fore.YELLOW}No 'w' fields specified!{Style.RESET_ALL}")
-            sys.exit()
+            raise ValueError(f"{Fore.YELLOW}No 'w' fields specified!{Style.RESET_ALL}")
 
     # Check selected keys for valid content
     if parameters["pol"] not in ["TE", "TM"]:
-        logger(
+        raise ValueError(
             f"{Fore.YELLOW}Invalid 'pol' field value '{parameters['pol']}'"
             + f" in '{filename}'!{Style.RESET_ALL}"
         )
-        sys.exit()
 
     # Copy the neff(u) and gamma(u) mode solver data to the "modes_data{}" dictionary,
     # and the alpha_bend(R, u) mode solver data to the "bending_loss_data{}" dictionary
@@ -233,14 +213,11 @@ def load_toml_file(
         }
 
     # Check the validity of the mode solver data, exit if problem found
-    if not _check_mode_solver_data(
+    _check_mode_solver_data(
         modes_data=modes_data,
         bending_loss_data=bending_loss_data,
         filename=filename,
-        logger=logger,
-    ):
-        logger(f"{Fore.YELLOW}Mode solver data validation fail!{Style.RESET_ALL}")
-        sys.exit()
+    )
 
     # Console message
     logger(f"Loaded information from '{filename}'.")
