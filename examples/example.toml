@@ -15,6 +15,7 @@ gamma_order = 4							# Polynomial model order for interpolating gamma(h)
 neff_order = 3							# Polynomial model order for interpolating neff(h)
 
 # Analysis parameters
+alpha_bend_threshold = 0.01				# Maximum value of alpha_bend (db/cm) for h search domain lower bound in optimization (default = 0.01 dB)
 min_delta_ni = 1.0e-6					# Desired minimum resolvable change in ni (RIU)
 Rmin = 10								# Analysis domain minimum radius (um)
 Rmax = 10000							# Analysis domain maximum radius (um)
@@ -22,7 +23,9 @@ R_samples_per_decade = 100				# Analysis domain  logarithmic sampling rate (numb
 T_SNR = 20								# Transmission measurement SNR (dB)
 
 # Graphing and file I/O and parameters
+draw_largest_spiral = true				# Enable/disable drawing of largest spiral (default = true)
 map2D_colormap = "jet"					# matplotlib colormap for rendering 2D images (default = "viridis")
+map2D_n_grid_points = 500				# Number of samples along an axis in the 2D maps (default = 500)
 map2D_overlay_color_dark = "white"		# color for overlay plots on "mainly dark" 2D maps (default = "white")
 map2D_overlay_color_light = "white"		# color for overlay plots on "mainly light" 2D maps (default = "black")
 map_line_profiles = [20, 45, 65, 75]	# gamma values for line profiles in 2D maps (default = [])
