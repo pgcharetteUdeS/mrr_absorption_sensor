@@ -148,7 +148,9 @@ def load_toml_file(
         "R_samples_per_decade": toml_data.get("R_samples_per_decade", 100),
         "T_SNR": toml_data.get("T_SNR", 20.0),
         # Graphing and file I/O and parameters
+        "draw_largest_spiral": toml_data.get("draw_largest_spiral", True),
         "map2D_colormap": toml_data.get("map2D_colormap", "viridis"),
+        "map2D_n_grid_points": toml_data.get("map2D_n_grid_points", 500),
         "map2D_overlay_color_dark": toml_data.get("map2D_overlay_color_dark", "white"),
         "map2D_overlay_color_light": toml_data.get(
             "map2D_overlay_color_light", "black"

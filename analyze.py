@@ -74,24 +74,10 @@ def analyze(
     # Instantiate the Models class to build/fit the interpolation models for
     # gamma_fluid(u), neff(u), and alpha_bend(u, r)
     models: Models = Models(
+        parameters=parameters,
         modes_data=modes_data,
         bending_loss_data=bending_loss_data,
-        core_u_name=parameters["core_u_name"],
-        core_v_name=parameters["core_v_name"],
-        core_v_value=parameters["core_v_value"],
-        Rmin=parameters["Rmin"],
-        Rmax=parameters["Rmax"],
-        R_samples_per_decade=parameters["R_samples_per_decade"],
-        lambda_res=parameters["lambda_res"],
-        pol=parameters["pol"],
-        ni_op=parameters["ni_op"],
-        alpha_wg_dB_per_cm=parameters["alpha_wg"],
         filename_path=output_filenames_path,
-        alpha_bend_threshold=parameters["alpha_bend_threshold"],
-        gamma_order=parameters["gamma_order"],
-        neff_order=parameters["neff_order"],
-        disable_R_domain_check=parameters["disable_R_domain_check"],
-        disable_u_search_lower_bound=parameters["disable_u_search_lower_bound"],
         logger=logger,
     )
 
@@ -122,10 +108,8 @@ def analyze(
 
     # Instantiate, then if required analyze the spiral sensor
     spiral = Spiral(
-        spacing=parameters["spiral_spacing"],
-        turns_min=parameters["spiral_turns_min"],
-        turns_max=parameters["spiral_turns_max"],
         models=models,
+        parameters=parameters,
         logger=logger,
     )
     if not parameters["no_spiral"]:
@@ -137,17 +121,8 @@ def analyze(
         mrr=mrr,
         linear=linear,
         spiral=spiral,
-        T_SNR=parameters["T_SNR"],
-        min_delta_ni=parameters["min_delta_ni"],
+        parameters=parameters,
         filename_path=output_filenames_path,
-        write_excel_files=parameters["write_excel_files"],
-        map2D_colormap=parameters["map2D_colormap"],
-        map2D_overlay_color_dark=parameters["map2D_overlay_color_dark"],
-        map2D_overlay_color_light=parameters["map2D_overlay_color_light"],
-        map_line_profiles=parameters["map_line_profiles"],
-        no_spiral=parameters["no_spiral"],
-        draw_largest_spiral=parameters["write_spiral_sequence_to_file"],
-        write_spiral_sequence_to_file=parameters["write_spiral_sequence_to_file"],
         logger=logger,
     )
 

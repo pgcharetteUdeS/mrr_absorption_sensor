@@ -46,17 +46,15 @@ class Spiral:
 
     def __init__(
         self,
-        spacing: float,
-        turns_min: float,
-        turns_max: float,
         models: Models,
+        parameters: dict,
         logger: Callable = print,
     ):
 
         # Load class instance parameter values
-        self.spacing: float = spacing
-        self.turns_min: float = turns_min
-        self.turns_max: float = turns_max
+        self.spacing: float = parameters["spiral_spacing"]
+        self.turns_min: float = parameters["spiral_turns_min"]
+        self.turns_max: float = parameters["spiral_turns_max"]
         self.models: Models = models
         self.logger: Callable = logger
 

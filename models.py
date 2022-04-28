@@ -43,52 +43,41 @@ class Models:
 
     def __init__(
         self,
+        parameters: dict,
         modes_data: dict,
         bending_loss_data: dict,
-        core_u_name: str,
-        core_v_name: str,
-        core_v_value: float,
-        Rmin: float,
-        Rmax: float,
-        R_samples_per_decade: int,
-        lambda_res: float,
-        pol: str,
-        ni_op: float,
-        alpha_wg_dB_per_cm: float,
         filename_path: Path,
-        alpha_bend_threshold: float,
-        gamma_order,
-        neff_order,
-        disable_R_domain_check: bool = False,
-        disable_u_search_lower_bound: bool = False,
         logger: Callable = print,
     ):
 
         # Load class instance input parameters
         self.modes_data: dict = modes_data
         self.bending_loss_data: dict = bending_loss_data
-        self.core_u_name: str = core_u_name
-        self.core_v_name: str = core_v_name
-        self.core_v_value: float = core_v_value
-        self.Rmin: float = Rmin
-        self.Rmax: float = Rmax
-        self.R_samples_per_decade: int = R_samples_per_decade
-        self.lambda_res: float = lambda_res
-        self.pol: str = pol
-        self.ni_op: float = ni_op
-        self.alpha_wg_dB_per_cm: float = alpha_wg_dB_per_cm
+        self.core_u_name: str = parameters["core_u_name"]
+        self.core_v_name: str = parameters["core_v_name"]
+        self.core_v_value: float = parameters["core_v_value"]
+        self.Rmin: float = parameters["Rmin"]
+        self.Rmax: float = parameters["Rmax"]
+        self.R_samples_per_decade: int = parameters["R_samples_per_decade"]
+        self.lambda_res: float = parameters["lambda_res"]
+        self.pol: str = parameters["pol"]
+        self.ni_op: float = parameters["ni_op"]
+        self.alpha_wg_dB_per_cm: float = parameters["alpha_wg"]
         self.filename_path: Path = filename_path
-        self.alpha_bend_threshold: float = alpha_bend_threshold
-        self.gamma_order = gamma_order
-        self.neff_order = neff_order
-        self.disable_u_search_lower_bound = disable_u_search_lower_bound
+        self.alpha_bend_threshold: float = parameters["alpha_bend_threshold"]
+        self.gamma_order = parameters["gamma_order"]
+        self.neff_order = parameters["neff_order"]
+        self.disable_u_search_lower_bound = parameters["disable_u_search_lower_bound"]
         self.logger: Callable = logger
 
         # Define the array of radii to be analyzed (R domain)
         self.R: np.ndarray = np.logspace(
             start=np.log10(self.Rmin),
             stop=np.log10(self.Rmax),
-            num=int((np.log10(Rmax) - np.log10(Rmin)) * self.R_samples_per_decade),
+            num=int(
+                (np.log10(parameters["Rmax"]) - np.log10(parameters["Rmin"]))
+                * self.R_samples_per_decade
+            ),
             base=10,
         )
 
@@ -129,14 +118,14 @@ class Models:
                 + f" down to min(alpha_prop)/100 ({alpha_prop_min/100:.2e} um-1)!"
                 + f"{Style.RESET_ALL}"
             )
-            if not disable_R_domain_check:
+            if not parameters["disable_R_domain_check"]:
                 sys.exit()
         if self.R_data_min > self.Rmin:
             self.logger(
                 f"{Fore.YELLOW}WARNING! Mode solver arrays must contain data"
                 + f" at radii < Rmin!{Style.RESET_ALL}"
             )
-            if not disable_R_domain_check:
+            if not parameters["disable_R_domain_check"]:
                 sys.exit()
 
         # Fit alpha_bend(r, u) 2D polynomial model to the mode solver data
