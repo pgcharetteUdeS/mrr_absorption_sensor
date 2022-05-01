@@ -109,29 +109,29 @@ class Mrr:
 
     def alpha_prop(self, u: float) -> float:
         """
-        Calculate alpha_prop
+        α_prop = α_wg + gamma_fluid*α_fluid
         """
 
-        return self.models.alpha_wg + (
+        return self.models.alpha_wg(u=u) + (
             self.models.gamma_of_u(u) * self.models.alpha_fluid
         )
 
     def calc_alpha_prop_L(self, r: float, u: float) -> float:
         """
-        Calculate alpha_prop * L component of ring round-trip losses
+        Propagation loss component of total round-trip losses : α_prop*L
         """
 
         return self.alpha_prop(u=u) * (2 * np.pi * r)
 
     def calc_alpha_bend_L(self, r: float, u: float) -> float:
         """
-        Calculate alpha_bend * L component of ring round-trip losses
+        Bending loss component of total round-trip losses: α_bend*L
         """
         return self.models.alpha_bend(r=r, u=u) * (2 * np.pi * r)
 
     def calc_alpha_L(self, r: float, u: float) -> float:
         """
-        Calculate alpha * L total ring round-trip losses
+        Total ring round-trip loss factor: αL = (α_prop + α_bend)*L
         """
 
         return (self.alpha_prop(u=u) + self.models.alpha_bend(r=r, u=u)) * (
@@ -140,14 +140,14 @@ class Mrr:
 
     def calc_a2(self, r: float, u: float) -> float:
         """
-        Calculate a2 = e**(-alpha * L)
+        Ring round trio losses: a2 = e**(-α*L)
         """
 
         return np.e ** -self.calc_alpha_L(r=r, u=u)
 
     def calc_Snr(self, r: float, u: float) -> float:
         """
-        Calculate Snr
+        Calculate Snr (see paper)
         """
         return (
             (4 * np.pi / self.models.lambda_res)
@@ -158,7 +158,7 @@ class Mrr:
 
     def calc_Se(self, r: float, u: float) -> float:
         """
-        Calculate Se
+        Calculate Se (see paper)
         """
 
         return (

@@ -112,7 +112,6 @@ def load_toml_file(
     # Parse fields from .toml file into the parameters{} dictionary
     parameters: dict = {
         # Waveguide physical parameters
-        "alpha_wg": toml_data.get("alpha_wg", 1.0),
         "core_height": toml_data.get("core_height"),
         "core_width": toml_data.get("core_width"),
         "lambda_res": toml_data.get("lambda_res", 0.633),
@@ -125,6 +124,7 @@ def load_toml_file(
         # Model fitting parameters
         "gamma_order": toml_data.get("gamma_order", 4),
         "neff_order": toml_data.get("neff_order", 3),
+        "alpha_wg_order": toml_data.get("alpha_wg_order", 3),
         # Analysis parameters
         "alpha_bend_threshold": toml_data.get("alpha_bend_threshold", 0.01),
         "min_delta_ni": toml_data.get("min_delta_ni", 1.0e-6),
@@ -142,11 +142,15 @@ def load_toml_file(
         ),
         "map_line_profiles": toml_data.get("map_line_profiles", []),
         "output_sub_dir": toml_data.get("output_sub_dir", ""),
+        "write_2D_maps": toml_data.get("write_2D_maps", True),
         "write_excel_files": toml_data.get("write_excel_files", True),
         "write_spiral_sequence_to_file": toml_data.get(
             "write_spiral_sequence_to_file", True
         ),
         # Debugging and other flags
+        "alpha_wg_exponential_model": toml_data.get(
+            "alpha_wg_exponential_model", False
+        ),
         "disable_u_search_lower_bound": toml_data.get(
             "disable_u_search_lower_bound", False
         ),
@@ -206,6 +210,7 @@ def load_toml_file(
             "u": u_key_um,
             "neff": value["neff"],
             "gamma": value["gamma"],
+            "alpha_wg": value["alpha_wg"],
         }
         bending_loss_data[u_key_um] = {
             "R": value["R"],
@@ -298,23 +303,23 @@ def write_excel_results_file(
 
     # Save the MMR data to a sheet
     mrr_data_dict = {
-        "R (um)": models.R,
+        "R_um": models.R,
         "neff": mrr.neff,
-        "max(S) (RIU-1)": mrr.S,
+        "maxS_RIU_inv": mrr.S,
         "Se": mrr.Se,
-        "Snr (RIU-1)": mrr.Snr,
+        "Snr_RIU_inv": mrr.Snr,
         "a2": mrr.a2,
         "tau": mrr.tau,
-        "T max": mrr.T_max,
-        "T min": mrr.T_min,
-        "ER (dB)": mrr.ER,
+        "T_max": mrr.T_max,
+        "T_min": mrr.T_min,
+        "ER_dB": mrr.ER,
         "contrast": mrr.contrast,
-        f"{models.core_u_name} (um)": mrr.u,
-        "gamma (%)": mrr.gamma,
+        f"{models.core_u_name}_um": mrr.u,
+        "gamma_percent": mrr.gamma,
         "Finesse": mrr.Finesse,
         "Q": mrr.Q,
-        "FWHM (um)": mrr.FWHM,
-        "FSR (um)": mrr.FSR,
+        "FWHM_um": mrr.FWHM,
+        "FSR_um": mrr.FSR,
     }
     mrr_data: np.ndarray = np.asarray(list(mrr_data_dict.values())).T
     mrr_sheet = wb["Sheet"]
@@ -327,12 +332,12 @@ def write_excel_results_file(
     ReRw_sheet = wb.create_sheet("Re and Rw")
     ReRw_sheet.append(
         [
-            "gamma (%)",
-            f"{models.core_u_name} (um)",
-            "Re (um)",
-            "Rw (um)",
-            "A (um-1)",
-            "B (um-1)",
+            "gamma_percent",
+            f"{models.core_u_name}_um",
+            "Re_um",
+            "Rw_um",
+            "A_um_inv",
+            "B_um_inv",
         ]
     )
     for line in zip(
@@ -342,11 +347,11 @@ def write_excel_results_file(
 
     # Save the linear waveguide data to a sheet
     linear_data_dict = {
-        "R (um)": models.R,
-        "max(S) (RIU-1)": linear.S,
-        f"{models.core_u_name} (um)": linear.u,
-        "gamma (%)": linear.gamma,
-        "L (um)": 2 * models.R,
+        "R_um": models.R,
+        "maxS_RIU_inv": linear.S,
+        f"{models.core_u_name}_um": linear.u,
+        "gamma_percent": linear.gamma,
+        "L_um": 2 * models.R,
         "a2": linear.a2,
     }
     linear_data: np.ndarray = np.asarray(list(linear_data_dict.values())).T
@@ -358,13 +363,13 @@ def write_excel_results_file(
     # If required, save the spiral data to a sheet
     if not no_spiral:
         spiral_data_dict = {
-            "R (um)": models.R,
-            "max(S) (RIU-1)": spiral.S,
-            f"{models.core_u_name} (um)": spiral.u,
-            "gamma (%)": spiral.gamma,
-            "n revs (inner+outer)": spiral.n_turns * 2,
-            "Rmin (um)": spiral.outer_spiral_r_min,
-            "L (um)": spiral.L,
+            "R_um": models.R,
+            "maxS_RIU_inv": spiral.S,
+            f"{models.core_u_name}_um": spiral.u,
+            "gamma_percent": spiral.gamma,
+            "n_revs": spiral.n_turns * 2,
+            "Rmin_um": spiral.outer_spiral_r_min,
+            "L_um": spiral.L,
             "a2": spiral.a2,
         }
         spiral_data: np.ndarray = np.asarray(list(spiral_data_dict.values())).T

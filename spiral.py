@@ -389,7 +389,9 @@ class Spiral:
         gamma: float = self.models.gamma_of_u(
             h if self.models.core_v_name == "w" else w
         )
-        alpha_prop: float = self.models.alpha_wg + (gamma * self.models.alpha_fluid)
+        alpha_prop: float = self.models.alpha_wg(u=u) + (
+            gamma * self.models.alpha_fluid
+        )
         prop_losses_spiral: float = alpha_prop * L
 
         # Calculate bending losses in the spiral by integration w/r to radius

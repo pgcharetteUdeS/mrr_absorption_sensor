@@ -46,7 +46,9 @@ class Linear:
         """
 
         gamma: float = self.models.gamma_of_u(u)
-        alpha_prop: float = self.models.alpha_wg + (gamma * self.models.alpha_fluid)
+        alpha_prop: float = self.models.alpha_wg(u=u) + (
+            gamma * self.models.alpha_fluid
+        )
         L: float = 2 * r
 
         return np.e ** -(alpha_prop * L)

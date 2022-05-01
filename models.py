@@ -7,7 +7,7 @@ Exposed methods:
     - calc_A_and_B_(gamma)
     - gamma_of_u(u)
     - neff_of_u(u)
-     - u_of_gamma(gamma)
+    - u_of_gamma(gamma)
     - u_search_domain(r)
 
     NB:
@@ -32,6 +32,9 @@ from scipy.linalg import lstsq
 from sympy import functions, lambdify, symbols
 from typing import Callable
 
+# Package modules
+from .constants import PER_UM_TO_DB_PER_CM
+
 
 class Models:
     """
@@ -50,24 +53,25 @@ class Models:
     ):
 
         # Load class instance input parameters
-        self.modes_data: dict = modes_data
+        self.alpha_bend_threshold: float = parameters["alpha_bend_threshold"]
+        self.alpha_wg_order = parameters["alpha_wg_order"]
         self.bending_loss_data: dict = bending_loss_data
         self.core_u_name: str = parameters["core_u_name"]
         self.core_v_name: str = parameters["core_v_name"]
         self.core_v_value: float = parameters["core_v_value"]
+        self.disable_u_search_lower_bound = parameters["disable_u_search_lower_bound"]
+        self.filename_path: Path = filename_path
+        self.gamma_order = parameters["gamma_order"]
+        self.lambda_res: float = parameters["lambda_res"]
+        self.logger: Callable = logger
+        self.modes_data: dict = modes_data
+        self.neff_order = parameters["neff_order"]
+        self.ni_op: float = parameters["ni_op"]
+        self.parameters: dict = parameters
+        self.pol: str = parameters["pol"]
         self.Rmin: float = parameters["Rmin"]
         self.Rmax: float = parameters["Rmax"]
         self.R_samples_per_decade: int = parameters["R_samples_per_decade"]
-        self.lambda_res: float = parameters["lambda_res"]
-        self.pol: str = parameters["pol"]
-        self.ni_op: float = parameters["ni_op"]
-        self.alpha_wg_dB_per_cm: float = parameters["alpha_wg"]
-        self.filename_path: Path = filename_path
-        self.alpha_bend_threshold: float = parameters["alpha_bend_threshold"]
-        self.gamma_order = parameters["gamma_order"]
-        self.neff_order = parameters["neff_order"]
-        self.disable_u_search_lower_bound = parameters["disable_u_search_lower_bound"]
-        self.logger: Callable = logger
 
         # Define the array of radii to be analyzed (R domain)
         self.R: np.ndarray = np.logspace(
@@ -81,7 +85,6 @@ class Models:
         )
 
         # Define propagation losses in the waveguide core and in the fluid medium (1/um)
-        self.alpha_wg: float = self.alpha_wg_dB_per_cm / 4.34 / 10000
         self.alpha_fluid: float = (4 * np.pi / self.lambda_res) * self.ni_op
 
         # Parse and validate the mode solver data loaded from the .toml file
@@ -101,6 +104,11 @@ class Models:
         self.alpha_bend_data_min: float = 0
         self._parse_bending_loss_mode_solver_data()
 
+        # Fit alpha_wg(u) model
+        self.alpha_wg_model: dict = {}
+        self._fit_alpha_wg_model()
+        self.alpha_wg_dB_per_cm: float = self.alpha_wg() * PER_UM_TO_DB_PER_CM
+
         # Fit gamma(h), h(gamma), and neff(h) 1D poly models to the mode solver data
         self.gamma_model: dict = {}
         self.u_model: dict = {}
@@ -108,7 +116,7 @@ class Models:
         self._fit_1D_models()
 
         # Check that the bending loss mode solver data covers the required h & R ranges
-        alpha_prop_min: float = self.alpha_wg + (
+        alpha_prop_min: float = self.alpha_wg() + (
             self.gamma_of_u(self.u_domain_max) * self.alpha_fluid
         )
         if self.alpha_bend_data_min > alpha_prop_min / 100:
@@ -296,6 +304,78 @@ class Models:
         self.logger(f"Wrote '{out_filename}'.")
 
     #
+    # Loss models
+    #
+
+    def _fit_alpha_wg_model(self):
+        """ """
+
+        # Polynomial model for alpha_wg(u) in the input mode solver data
+        u_data = np.asarray([value.get("u") for value in self.modes_data.values()])
+        alpha_wg_data = (
+            np.asarray([value.get("alpha_wg") for value in self.modes_data.values()])
+            / PER_UM_TO_DB_PER_CM
+        )
+        self.alpha_wg_model = {
+            "name": "alpha_wg",
+            "model": Polynomial.fit(x=u_data, y=alpha_wg_data, deg=self.alpha_wg_order),
+            "min": 0,
+            "max": 1,
+        }
+
+        # Plot modeled and original mode solver data values
+        fig, ax = plt.subplots()
+        u_interp: np.ndarray = np.linspace(u_data[0], u_data[-1], 100)
+        alpha_wg_modeled = np.asarray([self.alpha_wg(u) for u in u_interp]) * (
+            PER_UM_TO_DB_PER_CM
+        )
+        ax.plot(u_interp, alpha_wg_modeled)
+        if self.parameters["alpha_wg_exponential_model"]:
+            ax.set_title(r"$\alpha_{wg}$ ({self.core_u_name}), exponential model")
+        else:
+            ax.plot(u_data, alpha_wg_data * PER_UM_TO_DB_PER_CM, ".")
+            ax.set_title(
+                r"$\alpha_{wg}$"
+                + f"({self.core_u_name})"
+                + f", polynomial model order: {self.alpha_wg_order}"
+            )
+        ax.set_xlabel(f"{self.core_u_name} (μm)")
+        ax.set_ylabel(r"$\alpha_{wg}$ (dB/cm)")
+
+        # Save graph to file
+        out_filename: str = str(
+            (
+                self.filename_path.parent
+                / f"{self.filename_path.stem}_ALPHA_WG_MODEL.png"
+            )
+        )
+        fig.savefig(out_filename)
+        self.logger(f"Wrote '{out_filename}'.")
+
+    def alpha_wg(self, u: float = None) -> float:
+
+        # If no height or width specified, return minimum alpha_wg value
+        if u is None:
+            return [value.get("alpha_wg") for value in self.modes_data.values()][
+                -1
+            ] / PER_UM_TO_DB_PER_CM
+
+        # Normal function return: polynomial model for alpha_wg(u)
+        if not self.parameters["alpha_wg_exponential_model"]:
+            return self.alpha_wg_model["model"](u)
+
+        # Debugging: hard-coded exponential model for alpha_wg(u)
+        α_min: float = [value.get("alpha_wg") for value in self.modes_data.values()][-1]
+        α_max: float = α_min * 2
+        return (
+            α_min
+            + (α_max - α_min)
+            * np.exp(
+                -(u - self.u_domain_min) / (self.u_domain_max - self.u_domain_min) * 5
+            )
+        ) / PER_UM_TO_DB_PER_CM
+
+    #
     # alpha_bend(r, h) modeling
     #
 
@@ -398,8 +478,8 @@ class Models:
                     r"+ $\Gamma_{fluide}",
                     f"({self.core_u_name})",
                     r"\times\alpha_{fluid}$, where ",
-                    r"$\alpha_{wg}$",
-                    f" = {self.alpha_wg:.2e} ",
+                    r"min($\alpha_{wg}$)",
+                    f" = {self.alpha_wg():.2e} ",
                     r"$\mu$m$^{-1}$ and ",
                     r"$\alpha_{fluid}$",
                     f" = {self.alpha_fluid:.2e} ",
@@ -496,7 +576,7 @@ class Models:
         gamma: np.ndarray = np.ones_like(u_domain)
         for g, u in np.nditer([gamma, u_domain], op_flags=["readwrite"]):
             g[...] = self.gamma_of_u(u[...])
-        alpha_prop: np.ndarray = self.alpha_wg + (gamma * self.alpha_fluid)
+        alpha_prop: np.ndarray = self.alpha_wg() + (gamma * self.alpha_fluid)
         face_colors: np.ndarray = np.copy(
             np.broadcast_to(colors.to_rgba(c="red", alpha=0.8), u_domain.shape + (4,))
         )

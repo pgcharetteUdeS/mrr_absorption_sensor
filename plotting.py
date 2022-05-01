@@ -23,6 +23,7 @@ from .mrr import Mrr
 from .linear import Linear
 from .spiral import Spiral
 from .fileio import write_image_data_to_Excel
+from .constants import PER_UM_TO_DB_PER_CM
 
 
 def _calc_5X_10X_comp_data(
@@ -989,19 +990,16 @@ def _plot_mrr_optimization_results(
     )
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
-    # Finesse/2pi (number of turns in the ring) @ max{S}
+    # alpha_wg @ max{S}
     axs_index += 1
-    axs[axs_index].semilogx(models.R, mrr.Finesse / (2 * np.pi))
-    axs[axs_index].plot(
-        [mrr.max_S_radius, mrr.max_S_radius],
-        [0, plotting_extrema["Finesse_plot_max"]],
-        "r--",
+    axs[axs_index].semilogx(
+        models.R,
+        np.asarray([mrr.models.alpha_wg(u) for u in mrr.u]) * PER_UM_TO_DB_PER_CM,
     )
-    axs[axs_index].set_ylabel("Finesse/2π")
+    axs[axs_index].set_ylabel(r"α$_{wg}$")
     axs[axs_index].set_xlim(
         plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
     )
-    axs[axs_index].set_ylim(0, plotting_extrema["Finesse_plot_max"])
 
     axs[axs_index].set_xlabel("Ring radius (μm)")
     filename: Path = filename_path.parent / f"{filename_path.stem}_MRR_sens_parms.png"
@@ -1241,14 +1239,15 @@ def plot_results(
     )
 
     # Plot/save MRR 2D result maps
-    _plot_2D_maps(
-        models=models,
-        mrr=mrr,
-        parameters=parameters,
-        plotting_extrema=plotting_extrema,
-        filename_path=filename_path,
-        logger=logger,
-    )
+    if parameters["write_2D_maps"]:
+        _plot_2D_maps(
+            models=models,
+            mrr=mrr,
+            parameters=parameters,
+            plotting_extrema=plotting_extrema,
+            filename_path=filename_path,
+            logger=logger,
+        )
 
     # Plot/save spiral results, if required
     if not parameters["no_spiral"]:
