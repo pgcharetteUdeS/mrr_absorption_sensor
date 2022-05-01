@@ -1,6 +1,8 @@
 """
 
-Plot figure 5, 6a in the article from data in file "*_R_MRR_2DMAPS_VS_GAMMA_and_R.xlsx"
+Plot figure 5, 6a in the article
+
+Data in file "*_R_MRR_2DMAPS_VS_GAMMA_and_R.xlsx"
 
 """
 
@@ -9,7 +11,47 @@ import matplotlib.pyplot as plt
 from openpyxl import load_workbook, Workbook
 
 
-def plot_figure_5_sub_plot(
+def plot_figure_3(wb: Workbook, gamma: float):
+    # Fetch R and gamma arrays from their respective sheets in the workbook
+    R = np.asarray([c.value for c in wb["R (um)"][1]])
+    gammas = np.asarray([val[0].value for val in wb["gamma (%)"].iter_rows(max_col=1)])
+
+    # Fetch line profiles for S, Snr, and Se
+    index = int(np.argmin(np.abs(gammas - gamma)) + 1)
+    S = np.asarray([c.value for c in wb["S (RIU-1)"][index]])
+    Snr = np.asarray([c.value for c in wb["Snr (RIU-1)"][index]])
+    Se = np.asarray([c.value for c in wb["Se"][index]])
+
+    # Create the figure
+    fig, ax = plt.subplots(constrained_layout=True)
+    fig.suptitle("Figure 3")
+
+    # PLot line profiles
+    ax.semilogx(R, S, "b-", label=r"$S_{MRR}$")
+    ax.semilogx(R, Snr, "r--", label=r"$S_{NR}$")
+    axR = ax.twinx()
+    axR.semilogx(R, Se, "g--", label=r"$S_{e}$")
+
+    # PLot formatting, title, labels, etc.
+    ax.set_title(
+        "Sensitivity components as a function of radius"
+        + rf" at $\Gamma_{{fluid}}$ = {gamma:.0f}$\%$"
+    )
+    ax.set_xlabel("Radius (μm)")
+    ax.set_ylabel(r"$S_{MRR}$ and $S_{NR}$ (RIU$_{-1}$)")
+    axR.set_ylabel(r"$S_e$")
+    ax.set_ylim(0, 25000)
+    axR.set_ylim(0, 25)
+    ax.set_xlim(R[0], R[-1])
+    ax.grid(visible=True)
+
+    # Combine legends
+    ax_lines = ax.get_legend_handles_labels()[0] + axR.get_legend_handles_labels()[0]
+    ax_labels = ax.get_legend_handles_labels()[1] + axR.get_legend_handles_labels()[1]
+    ax.legend(ax_lines, ax_labels, loc="upper left")
+
+
+def _plot_figure_5_sub_plot(
     wb: Workbook,
     gamma: float,
     R: np.ndarray,
@@ -63,7 +105,7 @@ def plot_figure_5(wb: Workbook, line_profile_gammas: np.ndarray):
 
     # Loop to generate the subplots of the line profiles
     for i, gamma in enumerate(line_profile_gammas):
-        plot_figure_5_sub_plot(
+        _plot_figure_5_sub_plot(
             wb=wb,
             gamma=gamma,
             R=R,
@@ -71,7 +113,6 @@ def plot_figure_5(wb: Workbook, line_profile_gammas: np.ndarray):
             ax=axs[i],
             last=i >= len(line_profile_gammas) - 1,
         )
-    plt.show()
 
 
 def plot_figure_6a(wb: Workbook, line_profile_gammas: np.ndarray):
@@ -97,22 +138,25 @@ def plot_figure_6a(wb: Workbook, line_profile_gammas: np.ndarray):
     ax.set_ylim(0, 50000)
     ax.grid(visible=True)
     ax.legend(loc="upper left")
-    plt.show()
 
 
 def main():
     plt.ion()
+
+    # Load data from Excel file
     fname: str = (
-        "data/Tableau_REDUCED_TE_w07_dbrutes" + "_R_MRR_2DMAPS_VS_GAMMA_and_R.xlsx"
+        "data/Tableau_REDUCED_TE_w07_dbrutes_R_MRR_2DMAPS_VS_GAMMA_and_R"
+        + "__alpha_wg_variable.xlsx"
     )
-    plot_figure_5(
-        wb=load_workbook(fname, read_only=True),
-        line_profile_gammas=np.asarray([20, 45, 65, 75]),
-    )
+    wb: Workbook = load_workbook(fname, read_only=True)
+
+    # Generate figures
+    plot_figure_3(wb=wb, gamma=30)
+    plot_figure_5(wb=wb, line_profile_gammas=np.asarray([20, 45, 65, 75]))
     plot_figure_6a(
-        wb=load_workbook(fname, read_only=True),
-        line_profile_gammas=np.asarray([20, 30, 45, 55, 60, 65, 70, 75]),
+        wb=wb, line_profile_gammas=np.asarray([20, 30, 45, 55, 60, 65, 70, 75])
     )
+    plt.show()
 
 
 main()

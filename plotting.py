@@ -1073,7 +1073,7 @@ def _plot_mrr_optimization_results(
 
     # Q @ max{S}
     axs_index += 1
-    axs[axs_index].semilogx(models.R, mrr.Q, label="Q")
+    axs[axs_index].loglog(models.R, mrr.Q, label="Q")
     axs[axs_index].plot(
         [mrr.max_S_radius, mrr.max_S_radius], [0, np.amax(mrr.Q)], "r--"
     )
