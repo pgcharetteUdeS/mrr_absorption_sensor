@@ -14,7 +14,6 @@ from colorama import Fore, Style
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
-import sys
 
 # Package modules
 from .models import Models
@@ -120,7 +119,6 @@ def analyze(
         mrr=mrr,
         linear=linear,
         spiral=spiral,
-        parameters=parameters,
         filename_path=output_filenames_path,
         logger=logger,
     )

@@ -249,7 +249,7 @@ class Models:
             "1D model fits\n"
             + f"{self.pol}"
             + f", λ = {self.lambda_res:.3f} μm"
-            + rf", α$_{{wg}}$ = {self.alpha_wg_dB_per_cm:.1f} dB/cm"
+            + rf", min(α$_{{wg}}$) = {self.alpha_wg_dB_per_cm:.1f} dB/cm"
             + f", {self.core_v_name} = {self.core_v_value:.3f} μm"
         )
         axs_index: int = 0
@@ -331,7 +331,7 @@ class Models:
         )
         ax.plot(u_interp, alpha_wg_modeled)
         if self.parameters["alpha_wg_exponential_model"]:
-            ax.set_title(r"$\alpha_{wg}$ ({self.core_u_name}), exponential model")
+            ax.set_title(rf"$\alpha_{{wg}}$ ({self.core_u_name}), exponential model")
         else:
             ax.plot(u_data, alpha_wg_data * PER_UM_TO_DB_PER_CM, ".")
             ax.set_title(
@@ -573,10 +573,17 @@ class Models:
         #   red:    alpha_prop < alpha_bend
         #   green:  alpha_bend < alpha_prop < alpha_bend x 10
         #   blue:   alpha_prop > alpha_bend x 10, alpha_prop dominates
+        """
         gamma: np.ndarray = np.ones_like(u_domain)
         for g, u in np.nditer([gamma, u_domain], op_flags=["readwrite"]):
             g[...] = self.gamma_of_u(u[...])
         alpha_prop: np.ndarray = self.alpha_wg() + (gamma * self.alpha_fluid)
+        """
+        alpha_prop: np.ndarray = np.ones_like(u_domain)
+        for α_prop, u in np.nditer([alpha_prop, u_domain], op_flags=["readwrite"]):
+            α_prop[...] = self.alpha_wg(u[...]) + (
+                self.gamma_of_u(u[...]) * self.alpha_fluid
+            )
         face_colors: np.ndarray = np.copy(
             np.broadcast_to(colors.to_rgba(c="red", alpha=0.8), u_domain.shape + (4,))
         )
@@ -815,7 +822,9 @@ class Models:
                 ]
             )
             + "".join([r", $\lambda$", f" = {self.lambda_res:.3f} ", r"$\mu$m"])
-            + "".join([r", $\alpha_{wg}$", f" = {self.alpha_wg_dB_per_cm:.1f} dB/cm"])
+            + "".join(
+                [r", min($\alpha_{wg}$)", f" = {self.alpha_wg_dB_per_cm:.1f} dB/cm"]
+            )
             + "".join([f", {self.core_v_name} = {self.core_v_value:.3f} ", r"$\mu$m"])
             + (
                 "".join(
