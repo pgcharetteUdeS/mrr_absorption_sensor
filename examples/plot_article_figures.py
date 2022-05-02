@@ -1,14 +1,15 @@
 """
 
-Plot figure 5, 6a in the article
+Plot figures 3, 5, 6a in the article
 
-Data in file "*_R_MRR_2DMAPS_VS_GAMMA_and_R.xlsx"
+Data in files "*_MRR_2DMAPS_VS_GAMMA_and_R.xlsx" and "*_ALL_RESULTS.xlsx"
 
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
 from openpyxl import load_workbook, Workbook
+import sys
 
 
 def _get_Re_Rw(wb_all_results: Workbook, gamma: float) -> tuple[float, float]:
@@ -74,7 +75,6 @@ def plot_figure_3(wb_2D_map: Workbook, wb_all_results: Workbook, gamma: float):
     ax.set_ylim(0, 25000)
     axR.set_ylim(0, 25)
     ax.set_xlim(R[0], R[-1])
-    ax.grid(visible=True)
 
     # Combine legends
     ax_lines = ax.get_legend_handles_labels()[0] + axR.get_legend_handles_labels()[0]
@@ -82,7 +82,7 @@ def plot_figure_3(wb_2D_map: Workbook, wb_all_results: Workbook, gamma: float):
     ax.legend(ax_lines, ax_labels, loc="upper left")
 
 
-def _plot_figure_5_sub_plot(
+def _figure_5_line_profile_plot(
     wb_2D_map: Workbook,
     wb_all_results: Workbook,
     gamma: float,
@@ -103,7 +103,7 @@ def _plot_figure_5_sub_plot(
     # Get corresponding Re and Rw values from the all_results workbook
     Re, Rw = _get_Re_Rw(wb_all_results=wb_all_results, gamma=gamma)
 
-    # Plot the line profiles
+    # Plot the line profile
     ax.semilogx(R, αL, "k", label="αL")
     ax.semilogx(R, αbendL, "g--", label="αbendL")
     ax.semilogx(R, αpropL, "r--", label="αpropL")
@@ -121,7 +121,6 @@ def _plot_figure_5_sub_plot(
     ax.set_xlim(R[0], R[-1])
     ax.set_ylim(0, 60)
     axR.set_ylim(0, 50000)
-    ax.grid(visible=True)
     if last:
         ax.set_xlabel("Radius (μm)")
     else:
@@ -142,13 +141,13 @@ def plot_figure_5(
         [val[0].value for val in wb_2D_map["gamma (%)"].iter_rows(max_col=1)]
     )
 
-    # Create figure with required number of subplots for the line profiles
+    # Create figure with required number of subplots for the requested line profiles
     fig, axs = plt.subplots(len(line_profile_gammas), constrained_layout=True)
     fig.suptitle("Figure 5")
 
-    # Loop to generate the subplots of the line profiles
+    # Loop to generate the subplots of the line profiles in "line_profile_gammas"
     for i, gamma in enumerate(line_profile_gammas):
-        _plot_figure_5_sub_plot(
+        _figure_5_line_profile_plot(
             wb_2D_map=wb_2D_map,
             wb_all_results=wb_all_results,
             gamma=gamma,
@@ -159,42 +158,110 @@ def plot_figure_5(
         )
 
 
-def plot_figure_6a(wb_2D_map: Workbook, line_profile_gammas: np.ndarray):
+def plot_figure_6(
+    wb_2D_map: Workbook, wb_all_results: Workbook, line_profile_gammas: np.ndarray
+):
+    # Create the figure
+    fig, axs = plt.subplots(3)
+    fig.suptitle("Figure 6")
+
+    #
+    # 6a
+    #
+
     # Fetch R and gamma arrays from their respective sheets in the workbook
     R = np.asarray([c.value for c in wb_2D_map["R (um)"][1]])
     gammas = np.asarray(
         [val[0].value for val in wb_2D_map["gamma (%)"].iter_rows(max_col=1)]
     )
 
-    # Create the figure
-    fig, ax = plt.subplots(constrained_layout=True)
-    fig.suptitle("Figure 6a")
-
-    # Loop to generate the subplots of the line profiles
-    for g in line_profile_gammas:
+    # Loop to generate the subplots of the line profiles in "line_profile_gammas"
+    for g in np.insert(line_profile_gammas, 0, min(gammas)):
         index = int(np.argmin(np.abs(gammas - g)) + 1)
         S = np.asarray([c.value for c in wb_2D_map["S (RIU-1)"][index]])
-        ax.semilogx(R, S, label=f"{g:.0f}%")
+        axs[0].semilogx(R, S, label=rf"$\Gamma$ = {g:.0f}%")
 
     # PLot formatting, title, labels, etc.
-    ax.set_title(r"Sensitivity as a function of $\Gamma_{fluid}$ (linear)")
-    ax.set_xlabel("Radius (μm)")
-    ax.set_ylabel(r"S$_{MRR}$")
-    ax.set_xlim(R[0], R[-1])
-    ax.set_ylim(0, 50000)
-    ax.grid(visible=True)
-    ax.legend(loc="upper left")
+    axs[0].set_ylabel(r"S$_{MRR}$")
+    axs[0].set_xlim(R[0], R[-1])
+    axs[0].set_ylim(10, 30000)
+    axs[0].legend(loc="upper right")
+    axs[0].axes.get_xaxis().set_ticklabels([])
+
+    #
+    # 6b & 6c
+    #
+    R = np.asarray(
+        [val[0].value for val in wb_all_results["MRR"].iter_rows(min_row=2, max_col=1)]
+    )
+    Smax = np.asarray(
+        [
+            val[0].value
+            for val in wb_all_results["MRR"].iter_rows(min_row=2, min_col=3, max_col=3)
+        ]
+    )
+    h, gamma = np.asarray(
+        [
+            (val[0].value, val[1].value)
+            for val in wb_all_results["MRR"].iter_rows(
+                min_row=2, min_col=12, max_col=13
+            )
+        ]
+    ).T
+    max_Smax_R: float = R[int(np.argmax(Smax))]
+
+    # Smax(R)
+    axs[1].loglog(R, Smax, "k")
+    axs[1].set_ylabel("max(S$_{MRR}$)")
+    axs[1].set_xlim(R[0], R[-1])
+    axs[1].set_ylim(10, 100000)
+    axs[1].loglog([max_Smax_R, max_Smax_R], [10, 100000], "r--")
+    axs[1].text(max_Smax_R * 1.05, 50000, r"max(max($S_{MRR}$))", color="red")
+    axs[1].axes.get_xaxis().set_ticklabels([])
+
+    # h(R) and gamma(R) @ Smax
+    axs[2].semilogx(R, h, "b", label="h")
+    axs[2].set_ylabel(r"h (μm) @ max($S_{MRR}$)")
+    axs[2].set_ylim(0.1, 0.5)
+    axs[2].semilogx([max_Smax_R, max_Smax_R], [0.1, 0.5], "r--")
+    axR = axs[2].twinx()
+    axR.semilogx(R, gamma, "g--", label=r"$\Gamma_{fluid}$")
+    axR.set_ylabel(r"$\Gamma_{fluid}$ $(\%)$ @ max($S_{MRR}$)")
+    axR.set_ylim(0, 80)
+    axs[2].set_xlabel("Radius (μm)")
+    axs[2].set_xlim(R[0], R[-1])
+    ax_lines = (
+        axs[2].get_legend_handles_labels()[0] + axR.get_legend_handles_labels()[0]
+    )
+    ax_labels = (
+        axs[2].get_legend_handles_labels()[1] + axR.get_legend_handles_labels()[1]
+    )
+    axs[2].legend(ax_lines, ax_labels, loc="center left")
+    axs[2].text(max_Smax_R * 1.05, 0.45, r"max(max($S_{MRR}$))", color="red")
 
 
 def main():
+    # matplotlib initializations
+    plt.rcParams.update(
+        {
+            "axes.grid": True,
+            "axes.grid.which": "both",
+        },
+    )
     plt.ion()
 
-    # Define Excel filenames
-    filename_ALL_RESULTS: str = "data/Tableau_REDUCED_TE_w07_dbrutes_R_ALL_RESULTS.xlsx"
-    filename_MRR_2DMAPS_VS_GAMMA_AND_R: str = (
-        "data/Tableau_REDUCED_TE_w07_dbrutes_R_MRR_2DMAPS_VS_GAMMA_and_R"
-        + "__alpha_wg_variable.xlsx"
-    )
+    # Read Excel filenames from the command line, else define them locally
+    if len(sys.argv) == 3:
+        filename_ALL_RESULTS: str = sys.argv[1]
+        filename_MRR_2DMAPS_VS_GAMMA_AND_R: str = sys.argv[2]
+    else:
+        filename_ALL_RESULTS: str = (
+            "data/Tableau_REDUCED_TE_w07_dbrutes_R_ALL_RESULTS.xlsx"
+        )
+        filename_MRR_2DMAPS_VS_GAMMA_AND_R: str = (
+            "data/Tableau_REDUCED_TE_w07_dbrutes_R_MRR_2DMAPS_VS_GAMMA_and_R"
+            + "__alpha_wg_variable.xlsx"
+        )
 
     # Load Excel workbooks
     wb_all_results: Workbook = load_workbook(filename_ALL_RESULTS, read_only=True)
@@ -209,12 +276,20 @@ def main():
         wb_all_results=wb_all_results,
         line_profile_gammas=np.asarray([20, 45, 65, 75]),
     )
-    plot_figure_6a(
+    plot_figure_6(
         wb_2D_map=wb_2D_map,
+        wb_all_results=wb_all_results,
         line_profile_gammas=np.asarray([20, 30, 45, 55, 60, 65, 70, 75]),
     )
     plt.show()
 
+    # If running from the command line, either pause for user input to keep figures
+    # visible. If running in PyCharm debugger, set breakpoint here.
+    if sys.gettrace() is not None:
+        print("Breakpoint here to keep figures visible in IDE!")
+    else:
+        input("Script paused to display figures, press any key to exit")
 
+
+# Run the script...
 main()
-print("Done!")
