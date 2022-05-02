@@ -1,6 +1,6 @@
 """
 
-Plot figures 3, 5, 6a in the article
+Plot figures 3, 5, 6 in the article
 
 Data in files "*_MRR_2DMAPS_VS_GAMMA_and_R.xlsx" and "*_ALL_RESULTS.xlsx"
 
@@ -184,9 +184,8 @@ def plot_figure_6(
     # PLot formatting, title, labels, etc.
     axs[0].set_ylabel(r"S$_{MRR}$")
     axs[0].set_xlim(R[0], R[-1])
-    axs[0].set_ylim(10, 30000)
+    axs[0].set_ylim(0, 50000)
     axs[0].legend(loc="upper right")
-    axs[0].axes.get_xaxis().set_ticklabels([])
 
     #
     # 6b & 6c
@@ -209,6 +208,11 @@ def plot_figure_6(
         ]
     ).T
     max_Smax_R: float = R[int(np.argmax(Smax))]
+
+    # Add max(max(Smax)) vertical line to 6a
+    axs[0].semilogx([max_Smax_R, max_Smax_R], [0, 50000], "r--")
+    axs[0].text(max_Smax_R * 1.05, 45000, r"max(max($S_{MRR}$))", color="red")
+    axs[0].axes.get_xaxis().set_ticklabels([])
 
     # Smax(R)
     axs[1].loglog(R, Smax, "k")
