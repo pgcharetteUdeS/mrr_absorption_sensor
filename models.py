@@ -4,8 +4,8 @@ Models class
 
 Exposed methods:
     - alpha_bend(r, u)
-    - calc_A_and_B_(gamma)
     - alpha_wg_of_u(u)
+    - calc_A_and_B_(gamma)
     - gamma_of_u(u)
     - neff_of_u(u)
     - u_of_gamma(gamma)
@@ -85,7 +85,7 @@ class Models:
             base=10,
         )
 
-        # Define propagation losses in the waveguide core and in the fluid medium (1/um)
+        # Define propagation losses in the fluid medium (1/um)
         self.alpha_fluid: float = (4 * np.pi / self.lambda_res) * self.ni_op
 
         # Parse and validate the mode solver data loaded from the .toml file
@@ -105,15 +105,13 @@ class Models:
         self.alpha_bend_data_min: float = 0
         self._parse_bending_loss_mode_solver_data()
 
-        # Fit alpha_wg(u) model
-        self.alpha_wg_model: dict = {}
-        self.alpha_wg_dB_per_cm: float = self.alpha_wg_of_u() * PER_UM_TO_DB_PER_CM
-
         # Fit gamma(h), h(gamma), and neff(h) 1D poly models to the mode solver data
+        self.alpha_wg_model: dict = {}
         self.gamma_model: dict = {}
         self.u_model: dict = {}
         self.neff_model: dict = {}
         self._fit_1D_models()
+        self.alpha_wg_dB_per_cm: float = self.alpha_wg_of_u() * PER_UM_TO_DB_PER_CM
 
         # Check that the bending loss mode solver data covers the required h & R ranges
         alpha_prop_min: float = self.alpha_wg_of_u() + (
@@ -155,6 +153,7 @@ class Models:
     # alpha_wg(u), gamma(u), u(gamma), and neffs(u) modeling
     #
 
+    # alpha_wg(u) modeling function
     def alpha_wg_of_u(self, u: float = None) -> float:
         # If no height or width specified, return minimum alpha_wg value
         if u is None:
@@ -177,7 +176,7 @@ class Models:
             )
         ) / PER_UM_TO_DB_PER_CM
 
-    # Wrappers for models-specific calls to _interpolate()
+    # gamma(u), u(gamma), neff(u) wrappers for model-specific calls to _interpolate()
     def gamma_of_u(self, u: float) -> float:
         """
 
@@ -215,7 +214,7 @@ class Models:
 
         return value
 
-    # FIt 1D models to the mode solver data
+    # FIt alpha_wg(u), gamma(u), u(gamma), neff(u) 1D models to the mode solver data
     def _fit_1D_models(self):
         """
         1) Fit polynomial models to alpha_wg(u), gamma(u), u(gamma), and neffs(u),
