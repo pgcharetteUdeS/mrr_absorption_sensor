@@ -112,7 +112,7 @@ class Mrr:
         α_prop = α_wg + gamma_fluid*α_fluid
         """
 
-        return self.models.alpha_wg(u=u) + (
+        return self.models.alpha_wg_of_u(u=u) + (
             self.models.gamma_of_u(u) * self.models.alpha_fluid
         )
 

@@ -5,6 +5,7 @@ Models class
 Exposed methods:
     - alpha_bend(r, u)
     - calc_A_and_B_(gamma)
+    - alpha_wg_of_u(u)
     - gamma_of_u(u)
     - neff_of_u(u)
     - u_of_gamma(gamma)
@@ -106,8 +107,7 @@ class Models:
 
         # Fit alpha_wg(u) model
         self.alpha_wg_model: dict = {}
-        self._fit_alpha_wg_model()
-        self.alpha_wg_dB_per_cm: float = self.alpha_wg() * PER_UM_TO_DB_PER_CM
+        self.alpha_wg_dB_per_cm: float = self.alpha_wg_of_u() * PER_UM_TO_DB_PER_CM
 
         # Fit gamma(h), h(gamma), and neff(h) 1D poly models to the mode solver data
         self.gamma_model: dict = {}
@@ -116,7 +116,7 @@ class Models:
         self._fit_1D_models()
 
         # Check that the bending loss mode solver data covers the required h & R ranges
-        alpha_prop_min: float = self.alpha_wg() + (
+        alpha_prop_min: float = self.alpha_wg_of_u() + (
             self.gamma_of_u(self.u_domain_max) * self.alpha_fluid
         )
         if self.alpha_bend_data_min > alpha_prop_min / 100:
@@ -152,8 +152,30 @@ class Models:
         self._set_u_search_lower_bound()
 
     #
-    # gamma(u), u(gamma), and neffs(u) modeling
+    # alpha_wg(u), gamma(u), u(gamma), and neffs(u) modeling
     #
+
+    def alpha_wg_of_u(self, u: float = None) -> float:
+        # If no height or width specified, return minimum alpha_wg value
+        if u is None:
+            return [value.get("alpha_wg") for value in self.modes_data.values()][
+                -1
+            ] / PER_UM_TO_DB_PER_CM
+
+        # Normal function return: polynomial model for alpha_wg(u)
+        if not self.parameters["alpha_wg_exponential_model"]:
+            return self.alpha_wg_model["model"](u)
+
+        # Debugging: hard-coded exponential model for alpha_wg(u)
+        α_min: float = [value.get("alpha_wg") for value in self.modes_data.values()][-1]
+        α_max: float = α_min * 2
+        return (
+            α_min
+            + (α_max - α_min)
+            * np.exp(
+                -(u - self.u_domain_min) / (self.u_domain_max - self.u_domain_min) * 5
+            )
+        ) / PER_UM_TO_DB_PER_CM
 
     # Wrappers for models-specific calls to _interpolate()
     def gamma_of_u(self, u: float) -> float:
@@ -193,14 +215,28 @@ class Models:
 
         return value
 
+    # FIt 1D models to the mode solver data
     def _fit_1D_models(self):
         """
-        1) Fit polynomial models to gamma(u), u(gamma), and neffs(u), load the info
-           (model parameters, bounds) into dictionaries for each.
+        1) Fit polynomial models to alpha_wg(u), gamma(u), u(gamma), and neffs(u),
+           load the info (model parameters, bounds) into dictionaries for each.
 
         2) Fit interpolation models for R(u) @ max(alpha_bend) and R(u)
            @ min(alpha_bend), i.e. to R[0](u) and R[-1](u).
         """
+
+        # Polynomial model for alpha_wg(u) in the input mode solver data
+        u_data = np.asarray([value.get("u") for value in self.modes_data.values()])
+        alpha_wg_data = (
+            np.asarray([value.get("alpha_wg") for value in self.modes_data.values()])
+            / PER_UM_TO_DB_PER_CM
+        )
+        self.alpha_wg_model = {
+            "name": "alpha_wg",
+            "model": Polynomial.fit(x=u_data, y=alpha_wg_data, deg=self.alpha_wg_order),
+            "min": 0,
+            "max": 1,
+        }
 
         # Polynomial models for gamma(u) and u(gamma) in the input mode solver data
         u_data = np.asarray([value.get("u") for value in self.modes_data.values()])
@@ -244,7 +280,7 @@ class Models:
         # Plot modeled and original mode solver data values
         u_interp: np.ndarray = np.linspace(u_data[0], u_data[-1], 100)
         gamma_interp: np.ndarray = np.linspace(gamma_data[0], gamma_data[-1], 100)
-        fig, axs = plt.subplots(3)
+        fig, axs = plt.subplots(4)
         fig.suptitle(
             "1D model fits\n"
             + f"{self.pol}"
@@ -291,6 +327,28 @@ class Models:
         )
         axs[axs_index].set_ylabel(r"n$_{eff}$ (RIU)")
         axs[axs_index].set_xlabel("".join([f"{self.core_u_name} (μm)"]))
+        axs_index += 1
+
+        # Plot of alpha_wg(u)
+        alpha_wg_modeled = np.asarray([self.alpha_wg_of_u(u) for u in u_interp]) * (
+            PER_UM_TO_DB_PER_CM
+        )
+        axs[axs_index].plot(u_interp, alpha_wg_modeled)
+        if self.parameters["alpha_wg_exponential_model"]:
+            axs[axs_index].set_title(
+                rf"$\alpha_{{wg}}$ ({self.core_u_name}), exponential model"
+            )
+        else:
+            axs[axs_index].plot(u_data, alpha_wg_data * PER_UM_TO_DB_PER_CM, ".")
+            axs[axs_index].set_title(
+                r"$\alpha_{wg}$"
+                + f"({self.core_u_name})"
+                + f", polynomial model order: {self.alpha_wg_order}"
+            )
+        axs[axs_index].set_ylabel(r"$\alpha_{wg}$ (dB/cm)")
+        axs[axs_index].set_xlabel("".join([f"{self.core_u_name} (μm)"]))
+
+        # Complete plot formatting
         fig.tight_layout()
 
         # Save graph to file
@@ -302,78 +360,6 @@ class Models:
         )
         fig.savefig(out_filename)
         self.logger(f"Wrote '{out_filename}'.")
-
-    #
-    # Loss models
-    #
-
-    def _fit_alpha_wg_model(self):
-        """ """
-
-        # Polynomial model for alpha_wg(u) in the input mode solver data
-        u_data = np.asarray([value.get("u") for value in self.modes_data.values()])
-        alpha_wg_data = (
-            np.asarray([value.get("alpha_wg") for value in self.modes_data.values()])
-            / PER_UM_TO_DB_PER_CM
-        )
-        self.alpha_wg_model = {
-            "name": "alpha_wg",
-            "model": Polynomial.fit(x=u_data, y=alpha_wg_data, deg=self.alpha_wg_order),
-            "min": 0,
-            "max": 1,
-        }
-
-        # Plot modeled and original mode solver data values
-        fig, ax = plt.subplots()
-        u_interp: np.ndarray = np.linspace(u_data[0], u_data[-1], 100)
-        alpha_wg_modeled = np.asarray([self.alpha_wg(u) for u in u_interp]) * (
-            PER_UM_TO_DB_PER_CM
-        )
-        ax.plot(u_interp, alpha_wg_modeled)
-        if self.parameters["alpha_wg_exponential_model"]:
-            ax.set_title(rf"$\alpha_{{wg}}$ ({self.core_u_name}), exponential model")
-        else:
-            ax.plot(u_data, alpha_wg_data * PER_UM_TO_DB_PER_CM, ".")
-            ax.set_title(
-                r"$\alpha_{wg}$"
-                + f"({self.core_u_name})"
-                + f", polynomial model order: {self.alpha_wg_order}"
-            )
-        ax.set_xlabel(f"{self.core_u_name} (μm)")
-        ax.set_ylabel(r"$\alpha_{wg}$ (dB/cm)")
-
-        # Save graph to file
-        out_filename: str = str(
-            (
-                self.filename_path.parent
-                / f"{self.filename_path.stem}_ALPHA_WG_MODEL.png"
-            )
-        )
-        fig.savefig(out_filename)
-        self.logger(f"Wrote '{out_filename}'.")
-
-    def alpha_wg(self, u: float = None) -> float:
-
-        # If no height or width specified, return minimum alpha_wg value
-        if u is None:
-            return [value.get("alpha_wg") for value in self.modes_data.values()][
-                -1
-            ] / PER_UM_TO_DB_PER_CM
-
-        # Normal function return: polynomial model for alpha_wg(u)
-        if not self.parameters["alpha_wg_exponential_model"]:
-            return self.alpha_wg_model["model"](u)
-
-        # Debugging: hard-coded exponential model for alpha_wg(u)
-        α_min: float = [value.get("alpha_wg") for value in self.modes_data.values()][-1]
-        α_max: float = α_min * 2
-        return (
-            α_min
-            + (α_max - α_min)
-            * np.exp(
-                -(u - self.u_domain_min) / (self.u_domain_max - self.u_domain_min) * 5
-            )
-        ) / PER_UM_TO_DB_PER_CM
 
     #
     # alpha_bend(r, h) modeling
@@ -479,7 +465,7 @@ class Models:
                     f"({self.core_u_name})",
                     r"\times\alpha_{fluid}$, where ",
                     r"min($\alpha_{wg}$)",
-                    f" = {self.alpha_wg():.2e} ",
+                    f" = {self.alpha_wg_of_u():.2e} ",
                     r"$\mu$m$^{-1}$ and ",
                     r"$\alpha_{fluid}$",
                     f" = {self.alpha_fluid:.2e} ",
@@ -577,11 +563,11 @@ class Models:
         gamma: np.ndarray = np.ones_like(u_domain)
         for g, u in np.nditer([gamma, u_domain], op_flags=["readwrite"]):
             g[...] = self.gamma_of_u(u[...])
-        alpha_prop: np.ndarray = self.alpha_wg() + (gamma * self.alpha_fluid)
+        alpha_prop: np.ndarray = self.alpha_wg_of_u() + (gamma * self.alpha_fluid)
         """
         alpha_prop: np.ndarray = np.ones_like(u_domain)
         for α_prop, u in np.nditer([alpha_prop, u_domain], op_flags=["readwrite"]):
-            α_prop[...] = self.alpha_wg(u[...]) + (
+            α_prop[...] = self.alpha_wg_of_u(u[...]) + (
                 self.gamma_of_u(u[...]) * self.alpha_fluid
             )
         face_colors: np.ndarray = np.copy(

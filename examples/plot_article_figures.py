@@ -32,7 +32,7 @@ def _get_Re_Rw(wb_all_results: Workbook, gamma: float) -> tuple[float, float]:
     return Res[index], Rws[index]
 
 
-def plot_figure_3(wb_2D_map: Workbook, wb_all_results: Workbook, gamma: float):
+def figure_3(wb_2D_map: Workbook, wb_all_results: Workbook, gamma: float):
     # Fetch R and gamma arrays from their respective sheets in the 2D map workbook
     R = np.asarray([c.value for c in wb_2D_map["R (um)"][1]])
     gammas = np.asarray(
@@ -132,7 +132,7 @@ def _figure_5_line_profile_plot(
     ax.legend(ax_lines, ax_labels, loc="upper left")
 
 
-def plot_figure_5(
+def figure_5(
     wb_2D_map: Workbook, wb_all_results: Workbook, line_profile_gammas: np.ndarray
 ):
     # Fetch R and gamma arrays from their respective sheets in the workbook
@@ -158,7 +158,7 @@ def plot_figure_5(
         )
 
 
-def plot_figure_6(
+def figure_6(
     wb_2D_map: Workbook, wb_all_results: Workbook, line_profile_gammas: np.ndarray
 ):
     # Create the figure
@@ -274,13 +274,13 @@ def main():
     )
 
     # Generate figures
-    plot_figure_3(wb_2D_map=wb_2D_map, wb_all_results=wb_all_results, gamma=30)
-    plot_figure_5(
+    figure_3(wb_2D_map=wb_2D_map, wb_all_results=wb_all_results, gamma=30)
+    figure_5(
         wb_2D_map=wb_2D_map,
         wb_all_results=wb_all_results,
         line_profile_gammas=np.asarray([20, 45, 65, 75]),
     )
-    plot_figure_6(
+    figure_6(
         wb_2D_map=wb_2D_map,
         wb_all_results=wb_all_results,
         line_profile_gammas=np.asarray([20, 30, 45, 55, 60, 65, 70, 75]),

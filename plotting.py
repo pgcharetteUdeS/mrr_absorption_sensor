@@ -1003,7 +1003,7 @@ def _plot_mrr_optimization_results(
     axs_index += 1
     axs[axs_index].semilogx(
         models.R,
-        np.asarray([mrr.models.alpha_wg(u) for u in mrr.u]) * PER_UM_TO_DB_PER_CM,
+        np.asarray([mrr.models.alpha_wg_of_u(u) for u in mrr.u]) * PER_UM_TO_DB_PER_CM,
     )
     axs[axs_index].set_ylabel(r"α$_{wg}$")
     axs[axs_index].set_xlim(

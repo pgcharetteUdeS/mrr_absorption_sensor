@@ -389,7 +389,7 @@ class Spiral:
         gamma: float = self.models.gamma_of_u(
             h if self.models.core_v_name == "w" else w
         )
-        alpha_prop: float = self.models.alpha_wg(u=u) + (
+        alpha_prop: float = self.models.alpha_wg_of_u(u=u) + (
             gamma * self.models.alpha_fluid
         )
         prop_losses_spiral: float = alpha_prop * L
