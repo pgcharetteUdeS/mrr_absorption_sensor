@@ -285,7 +285,6 @@ class Models:
             "1D model fits\n"
             + f"{self.pol}"
             + f", λ = {self.lambda_res:.3f} μm"
-            + rf", min(α$_{{wg}}$) = {self.alpha_wg_dB_per_cm:.1f} dB/cm"
             + f", {self.core_v_name} = {self.core_v_value:.3f} μm"
         )
         axs_index: int = 0
