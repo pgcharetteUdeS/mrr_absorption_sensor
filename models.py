@@ -39,7 +39,7 @@ from .constants import PER_UM_TO_DB_PER_CM
 
 class Models:
     """
-    Models class for polynomial interpolation of gamma(u), neffs(u), alpha_bend(r, u)
+    Models class for polynomial interpolation: gamma(u), neffs(u), α_wg(u), α_bend(r, u)
 
     All lengths are in units of um
     """
@@ -153,7 +153,7 @@ class Models:
     # alpha_wg(u), gamma(u), u(gamma), and neffs(u) modeling
     #
 
-    # alpha_wg(u) modeling function
+    # alpha_wg(u) model function
     def alpha_wg_of_u(self, u: float = None) -> float:
         # If no height or width specified, return minimum alpha_wg value
         if u is None:
