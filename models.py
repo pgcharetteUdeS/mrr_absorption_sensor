@@ -3,11 +3,11 @@
 Models class
 
 Exposed methods:
-    - alpha_bend(r, u)
-    - alpha_wg_of_u(u)
-    - calc_A_and_B_(gamma)
+    - α_bend(r, u)
+    - α_wg_of_u(u)
+    - calc_α_bend_a_and_b_(gamma)
     - gamma_of_u(u)
-    - neff_of_u(u)
+    - n_eff_of_u(u)
     - u_of_gamma(gamma)
     - u_search_domain(r)
 
@@ -54,8 +54,8 @@ class Models:
     ):
 
         # Load class instance input parameters
-        self.alpha_bend_threshold: float = parameters["alpha_bend_threshold"]
-        self.alpha_wg_order = parameters["alpha_wg_order"]
+        self.α_bend_threshold: float = parameters["alpha_bend_threshold"]
+        self.α_wg_order = parameters["alpha_wg_order"]
         self.bending_loss_data: dict = bending_loss_data
         self.core_u_name: str = parameters["core_u_name"]
         self.core_v_name: str = parameters["core_v_name"]
@@ -66,66 +66,66 @@ class Models:
         self.lambda_res: float = parameters["lambda_res"]
         self.logger: Callable = logger
         self.modes_data: dict = modes_data
-        self.neff_order = parameters["neff_order"]
+        self.n_eff_order = parameters["neff_order"]
         self.ni_op: float = parameters["ni_op"]
         self.parameters: dict = parameters
         self.pol: str = parameters["pol"]
-        self.Rmin: float = parameters["Rmin"]
-        self.Rmax: float = parameters["Rmax"]
-        self.R_samples_per_decade: int = parameters["R_samples_per_decade"]
+        self.r_min: float = parameters["Rmin"]
+        self.r_max: float = parameters["Rmax"]
+        self.r_samples_per_decade: int = parameters["R_samples_per_decade"]
 
         # Define the array of radii to be analyzed (R domain)
-        self.R: np.ndarray = np.logspace(
-            start=np.log10(self.Rmin),
-            stop=np.log10(self.Rmax),
+        self.r: np.ndarray = np.logspace(
+            start=np.log10(self.r_min),
+            stop=np.log10(self.r_max),
             num=int(
                 (np.log10(parameters["Rmax"]) - np.log10(parameters["Rmin"]))
-                * self.R_samples_per_decade
+                * self.r_samples_per_decade
             ),
             base=10,
         )
 
         # Define propagation losses in the fluid medium (1/um)
-        self.alpha_fluid: float = (4 * np.pi / self.lambda_res) * self.ni_op
+        self.α_fluid: float = (4 * np.pi / self.lambda_res) * self.ni_op
 
         # Parse and validate the mode solver data loaded from the .toml file
         self.u_data: np.ndarray = np.asarray([])
-        self.R_data: np.ndarray = np.asarray([])
+        self.r_alpha_bend_data: np.ndarray = np.asarray([])
         self.ln_alpha_bend_data: np.ndarray = np.asarray([])
         self.u_domain_min: float = 0
         self.u_domain_max: float = 0
-        self.R_data_min: float = 0
-        self.R_alpha_bend_min_interp: interpolate.interp1d = interpolate.interp1d(
+        self.r_α_bend_data_min: float = 0
+        self.r_α_bend_min_interp: interpolate.interp1d = interpolate.interp1d(
             [0, 1], [0, 1]
         )
-        self.R_data_max: float = 0
-        self.R_alpha_bend_max_interp: interpolate.interp1d = interpolate.interp1d(
+        self.r_α_bend_data_max: float = 0
+        self.r_α_bend_max_interp: interpolate.interp1d = interpolate.interp1d(
             [0, 1], [0, 1]
         )
-        self.alpha_bend_data_min: float = 0
+        self.α_bend_data_min: float = 0
         self._parse_bending_loss_mode_solver_data()
 
         # Fit gamma(h), h(gamma), and neff(h) 1D poly models to the mode solver data
-        self.alpha_wg_model: dict = {}
+        self.α_wg_model: dict = {}
         self.gamma_model: dict = {}
         self.u_model: dict = {}
-        self.neff_model: dict = {}
-        self._fit_1D_models()
-        self.alpha_wg_dB_per_cm: float = self.alpha_wg_of_u() * PER_UM_TO_DB_PER_CM
+        self.n_eff_model: dict = {}
+        self._fit_1d_models()
+        self.α_wg_db_per_cm: float = self.α_wg_of_u() * PER_UM_TO_DB_PER_CM
 
         # Check that the bending loss mode solver data covers the required h & R ranges
-        alpha_prop_min: float = self.alpha_wg_of_u() + (
-            self.gamma_of_u(self.u_domain_max) * self.alpha_fluid
+        α_prop_min: float = self.α_wg_of_u() + (
+            self.gamma_of_u(self.u_domain_max) * self.α_fluid
         )
-        if self.alpha_bend_data_min > alpha_prop_min / 100:
+        if self.α_bend_data_min > α_prop_min / 100:
             self.logger(
                 f"{Fore.YELLOW}WARNING! Mode solver arrays must contain alpha_bend data"
-                + f" down to min(alpha_prop)/100 ({alpha_prop_min/100:.2e} um-1)!"
+                + f" down to min(alpha_prop)/100 ({α_prop_min/100:.2e} um-1)!"
                 + f"{Style.RESET_ALL}"
             )
             if not parameters["disable_R_domain_check"]:
                 raise ValueError
-        if self.R_data_min > self.Rmin:
+        if self.r_α_bend_data_min > self.r_min:
             self.logger(
                 f"{Fore.YELLOW}WARNING! Mode solver arrays must contain data"
                 + f" at radii < Rmin!{Style.RESET_ALL}"
@@ -134,13 +134,13 @@ class Models:
                 raise ValueError
 
         # Fit alpha_bend(r, u) 2D polynomial model to the mode solver data
-        self.alpha_bend = lambda *args, **kwargs: 0
-        self._alpha_bend_model_fig: dict = {}
-        self.alpha_bend_model_symbolic: functions.exp | None = None
-        self._alpha_bend_model_fig_azim: float = 0
-        self._alpha_bend_model_fig_elev: float = 0
-        self._fit_alpha_bend_model()
-        self._plot_alpha_bend_model_fitting_results()
+        self.α_bend = lambda *args, **kwargs: 0
+        self._α_bend_model_fig: dict = {}
+        self.α_bend_model_symbolic: functions.exp | None = None
+        self._α_bend_model_fig_azim: float = 0
+        self._α_bend_model_fig_elev: float = 0
+        self._fit_α_bend_model()
+        self._plot_α_bend_model_fitting_results()
 
         # For use in the optimization: constrain the search domain for u at low radii,
         # else the optimization erroneously converges to a local minima.
@@ -154,7 +154,15 @@ class Models:
     #
 
     # alpha_wg(u) model function
-    def alpha_wg_of_u(self, u: float = None) -> float:
+    def α_wg_of_u(self, u: float = None) -> float:
+        """
+
+        Args:
+            u ():
+
+        Returns:
+
+        """
         # If no height or width specified, return minimum alpha_wg value
         if u is None:
             return [value.get("alpha_wg") for value in self.modes_data.values()][
@@ -163,14 +171,16 @@ class Models:
 
         # Normal function return: polynomial model for alpha_wg(u)
         if not self.parameters["alpha_wg_exponential_model"]:
-            return self.alpha_wg_model["model"](u)
+            return self.α_wg_model["model"](u)
 
         # Debugging: hard-coded exponential model for alpha_wg(u)
-        α_min: float = [value.get("alpha_wg") for value in self.modes_data.values()][-1]
-        α_max: float = α_min * 2
+        α_wg_min: float = [value.get("alpha_wg") for value in self.modes_data.values()][
+            -1
+        ]
+        α_wg_max: float = α_wg_min * 2
         return (
-            α_min
-            + (α_max - α_min)
+            α_wg_min
+            + (α_wg_max - α_wg_min)
             * np.exp(
                 -(u - self.u_domain_min) / (self.u_domain_max - self.u_domain_min) * 5
             )
@@ -193,13 +203,13 @@ class Models:
         """
         return self._interpolate(model=self.u_model, x=gamma)
 
-    def neff_of_u(self, u: float) -> float:
+    def n_eff_of_u(self, u: float) -> float:
         """
 
         :param u: waveguide core dimension (um)
         :return:  neff(u) polynomial model estimate
         """
-        return self._interpolate(model=self.neff_model, x=u)
+        return self._interpolate(model=self.n_eff_model, x=u)
 
     @staticmethod
     def _interpolate(model: dict, x: float) -> float:
@@ -215,7 +225,7 @@ class Models:
         return value
 
     # FIt alpha_wg(u), gamma(u), u(gamma), neff(u) 1D models to the mode solver data
-    def _fit_1D_models(self):
+    def _fit_1d_models(self):
         """
         1) Fit polynomial models to alpha_wg(u), gamma(u), u(gamma), and neffs(u),
            load the info (model parameters, bounds) into dictionaries for each.
@@ -226,19 +236,18 @@ class Models:
 
         # Polynomial model for alpha_wg(u) in the input mode solver data
         u_data = np.asarray([value.get("u") for value in self.modes_data.values()])
-        alpha_wg_data = (
+        α_wg_data = (
             np.asarray([value.get("alpha_wg") for value in self.modes_data.values()])
             / PER_UM_TO_DB_PER_CM
         )
-        self.alpha_wg_model = {
+        self.α_wg_model = {
             "name": "alpha_wg",
-            "model": Polynomial.fit(x=u_data, y=alpha_wg_data, deg=self.alpha_wg_order),
+            "model": Polynomial.fit(x=u_data, y=α_wg_data, deg=self.α_wg_order),
             "min": 0,
             "max": 1,
         }
 
         # Polynomial models for gamma(u) and u(gamma) in the input mode solver data
-        u_data = np.asarray([value.get("u") for value in self.modes_data.values()])
         gamma_data = np.asarray(
             [value.get("gamma") for value in self.modes_data.values()]
         )
@@ -256,22 +265,22 @@ class Models:
         }
 
         # Polynomial model for neff(u) in the input mode solver data
-        neff_data = np.asarray(
+        n_eff_data = np.asarray(
             [value.get("neff") for value in self.modes_data.values()]
         )
-        self.neff_model = {
+        self.n_eff_model = {
             "name": "neff",
-            "model": Polynomial.fit(x=u_data, y=neff_data, deg=self.neff_order),
-            "min": np.amin(neff_data),
-            "max": np.amax(neff_data),
+            "model": Polynomial.fit(x=u_data, y=n_eff_data, deg=self.n_eff_order),
+            "min": np.amin(n_eff_data),
+            "max": np.amax(n_eff_data),
         }
 
         # Interpolation models for R(u) @ max(alpha_bend) and R(u) @ min(alpha_bend)
         # in the input mode solver data, i.e. R[0](u) and R[-1](u).
-        self.R_alpha_bend_max_interp = interpolate.interp1d(
+        self.r_α_bend_max_interp = interpolate.interp1d(
             x=u_data, y=[value.get("R")[0] for value in self.bending_loss_data.values()]
         )
-        self.R_alpha_bend_min_interp = interpolate.interp1d(
+        self.r_α_bend_min_interp = interpolate.interp1d(
             x=u_data,
             y=[value.get("R")[-1] for value in self.bending_loss_data.values()],
         )
@@ -315,20 +324,20 @@ class Models:
         axs_index += 1
 
         # plot of neff(u)
-        neff_modeled = [self.neff_of_u(h) for h in u_interp]
-        axs[axs_index].plot(u_data, neff_data, ".")
+        neff_modeled = [self.n_eff_of_u(h) for h in u_interp]
+        axs[axs_index].plot(u_data, n_eff_data, ".")
         axs[axs_index].plot(u_interp, neff_modeled)
         axs[axs_index].set_title(
             r"n$_{eff}$"
             + f"({self.core_u_name})"
-            + f", polynomial model order: {self.neff_order}"
+            + f", polynomial model order: {self.n_eff_order}"
         )
         axs[axs_index].set_ylabel(r"n$_{eff}$ (RIU)")
         axs[axs_index].set_xlabel("".join([f"{self.core_u_name} (μm)"]))
         axs_index += 1
 
         # Plot of alpha_wg(u)
-        alpha_wg_modeled = np.asarray([self.alpha_wg_of_u(u) for u in u_interp]) * (
+        alpha_wg_modeled = np.asarray([self.α_wg_of_u(u) for u in u_interp]) * (
             PER_UM_TO_DB_PER_CM
         )
         axs[axs_index].plot(u_interp, alpha_wg_modeled)
@@ -337,11 +346,11 @@ class Models:
                 rf"$\alpha_{{wg}}$ ({self.core_u_name}), exponential model"
             )
         else:
-            axs[axs_index].plot(u_data, alpha_wg_data * PER_UM_TO_DB_PER_CM, ".")
+            axs[axs_index].plot(u_data, α_wg_data * PER_UM_TO_DB_PER_CM, ".")
             axs[axs_index].set_title(
                 r"$\alpha_{wg}$"
                 + f"({self.core_u_name})"
-                + f", polynomial model order: {self.alpha_wg_order}"
+                + f", polynomial model order: {self.α_wg_order}"
             )
         axs[axs_index].set_ylabel(r"$\alpha_{wg}$ (dB/cm)")
         axs[axs_index].set_xlabel("".join([f"{self.core_u_name} (μm)"]))
@@ -374,19 +383,21 @@ class Models:
         # "alpha_bend_threshold" specified in the input file, by fitting
         # a first order polynomial (parameters A&B) to "ln(alpha_bend) = ln(A) - R*B".
         for key, value in self.bending_loss_data.items():
-            lnA, negB = (
+            ln_a, neg_b = (
                 Polynomial.fit(x=value["R"], y=np.log(value["alpha_bend"]), deg=1)
                 .convert()
                 .coef
             )
             self.bending_loss_data[key]["r_alpha_bend_threshold"] = (
-                lnA - np.log(self.alpha_bend_threshold)
-            ) / -negB
+                ln_a - np.log(self.α_bend_threshold)
+            ) / -neg_b
 
         # Loop to build "u / R / log(alpha_bend)" data arrays for fitting
         for u_key_um, value in self.bending_loss_data.items():
             self.u_data = np.append(self.u_data, u_key_um * np.ones_like(value["R"]))
-            self.R_data = np.append(self.R_data, np.asarray(value["R"]))
+            self.r_alpha_bend_data = np.append(
+                self.r_alpha_bend_data, np.asarray(value["R"])
+            )
             self.ln_alpha_bend_data = np.append(
                 self.ln_alpha_bend_data, np.log(value["alpha_bend"])
             )
@@ -394,55 +405,53 @@ class Models:
         # Determine dynamic range extrema of the bending loss data
         self.u_domain_min: float = float(list(self.bending_loss_data.keys())[0])
         self.u_domain_max: float = float(list(self.bending_loss_data.keys())[-1])
-        self.alpha_bend_data_min = np.exp(min(self.ln_alpha_bend_data))
-        self.R_data_min = min(self.R_data)
-        self.R_data_max = max(self.R_data)
+        self.α_bend_data_min = np.exp(min(self.ln_alpha_bend_data))
+        self.r_α_bend_data_min = min(self.r_alpha_bend_data)
+        self.r_α_bend_data_max = max(self.r_alpha_bend_data)
 
-    def _alpha_bend_model_fig_check_button_callback(self, label):
-        index = self._alpha_bend_model_fig["labels"].index(label)
-        self._alpha_bend_model_fig["lines"][index].set_visible(
-            not self._alpha_bend_model_fig["lines"][index].get_visible()
+    def _α_bend_model_fig_check_button_callback(self, label):
+        index = self._α_bend_model_fig["labels"].index(label)
+        self._α_bend_model_fig["lines"][index].set_visible(
+            not self._α_bend_model_fig["lines"][index].get_visible()
         )
         plt.draw()
 
-    def _alpha_bend_model_fig_slider_callback(self, *_, **__):
-        self._alpha_bend_model_fig["surface"].set_alpha(
-            self._alpha_bend_model_fig["slider"].val
+    def _α_bend_model_fig_slider_callback(self, *_, **__):
+        self._α_bend_model_fig["surface"].set_alpha(
+            self._α_bend_model_fig["slider"].val
         )
         plt.draw()
 
-    def _alpha_bend_model_fig_save(self, *_, **__):
-        self._alpha_bend_model_fig["fig"].savefig(
-            self._alpha_bend_model_fig["out_filename"]
-        )
-        self.logger(f"Wrote '{self._alpha_bend_model_fig['out_filename']}'.")
+    def _α_bend_model_fig_save(self, *_, **__):
+        self._α_bend_model_fig["fig"].savefig(self._α_bend_model_fig["out_filename"])
+        self.logger(f"Wrote '{self._α_bend_model_fig['out_filename']}'.")
 
-    def _alpha_bend_model_fig_top_view(self, *_, **__):
-        self._alpha_bend_model_fig["ax"].view_init(azim=0, elev=90)
+    def _α_bend_model_fig_top_view(self, *_, **__):
+        self._α_bend_model_fig["ax"].view_init(azim=0, elev=90)
         plt.draw()
 
-    def _alpha_bend_model_fig_reset_view(self, *_, **__):
-        self._alpha_bend_model_fig["ax"].view_init(
-            azim=self._alpha_bend_model_fig_azim, elev=self._alpha_bend_model_fig_elev
+    def _α_bend_model_fig_reset_view(self, *_, **__):
+        self._α_bend_model_fig["ax"].view_init(
+            azim=self._α_bend_model_fig_azim, elev=self._α_bend_model_fig_elev
         )
         plt.draw()
 
-    def _plot_alpha_bend_model_fitting_results(self):
+    def _plot_α_bend_model_fitting_results(self):
         # Calculate rms error over the data points
-        alpha_bend_fitted: np.ndarray = np.asarray(
-            self.alpha_bend(r=self.R_data, u=self.u_data)
+        α_bend_fitted: np.ndarray = np.asarray(
+            self.α_bend(r=self.r_alpha_bend_data, u=self.u_data)
         )
         rms_error: float = float(
-            np.std(self.ln_alpha_bend_data - np.log(alpha_bend_fitted))
+            np.std(self.ln_alpha_bend_data - np.log(α_bend_fitted))
         )
 
         # Plot model solver data, fitted points, and 3D wireframes & surface
         # to verify the goodness of fit of the alpha_bend(r, u) model.
-        self._alpha_bend_model_fig["fig"] = plt.figure()
-        ax = self._alpha_bend_model_fig["fig"].add_subplot(projection="3d")
-        self._alpha_bend_model_fig["ax"] = ax
+        self._α_bend_model_fig["fig"] = plt.figure()
+        ax = self._α_bend_model_fig["fig"].add_subplot(projection="3d")
+        self._α_bend_model_fig["ax"] = ax
         ax.set_title(
-            rf"α$_{{bend}}$(r, u) = {str(self.alpha_bend_model_symbolic)}"
+            rf"α$_{{bend}}$(r, u) = {str(self.α_bend_model_symbolic)}"
             + "".join(
                 [
                     "\nWireframes: ",
@@ -463,10 +472,10 @@ class Models:
                     f"({self.core_u_name})",
                     r"\times\alpha_{fluid}$, where ",
                     r"min($\alpha_{wg}$)",
-                    f" = {self.alpha_wg_of_u():.2e} ",
+                    f" = {self.α_wg_of_u():.2e} ",
                     r"$\mu$m$^{-1}$ and ",
                     r"$\alpha_{fluid}$",
-                    f" = {self.alpha_fluid:.2e} ",
+                    f" = {self.α_fluid:.2e} ",
                     r"$\mu$m$^{-1}$",
                 ]
             )
@@ -496,7 +505,7 @@ class Models:
         ax.set_zlabel(r"log$_{10}$($\alpha_{BEND}$) ($\mu$m$^{-1}$)")
         raw_points = ax.scatter(
             self.u_data,
-            np.log10(self.R_data),
+            np.log10(self.r_alpha_bend_data),
             self.ln_alpha_bend_data * np.log10(np.e),
             color="red",
             label="Mode solver points (raw)",
@@ -504,8 +513,8 @@ class Models:
         )
         fitted_points = ax.scatter(
             self.u_data,
-            np.log10(self.R_data),
-            np.log10(alpha_bend_fitted),
+            np.log10(self.r_alpha_bend_data),
+            np.log10(α_bend_fitted),
             color="blue",
             label="Mode solver points (fitted)",
             s=1,
@@ -514,16 +523,14 @@ class Models:
         # alpha_bend(r, u) wireframe, for r in [Rmin, Rmax] analysis domain
         u_domain, r_domain = np.meshgrid(
             np.linspace(self.u_domain_min, self.u_domain_max, 75),
-            np.logspace(np.log10(self.Rmin), np.log10(self.Rmax), 100),
+            np.logspace(np.log10(self.r_min), np.log10(self.r_max), 100),
         )
-        alpha_bend: np.ndarray = np.asarray(self.alpha_bend(r=r_domain, u=u_domain))
-        alpha_bend[alpha_bend < self.alpha_bend_data_min / 2] = (
-            self.alpha_bend_data_min / 2
-        )
+        α_bend: np.ndarray = np.asarray(self.α_bend(r=r_domain, u=u_domain))
+        α_bend[α_bend < self.α_bend_data_min / 2] = self.α_bend_data_min / 2
         model_mesh = ax.plot_wireframe(
             X=u_domain,
             Y=np.log10(r_domain),
-            Z=np.log10(alpha_bend),
+            Z=np.log10(α_bend),
             rstride=5,
             cstride=5,
             alpha=0.30,
@@ -535,16 +542,18 @@ class Models:
         # alpha_bend(r, u) wireframe, for all r in mode solver data
         u_data, r_data = np.meshgrid(
             np.linspace(self.u_domain_min, self.u_domain_max, 15),
-            np.logspace(np.log10(self.R_data_min), np.log10(self.R_data_max), 20),
+            np.logspace(
+                np.log10(self.r_α_bend_data_min),
+                np.log10(self.r_α_bend_data_max),
+                20,
+            ),
         )
-        alpha_bend_data: np.ndarray = np.asarray(self.alpha_bend(r=r_data, u=u_data))
-        alpha_bend_data[alpha_bend_data < self.alpha_bend_data_min / 2] = (
-            self.alpha_bend_data_min / 2
-        )
+        α_bend_data: np.ndarray = np.asarray(self.α_bend(r=r_data, u=u_data))
+        α_bend_data[α_bend_data < self.α_bend_data_min / 2] = self.α_bend_data_min / 2
         data_mesh = ax.plot_wireframe(
             X=u_data,
             Y=np.log10(r_data),
-            Z=np.log10(alpha_bend_data),
+            Z=np.log10(α_bend_data),
             alpha=0.30,
             color="red",
             label=r"$\alpha_{bend}$"
@@ -563,92 +572,86 @@ class Models:
             g[...] = self.gamma_of_u(u[...])
         alpha_prop: np.ndarray = self.alpha_wg_of_u() + (gamma * self.alpha_fluid)
         """
-        alpha_prop: np.ndarray = np.ones_like(u_domain)
-        for α_prop, u in np.nditer([alpha_prop, u_domain], op_flags=["readwrite"]):
-            α_prop[...] = self.alpha_wg_of_u(u[...]) + (
-                self.gamma_of_u(u[...]) * self.alpha_fluid
-            )
+        α_prop: np.ndarray = np.ones_like(u_domain)
+        for αp, u in np.nditer([α_prop, u_domain], op_flags=["readwrite"]):
+            αp[...] = self.α_wg_of_u(u[...]) + (self.gamma_of_u(u[...]) * self.α_fluid)
         face_colors: np.ndarray = np.copy(
             np.broadcast_to(colors.to_rgba(c="red", alpha=0.8), u_domain.shape + (4,))
         )
         for index in np.ndindex(u_domain.shape):
-            if alpha_prop[index] > alpha_bend[index]:
-                if alpha_prop[index] > alpha_bend[index] * 10:
+            if α_prop[index] > α_bend[index]:
+                if α_prop[index] > α_bend[index] * 10:
                     face_colors[index] = colors.to_rgba(c="blue", alpha=0.5)
                 else:
                     face_colors[index] = colors.to_rgba(c="green", alpha=1)
-        alpha_prop_surface: PolyCollection = ax.plot_surface(
+        α_prop_surface: PolyCollection = ax.plot_surface(
             X=u_domain,
             Y=np.log10(r_domain),
-            Z=np.log10(alpha_prop),
+            Z=np.log10(α_prop),
             facecolors=face_colors,
             label=r"$\alpha_{prop}$" + f"({self.core_u_name}) surface",
             linewidth=0,
             rstride=1,
             cstride=1,
         )
-        self._alpha_bend_model_fig["surface"] = alpha_prop_surface
+        self._α_bend_model_fig["surface"] = α_prop_surface
 
         # Add "check button" to figure to turn visibility of individual plots on/off
-        self._alpha_bend_model_fig["lines"] = [
+        self._α_bend_model_fig["lines"] = [
             raw_points,
             fitted_points,
             model_mesh,
             data_mesh,
-            alpha_prop_surface,
+            α_prop_surface,
         ]
-        self._alpha_bend_model_fig["lines"][3].set_visible(False)
-        self._alpha_bend_model_fig["labels"] = [
-            str(line.get_label()) for line in self._alpha_bend_model_fig["lines"]
+        self._α_bend_model_fig["lines"][3].set_visible(False)
+        self._α_bend_model_fig["labels"] = [
+            str(line.get_label()) for line in self._α_bend_model_fig["lines"]
         ]
-        self._alpha_bend_model_fig["check_button"] = CheckButtons(
+        self._α_bend_model_fig["check_button"] = CheckButtons(
             ax=plt.axes([0.01, 0.71, 0.30, 0.15]),
-            labels=self._alpha_bend_model_fig["labels"],
+            labels=self._α_bend_model_fig["labels"],
             actives=([True, True, True, False, True]),
         )
-        self._alpha_bend_model_fig["check_button"].on_clicked(
-            self._alpha_bend_model_fig_check_button_callback
+        self._α_bend_model_fig["check_button"].on_clicked(
+            self._α_bend_model_fig_check_button_callback
         )
 
         # Add "save" button, to save the image of the 3D plot to file
-        self._alpha_bend_model_fig["button_save"] = Button(
+        self._α_bend_model_fig["button_save"] = Button(
             ax=plt.axes([0.01, 0.4, 0.10, 0.05]), label="Save", color="white"
         )
-        self._alpha_bend_model_fig["button_save"].on_clicked(
-            self._alpha_bend_model_fig_save
-        )
+        self._α_bend_model_fig["button_save"].on_clicked(self._α_bend_model_fig_save)
 
         # Add "Reset" and "Top view" buttons, to either reset the 3D view
         # to the initial perspective, or to a pure top-down view.
-        self._alpha_bend_model_fig["button_reset_view"] = Button(
+        self._α_bend_model_fig["button_reset_view"] = Button(
             ax=plt.axes([0.01, 0.5, 0.10, 0.05]), label="Reset view", color="white"
         )
-        self._alpha_bend_model_fig["button_reset_view"].on_clicked(
-            self._alpha_bend_model_fig_reset_view
+        self._α_bend_model_fig["button_reset_view"].on_clicked(
+            self._α_bend_model_fig_reset_view
         )
-        self._alpha_bend_model_fig["button_top_view"] = Button(
+        self._α_bend_model_fig["button_top_view"] = Button(
             ax=plt.axes([0.01, 0.56, 0.10, 0.05]), label="Top view", color="white"
         )
-        self._alpha_bend_model_fig["button_top_view"].on_clicked(
-            self._alpha_bend_model_fig_top_view
+        self._α_bend_model_fig["button_top_view"].on_clicked(
+            self._α_bend_model_fig_top_view
         )
 
         # Rotate plot and write to file
-        self._alpha_bend_model_fig_azim = 40
-        self._alpha_bend_model_fig_elev = 30
-        ax.view_init(
-            azim=self._alpha_bend_model_fig_azim, elev=self._alpha_bend_model_fig_elev
-        )
-        self._alpha_bend_model_fig["out_filename"] = str(
+        self._α_bend_model_fig_azim = 40
+        self._α_bend_model_fig_elev = 30
+        ax.view_init(azim=self._α_bend_model_fig_azim, elev=self._α_bend_model_fig_elev)
+        self._α_bend_model_fig["out_filename"] = str(
             (
                 self.filename_path.parent
                 / f"{self.filename_path.stem}_POLY_3D_MODEL_FIT.png"
             )
         )
 
-        self._alpha_bend_model_fig_save()
+        self._α_bend_model_fig_save()
 
-    def _fit_alpha_bend_model(self):
+    def _fit_α_bend_model(self):
         """
         Polynomial model least squares fit to ln(alpha_bend(r, u))
 
@@ -676,7 +679,7 @@ class Models:
         # must match the column definitions in the "M" matrix below exactly.
         r, u = symbols("r, u")
         c = symbols("c:7")
-        self.alpha_bend_model_symbolic: functions.exp = functions.exp(
+        self.α_bend_model_symbolic: functions.exp = functions.exp(
             c[0]
             + c[1] * u
             + c[2] * r
@@ -690,14 +693,14 @@ class Models:
         # the monomial terms in the model for each r & u value pair in the input data.
         # NB: the model is actually alpha_bend(u,r) = exp(model(u,r)) because
         # the model coefficients are fitted to the ln(alpha_bend(u,r)) data.
-        M: np.nedarray = np.asarray(
+        m: np.nedarray = np.asarray(
             [
                 np.ones_like(self.u_data),
                 self.u_data,
-                self.R_data,
-                self.u_data * self.R_data,
-                self.u_data**2 * self.R_data,
-                self.u_data**3 * self.R_data,
+                self.r_alpha_bend_data,
+                self.u_data * self.r_alpha_bend_data,
+                self.u_data**2 * self.r_alpha_bend_data,
+                self.u_data**3 * self.r_alpha_bend_data,
                 self.u_data**4,
             ]
         ).T
@@ -707,32 +710,30 @@ class Models:
         #
 
         # Check that the model definition and the coefficient matrix are consistent
-        assert len(c) == M.shape[1], (
+        assert len(c) == m.shape[1], (
             f"Model ({len(c)} coefficients) and "
-            + f"coefficient matrix ({M.shape[1]} columns) are inconsistent!"
+            + f"coefficient matrix ({m.shape[1]} columns) are inconsistent!"
         )
 
         # Linear least-squares fit to "ln(alpha_bend(r, u)" to determine the values of
         # the model coefficients. Although the model contains an exponential, the model
         # without the exponential is fitted to ln(alpha_bend(r, u)), to use
         # LINEAR least squares.
-        c_fitted, residual, rank, s = lstsq(M, self.ln_alpha_bend_data)
+        c_fitted, residual, rank, s = lstsq(m, self.ln_alpha_bend_data)
         assert rank == len(
             c_fitted
         ), f"Matrix rank ({rank}) is not equal to model order+1 ({len(c_fitted)})!"
 
         # Insert the fitted coefficient values into the model, then convert the symbolic
         # model to a lambda function for faster evaluation.
-        alpha_bend_model_fitted = self.alpha_bend_model_symbolic.subs(
-            list(zip(c, c_fitted))
-        )
-        self.alpha_bend = lambdify([r, u], alpha_bend_model_fitted, "numpy")
+        α_bend_model_fitted = self.α_bend_model_symbolic.subs(list(zip(c, c_fitted)))
+        self.α_bend = lambdify([r, u], α_bend_model_fitted, "numpy")
 
         # Calculate rms fitting error over the data set
         rms_error: float = float(
             np.std(
                 self.ln_alpha_bend_data
-                - np.log(self.alpha_bend(r=self.R_data, u=self.u_data))
+                - np.log(self.α_bend(r=self.r_alpha_bend_data, u=self.u_data))
             )
         )
         self.logger(f"Fitted ln(alpha_bend) model, rms error = {rms_error:.1e}.")
@@ -763,24 +764,24 @@ class Models:
         u = list(self.bending_loss_data.keys())
 
         # Fit the piecewise spline to model h_lower_bound(r)
-        R_alpha_bend_threshold: np.ndarray = np.asarray(
+        r_α_bend_threshold: np.ndarray = np.asarray(
             [
                 value["r_alpha_bend_threshold"]
                 for value in self.bending_loss_data.values()
             ]
         )
-        max_indx: int = int(np.argmax(R_alpha_bend_threshold))
-        R_alpha_bend_threshold: np.ndarray = R_alpha_bend_threshold[max_indx:]
-        if len(R_alpha_bend_threshold) <= 1:
+        max_indx: int = int(np.argmax(r_α_bend_threshold))
+        r_α_bend_threshold: np.ndarray = r_α_bend_threshold[max_indx:]
+        if len(r_α_bend_threshold) <= 1:
             raise ValueError(
                 f"{Fore.YELLOW}'ERROR: alpha_bend_threshold' value us too high!"
                 + f"{Style.RESET_ALL}"
             )
-        u_alpha_bend_threshold: np.ndarray = np.asarray(u[max_indx:])
-        self.r_min_for_u_search_lower_bound = R_alpha_bend_threshold[-1]
-        self.r_max_for_u_search_lower_bound = R_alpha_bend_threshold[0]
+        u_α_bend_threshold: np.ndarray = np.asarray(u[max_indx:])
+        self.r_min_for_u_search_lower_bound = r_α_bend_threshold[-1]
+        self.r_max_for_u_search_lower_bound = r_α_bend_threshold[0]
         self.u_lower_bound = interpolate.interp1d(
-            x=R_alpha_bend_threshold, y=u_alpha_bend_threshold
+            x=r_α_bend_threshold, y=u_α_bend_threshold
         )
         if self.r_max_for_u_search_lower_bound < 500:
             self.logger(
@@ -806,9 +807,7 @@ class Models:
                 ]
             )
             + "".join([r", $\lambda$", f" = {self.lambda_res:.3f} ", r"$\mu$m"])
-            + "".join(
-                [r", min($\alpha_{wg}$)", f" = {self.alpha_wg_dB_per_cm:.1f} dB/cm"]
-            )
+            + "".join([r", min($\alpha_{wg}$)", f" = {self.α_wg_db_per_cm:.1f} dB/cm"])
             + "".join([f", {self.core_v_name} = {self.core_v_value:.3f} ", r"$\mu$m"])
             + (
                 "".join(
@@ -822,13 +821,13 @@ class Models:
             ),
             color="black" if self.r_max_for_u_search_lower_bound < 500 else "red",
         )
-        R_alpha_bend_threshold_i: np.ndarra = np.linspace(
+        r_α_bend_threshold_i: np.ndarra = np.linspace(
             self.r_min_for_u_search_lower_bound,
             self.r_max_for_u_search_lower_bound,
             100,
         )
-        axs.plot(R_alpha_bend_threshold, u_alpha_bend_threshold, "o")
-        axs.plot(R_alpha_bend_threshold_i, self.u_lower_bound(R_alpha_bend_threshold_i))
+        axs.plot(r_α_bend_threshold, u_α_bend_threshold, "o")
+        axs.plot(r_α_bend_threshold_i, self.u_lower_bound(r_α_bend_threshold_i))
         axs.set_xlabel(r"R ($\mu$m)")
         axs.set_ylabel(r"min$\{$" + f"{self.core_u_name}" + r"$\}$ ($\mu$m)")
         out_filename: str = str(
@@ -847,7 +846,7 @@ class Models:
 
         # If the R values used for interpolation of the h domain lower bound are not
         # in monotonically increasing oder, exit with an error.
-        if np.any(np.diff(R_alpha_bend_threshold) > 0):
+        if np.any(np.diff(r_α_bend_threshold) > 0):
             raise ValueError(
                 f"{Fore.YELLOW}ERROR! Search domain lower bound fit:"
                 + "R values are not monotonically decreasing "
@@ -878,20 +877,20 @@ class Models:
         else:
             return self.u_domain_min, self.u_domain_max
 
-    def calc_A_and_B(self, gamma: float) -> tuple[float, float]:
+    def calc_α_bend_a_and_b(self, gamma: float) -> tuple[float, float]:
         """
         Calculate A*B model parameters for alpha_bend = A*exp(-B*R)
         """
 
         u: float = self.u_of_gamma(gamma=gamma)
-        R: np.ndarray = np.arange(
-            self.R_alpha_bend_min_interp(u),
-            self.R_alpha_bend_max_interp(u),
-            (self.R_alpha_bend_max_interp(u) - self.R_alpha_bend_min_interp(u)) / 10,
+        r: np.ndarray = np.arange(
+            self.r_α_bend_min_interp(u),
+            self.r_α_bend_max_interp(u),
+            (self.r_α_bend_max_interp(u) - self.r_α_bend_min_interp(u)) / 10,
         )
-        alpha_bend: np.ndarray = np.asarray([self.alpha_bend(r=r, u=u) for r in R])
-        minusB, lnA = np.linalg.lstsq(
-            a=np.vstack([R, np.ones(len(R))]).T, b=np.log(alpha_bend), rcond=None
+        α_bend: np.ndarray = np.asarray([self.α_bend(r=r, u=u) for r in r])
+        minus_b, ln_a = np.linalg.lstsq(
+            a=np.vstack([r, np.ones(len(r))]).T, b=np.log(α_bend), rcond=None
         )[0]
 
-        return np.exp(lnA), -minusB
+        return np.exp(ln_a), -minus_b

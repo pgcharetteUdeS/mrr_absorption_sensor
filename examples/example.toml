@@ -19,8 +19,8 @@ alpha_bend_threshold = 0.01				# Maximum value of alpha_bend (db/cm) for h searc
 min_delta_ni = 1.0e-6					# Desired minimum resolvable change in ni (RIU)
 #Rmin = 10								# Analysis domain minimum radius (um)
 #Rmax = 10000							# Analysis domain maximum radius (um)
-Rmin = 6100								# Analysis domain minimum radius (um)
-Rmax = 7000							# Analysis domain maximum radius (um)
+Rmin = 1000								# Analysis domain minimum radius (um)
+Rmax = 10000							# Analysis domain maximum radius (um)
 R_samples_per_decade = 100				# Analysis domain  logarithmic sampling rate (number of samples per decade)
 T_SNR = 20								# Transmission measurement SNR (dB)
 

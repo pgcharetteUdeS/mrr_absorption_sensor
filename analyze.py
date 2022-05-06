@@ -71,7 +71,7 @@ def analyze(
     )
 
     # Instantiate the Models class to build/fit the interpolation models for
-    # gamma_fluid(u), neff(u), and alpha_bend(u, r)
+    # gamma_fluid(u), neff(u), alpha_wg(u), and alpha_bend(u, r)
     models: Models = Models(
         parameters=parameters,
         modes_data=modes_data,
@@ -81,7 +81,7 @@ def analyze(
     )
 
     # Check that the array of radii to be analyzed is not empty
-    if np.size(models.R) == 0:
+    if np.size(models.r) == 0:
         raise ValueError(f"{Fore.YELLOW}No radii to analyze!{Style.RESET_ALL}")
 
     # If only model fitting was required, return

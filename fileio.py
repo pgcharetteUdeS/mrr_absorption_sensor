@@ -60,22 +60,26 @@ def _check_mode_solver_data(modes_data: dict, bending_loss_data: dict, filename:
 
     # Check radii and alpha_bend arrays are ordered, positive, and without duplicates
     for u, value in bending_loss_data.items():
-        Rs: np.ndarray = np.asarray(value["R"])
-        ABs: np.ndarray = np.asarray(value["alpha_bend"])
-        if len(Rs) != len(ABs) or len(Rs) < 3:
+        r_array: np.ndarray = np.asarray(value["R"])
+        α_band_array: np.ndarray = np.asarray(value["alpha_bend"])
+        if len(r_array) != len(α_band_array) or len(r_array) < 3:
             raise ValueError(
                 f"{Fore.YELLOW}Invalid R/alpha_bend arrays for u = {u:.3f} in "
                 + f"'{filename}'!{Style.RESET_ALL}"
             )
-        if len(np.unique(Rs)) != len(Rs) or not np.all(Rs[:-1] < Rs[1:]) or Rs[0] <= 0:
+        if (
+            len(np.unique(r_array)) != len(r_array)
+            or not np.all(r_array[:-1] < r_array[1:])
+            or r_array[0] <= 0
+        ):
             raise ValueError(
                 f"{Fore.YELLOW}Invalid R array for u {u:.3f} in "
                 + f"'{filename}'!!{Style.RESET_ALL}"
             )
         if (
-            len(np.unique(ABs)) != len(ABs)
-            or not np.all(ABs[:-1] > ABs[1:])
-            or ABs[-1] <= 0
+            len(np.unique(α_band_array)) != len(α_band_array)
+            or not np.all(α_band_array[:-1] > α_band_array[1:])
+            or α_band_array[-1] <= 0
         ):
             raise ValueError(
                 f"{Fore.YELLOW}Invalid alpha_bend array for u = {u:.3f} in "
@@ -303,23 +307,23 @@ def write_excel_results_file(
 
     # Save the MMR data to a sheet
     mrr_data_dict = {
-        "R_um": models.R,
-        "neff": mrr.neff,
-        "maxS_RIU_inv": mrr.S,
-        "Se": mrr.Se,
-        "Snr_RIU_inv": mrr.Snr,
-        "a2": mrr.a2,
+        "R_um": models.r,
+        "neff": mrr.n_eff,
+        "maxS_RIU_inv": mrr.s,
+        "Se": mrr.s_e,
+        "Snr_RIU_inv": mrr.s_nr,
+        "a2": mrr.a2_wg,
         "tau": mrr.tau,
-        "T_max": mrr.T_max,
-        "T_min": mrr.T_min,
-        "ER_dB": mrr.ER,
+        "T_max": mrr.t_max,
+        "T_min": mrr.t_min,
+        "ER_dB": mrr.er,
         "contrast": mrr.contrast,
         f"{models.core_u_name}_um": mrr.u,
         "gamma_percent": mrr.gamma,
-        "Finesse": mrr.Finesse,
-        "Q": mrr.Q,
-        "FWHM_um": mrr.FWHM,
-        "FSR_um": mrr.FSR,
+        "Finesse": mrr.finesse,
+        "Q": mrr.q,
+        "FWHM_um": mrr.fwhm,
+        "FSR_um": mrr.fsr,
     }
     mrr_data: np.ndarray = np.asarray(list(mrr_data_dict.values())).T
     mrr_sheet = wb["Sheet"]
@@ -329,8 +333,8 @@ def write_excel_results_file(
         mrr_sheet.append(row.tolist())
 
     # Save the Re(gamma) & Rw(gamma) arrays to a sheet
-    ReRw_sheet = wb.create_sheet("Re and Rw")
-    ReRw_sheet.append(
+    re_rw_sheet = wb.create_sheet("Re and Rw")
+    re_rw_sheet.append(
         [
             "gamma_percent",
             f"{models.core_u_name}_um",
@@ -341,18 +345,23 @@ def write_excel_results_file(
         ]
     )
     for line in zip(
-        mrr.gamma_resampled * 100, mrr.u_resampled, mrr.Re, mrr.Rw, mrr.A, mrr.B
+        mrr.gamma_resampled * 100,
+        mrr.u_resampled,
+        mrr.r_e,
+        mrr.r_w,
+        mrr.α_bend_a,
+        mrr.α_bend_b,
     ):
-        ReRw_sheet.append(line)
+        re_rw_sheet.append(line)
 
     # Save the linear waveguide data to a sheet
     linear_data_dict = {
-        "R_um": models.R,
-        "maxS_RIU_inv": linear.S,
+        "R_um": models.r,
+        "maxS_RIU_inv": linear.s,
         f"{models.core_u_name}_um": linear.u,
         "gamma_percent": linear.gamma,
-        "L_um": 2 * models.R,
-        "a2": linear.a2,
+        "L_um": 2 * models.r,
+        "a2": linear.a2_wg,
     }
     linear_data: np.ndarray = np.asarray(list(linear_data_dict.values())).T
     linear_sheet = wb.create_sheet("Linear")
@@ -363,14 +372,14 @@ def write_excel_results_file(
     # If required, save the spiral data to a sheet
     if not no_spiral:
         spiral_data_dict = {
-            "R_um": models.R,
-            "maxS_RIU_inv": spiral.S,
+            "R_um": models.r,
+            "maxS_RIU_inv": spiral.s,
             f"{models.core_u_name}_um": spiral.u,
             "gamma_percent": spiral.gamma,
             "n_revs": spiral.n_turns * 2,
             "Rmin_um": spiral.outer_spiral_r_min,
             "L_um": spiral.L,
-            "a2": spiral.a2,
+            "a2": spiral.a2_wg,
         }
         spiral_data: np.ndarray = np.asarray(list(spiral_data_dict.values())).T
         spiral_sheet = wb.create_sheet("Spiral")
@@ -383,13 +392,13 @@ def write_excel_results_file(
     logger(f"Wrote '{excel_output_fname}'.")
 
 
-def write_image_data_to_Excel(
+def write_image_data_to_excel(
     filename: str,
-    X: np.ndarray,
+    x_array: np.ndarray,
     x_label: str,
-    Y: np.ndarray,
+    y_array: np.ndarray,
     y_label: str,
-    Zs: list,
+    z_array: list,
     z_labels: list,
 ):
     """
@@ -399,20 +408,20 @@ def write_image_data_to_Excel(
     wb = Workbook()
 
     # X sheet
-    X_sheet = wb["Sheet"]
-    X_sheet.title = x_label
-    X_sheet.append(X.tolist())
+    x_sheet = wb["Sheet"]
+    x_sheet.title = x_label
+    x_sheet.append(x_array.tolist())
 
     # Y sheet
-    Y_sheet = wb.create_sheet(y_label)
-    for y in Y:
-        Y_sheet.append([y])
+    y_sheet = wb.create_sheet(y_label)
+    for y in y_array:
+        y_sheet.append([y])
 
     # Z sheets
-    for i, Z in enumerate(Zs):
-        Z_sheet = wb.create_sheet(z_labels[i])
+    for i, Z in enumerate(z_array):
+        z_sheet = wb.create_sheet(z_labels[i])
         for z in Z:
-            Z_sheet.append(z.tolist())
+            z_sheet.append(z.tolist())
 
     # Save file
     wb.save(filename=filename)

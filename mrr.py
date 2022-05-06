@@ -42,46 +42,46 @@ class Mrr:
         self.previous_solution: float = -1
 
         # Define class instance result variables and arrays
-        self.A: np.ndarray = np.ndarray([])
-        self.a2: np.ndarray = np.ndarray([])
-        self.B: np.ndarray = np.ndarray([])
-        self.T_max: np.ndarray = np.ndarray([])
-        self.T_min: np.ndarray = np.ndarray([])
-        self.ER: np.ndarray = np.ndarray([])
+        self.α_bend_a: np.ndarray = np.ndarray([])
+        self.α_bend_b: np.ndarray = np.ndarray([])
+        self.a2_wg: np.ndarray = np.ndarray([])
+        self.er: np.ndarray = np.ndarray([])
         self.contrast: np.ndarray = np.ndarray([])
-        self.Finesse: np.ndarray = np.ndarray([])
-        self.FSR: np.ndarray = np.ndarray([])
-        self.FWHM: np.ndarray = np.ndarray([])
+        self.finesse: np.ndarray = np.ndarray([])
+        self.fsr: np.ndarray = np.ndarray([])
+        self.fwhm: np.ndarray = np.ndarray([])
         self.gamma: np.ndarray = np.ndarray([])
         self.gamma_resampled: np.ndarray = np.ndarray([])
+        self.max_s: float = 0
+        self.max_s_radius: float = 0
+        self.n_eff: np.ndarray = np.ndarray([])
+        self.q: np.ndarray = np.ndarray([])
+        self.results: list = []
+        self.s: np.ndarray = np.ndarray([])
+        self.r_e: np.ndarray = np.ndarray([])
+        self.r_w: np.ndarray = np.ndarray([])
+        self.s_e: np.ndarray = np.ndarray([])
+        self.s_nr: np.ndarray = np.ndarray([])
+        self.t_max: np.ndarray = np.ndarray([])
+        self.t_min: np.ndarray = np.ndarray([])
+        self.tau: np.ndarray = np.ndarray([])
         self.u: np.ndarray = np.ndarray([])
         self.u_resampled: np.ndarray = np.ndarray([])
-        self.max_S: float = 0
-        self.max_S_radius: float = 0
-        self.neff: np.ndarray = np.ndarray([])
-        self.Q: np.ndarray = np.ndarray([])
-        self.results: list = []
-        self.S: np.ndarray = np.ndarray([])
-        self.Re: np.ndarray = np.ndarray([])
-        self.Rw: np.ndarray = np.ndarray([])
-        self.Se: np.ndarray = np.ndarray([])
-        self.Snr: np.ndarray = np.ndarray([])
-        self.tau: np.ndarray = np.ndarray([])
 
-    def _objfun_Rw(self, r: float, u: float, A: float, B: float) -> float:
+    def _objfun_r_w(self, r: float, u: float, a: float, b: float) -> float:
         """
         Calculate the residual squared with the current solution for Rw,
         using equation (15) in the paper.
         """
 
-        alpha_bend: float = A * np.exp(-B * r)
+        α_bend: float = a * np.exp(-b * r)
         residual: float = 1 - r * (2 * np.pi) * (
-            self.alpha_prop(u=u) + (1 - B * r) * alpha_bend
+                self.α_prop(u=u) + (1 - b * r) * α_bend
         )
 
         return residual**2
 
-    def _calc_Re_Rw(self, gamma: float) -> tuple[float, float, float, float]:
+    def _calc_r_e_and_r_w(self, gamma: float) -> tuple[float, float, float, float]:
         """
         Calculate Re(gamma) and Rw(gamma)
         """
@@ -90,62 +90,62 @@ class Mrr:
         u: float = self.models.u_of_gamma(gamma=gamma)
 
         # alpha_bend(R) = A*exp(-BR) model parameters @gamma
-        A, B = self.models.calc_A_and_B(gamma=gamma)
+        α_bend_a, α_bend_b = self.models.calc_α_bend_a_and_b(gamma=gamma)
 
         # Re
-        W: float = lambertw(-e * self.alpha_prop(u=u) / A, k=-1).real
-        Re: float = (1 / B) * (1 - W)
+        w: float = lambertw(-e * self.α_prop(u=u) / α_bend_a, k=-1).real
+        r_e: float = (1 / α_bend_b) * (1 - w)
 
         # Rw
         optimization_result = optimize.minimize(
-            fun=self._objfun_Rw,
-            x0=np.asarray(Re),
-            args=(u, A, B),
+            fun=self._objfun_r_w,
+            x0=np.asarray(r_e),
+            args=(u, α_bend_a, α_bend_b),
             method="SLSQP",
         )
-        Rw: float = optimization_result["x"][0]
+        r_w: float = optimization_result["x"][0]
 
-        return Re, Rw, A, B
+        return r_e, r_w, α_bend_a, α_bend_b
 
-    def alpha_prop(self, u: float) -> float:
+    def α_prop(self, u: float) -> float:
         """
         α_prop = α_wg + gamma_fluid*α_fluid
         """
 
-        return self.models.alpha_wg_of_u(u=u) + (
-            self.models.gamma_of_u(u) * self.models.alpha_fluid
+        return self.models.α_wg_of_u(u=u) + (
+            self.models.gamma_of_u(u) * self.models.α_fluid
         )
 
-    def calc_alpha_prop_L(self, r: float, u: float) -> float:
+    def calc_α_prop_l(self, r: float, u: float) -> float:
         """
         Propagation loss component of total round-trip losses : α_prop*L
         """
 
-        return self.alpha_prop(u=u) * (2 * np.pi * r)
+        return self.α_prop(u=u) * (2 * np.pi * r)
 
-    def calc_alpha_bend_L(self, r: float, u: float) -> float:
+    def calc_α_bend_l(self, r: float, u: float) -> float:
         """
         Bending loss component of total round-trip losses: α_bend*L
         """
-        return self.models.alpha_bend(r=r, u=u) * (2 * np.pi * r)
+        return self.models.α_bend(r=r, u=u) * (2 * np.pi * r)
 
-    def calc_alpha_L(self, r: float, u: float) -> float:
+    def calc_α_l(self, r: float, u: float) -> float:
         """
         Total ring round-trip loss factor: αL = (α_prop + α_bend)*L
         """
 
-        return (self.alpha_prop(u=u) + self.models.alpha_bend(r=r, u=u)) * (
+        return (self.α_prop(u=u) + self.models.α_bend(r=r, u=u)) * (
             2 * np.pi * r
         )
 
-    def calc_a2(self, r: float, u: float) -> float:
+    def calc_a2_wg(self, r: float, u: float) -> float:
         """
         Ring round trio losses: a2 = e**(-α*L)
         """
 
-        return np.e ** -self.calc_alpha_L(r=r, u=u)
+        return np.e ** -self.calc_α_l(r=r, u=u)
 
-    def calc_Snr(self, r: float, u: float) -> float:
+    def calc_s_nr(self, r: float, u: float) -> float:
         """
         Calculate Snr (see paper)
         """
@@ -153,10 +153,10 @@ class Mrr:
             (4 * np.pi / self.models.lambda_res)
             * (2 * np.pi * r)
             * self.models.gamma_of_u(u)
-            * self.calc_a2(r=r, u=u)
+            * self.calc_a2_wg(r=r, u=u)
         )
 
-    def calc_Se(self, r: float, u: float) -> float:
+    def calc_s_e(self, r: float, u: float) -> float:
         """
         Calculate Se (see paper)
         """
@@ -164,7 +164,7 @@ class Mrr:
         return (
             2
             / (3 * np.sqrt(3))
-            / (np.sqrt(self.calc_a2(r=r, u=u)) * (1 - self.calc_a2(r=r, u=u)))
+            / (np.sqrt(self.calc_a2_wg(r=r, u=u)) * (1 - self.calc_a2_wg(r=r, u=u)))
         )
 
     def calc_sensitivity(self, r: float, u: float) -> tuple[float, float, float, float]:
@@ -173,13 +173,13 @@ class Mrr:
         """
 
         # Calculate sensitivity
-        a2: float = self.calc_a2(r=r, u=u)
-        Snr: float = self.calc_Snr(r=r, u=u)
-        Se: float = self.calc_Se(r=r, u=u)
-        S: float = Snr * Se
-        assert S >= 0, "S should not be negative!"
+        a2_wg: float = self.calc_a2_wg(r=r, u=u)
+        s_nr: float = self.calc_s_nr(r=r, u=u)
+        s_e: float = self.calc_s_e(r=r, u=u)
+        s: float = s_nr * s_e
+        assert s >= 0, "S should not be negative!"
 
-        return S, Snr, Se, a2
+        return s, s_nr, s_e, a2_wg
 
     def _obj_fun(self, u: float, r: float) -> float:
         """
@@ -236,46 +236,46 @@ class Mrr:
             method="Powell",
             options={"ftol": 1e-9},
         )
-        u_max_S: float = optimization_result["x"][0]
+        u_max_s: float = optimization_result["x"][0]
 
         # Update previous solution
-        self.previous_solution = u_max_S
+        self.previous_solution = u_max_s
 
         # Calculate sensitivity and other parameters at the solution
-        S, Snr, Se, a2 = self.calc_sensitivity(r=r, u=u_max_S)
+        s, s_nr, s_e, a2_wg = self.calc_sensitivity(r=r, u=u_max_s)
 
         # Calculate other useful MRR parameters at the solution
-        a: float = np.sqrt(a2)
-        gamma: float = self.models.gamma_of_u(u_max_S) * 100
-        neff: float = self.models.neff_of_u(u_max_S)
-        tau: float = (np.sqrt(3) * a2 - np.sqrt(3) - 2 * a) / (a2 - 3)
+        a: float = np.sqrt(a2_wg)
+        gamma: float = self.models.gamma_of_u(u_max_s) * 100
+        n_eff: float = self.models.n_eff_of_u(u_max_s)
+        tau: float = (np.sqrt(3) * a2_wg - np.sqrt(3) - 2 * a) / (a2_wg - 3)
         finesse: float = np.pi * (np.sqrt(tau * a)) / (1 - tau * a)
-        Q: float = (neff * (2 * np.pi * r) / self.models.lambda_res) * finesse
-        FWHM: float = self.models.lambda_res / Q
-        FSR: float = finesse * FWHM
-        T_max: float = ((tau + a) / (1 + tau * a)) ** 2
-        T_min: float = ((tau - a) / (1 - tau * a)) ** 2
-        contrast: float = T_max - T_min
-        ER: float = 10 * np.log10(T_max / T_min)
+        q: float = (n_eff * (2 * np.pi * r) / self.models.lambda_res) * finesse
+        fwhm: float = self.models.lambda_res / q
+        fsr: float = finesse * fwhm
+        t_max: float = ((tau + a) / (1 + tau * a)) ** 2
+        t_min: float = ((tau - a) / (1 - tau * a)) ** 2
+        contrast: float = t_max - t_min
+        er: float = 10 * np.log10(t_max / t_min)
 
         # Return results to calling program
         return (
-            S,
-            u_max_S,
+            s,
+            u_max_s,
             gamma,
-            Snr,
-            Se,
-            a2,
+            s_nr,
+            s_e,
+            a2_wg,
             tau,
-            T_max,
-            T_min,
-            ER,
+            t_max,
+            t_min,
+            er,
             contrast,
-            neff,
-            Q,
+            n_eff,
+            q,
             finesse,
-            FWHM,
-            FSR,
+            fwhm,
+            fsr,
         )
 
     def analyze(self):
@@ -285,40 +285,40 @@ class Mrr:
         :return: None
         """
         # Analyse the sensor performance for all radii in the R domain
-        self.results = [self._find_max_sensitivity(r=r) for r in self.models.R]
+        self.results = [self._find_max_sensitivity(r=r) for r in self.models.r]
 
         # Unpack the analysis results as a function of radius into separate lists, the
         # order must be the same as in the find_max_sensitivity() return statement above
         [
-            self.S,
+            self.s,
             self.u,
             self.gamma,
-            self.Snr,
-            self.Se,
-            self.a2,
+            self.s_nr,
+            self.s_e,
+            self.a2_wg,
             self.tau,
-            self.T_max,
-            self.T_min,
-            self.ER,
+            self.t_max,
+            self.t_min,
+            self.er,
             self.contrast,
-            self.neff,
-            self.Q,
-            self.Finesse,
-            self.FWHM,
-            self.FSR,
+            self.n_eff,
+            self.q,
+            self.finesse,
+            self.fwhm,
+            self.fsr,
         ] = list(np.asarray(self.results).T)
 
         # Find maximum sensitivity overall and corresponding radius
-        self.max_S = np.amax(self.S)
-        self.max_S_radius = self.models.R[np.argmax(self.S)]
+        self.max_s = np.amax(self.s)
+        self.max_s_radius = self.models.r[np.argmax(self.s)]
 
         # Calculate Re(gamma) and Rw(gamma)
         gamma_min: float = list(self.models.modes_data.values())[-1]["gamma"]
         gamma_max: float = list(self.models.modes_data.values())[0]["gamma"]
         self.gamma_resampled = np.linspace(gamma_min, gamma_max, 500)
         self.u_resampled = [self.models.u_of_gamma(g) for g in self.gamma_resampled]
-        self.Re, self.Rw, self.A, self.B = zip(
-            *[self._calc_Re_Rw(gamma=gamma) for gamma in self.gamma_resampled]
+        self.r_e, self.r_w, self.α_bend_a, self.α_bend_b = zip(
+            *[self._calc_r_e_and_r_w(gamma=gamma) for gamma in self.gamma_resampled]
         )
 
         # Console message

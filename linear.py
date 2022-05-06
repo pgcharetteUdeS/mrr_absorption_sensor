@@ -34,24 +34,24 @@ class Linear:
         self.previous_solution: float = -1
 
         # Declare class instance result variables and arrays
-        self.S: np.ndarray = np.ndarray([])
+        self.s: np.ndarray = np.ndarray([])
         self.u: np.ndarray = np.ndarray([])
         self.gamma: np.ndarray = np.ndarray([])
-        self.a2: np.ndarray = np.ndarray([])
+        self.a2_wg: np.ndarray = np.ndarray([])
         self.results: list = []
 
-    def calc_a2(self, r: float, u: float) -> float:
+    def calc_a2_wg(self, r: float, u: float) -> float:
         """
         Calculate a2
         """
 
         gamma: float = self.models.gamma_of_u(u)
-        alpha_prop: float = self.models.alpha_wg_of_u(u=u) + (
-            gamma * self.models.alpha_fluid
+        α_prop: float = self.models.α_wg_of_u(u=u) + (
+            gamma * self.models.α_fluid
         )
-        L: float = 2 * r
+        length: float = 2 * r
 
-        return np.e ** -(alpha_prop * L)
+        return np.e ** -(α_prop * length)
 
     def _calc_sensitivity(self, r: float, u: float) -> float:
         """
@@ -59,15 +59,15 @@ class Linear:
         """
 
         # Calculate sensitivity
-        Snr: float = (
+        s_nr: float = (
             (4 * np.pi / self.models.lambda_res)
             * (2 * r)
             * self.models.gamma_of_u(u)
-            * self.calc_a2(r=r, u=u)
+            * self.calc_a2_wg(r=r, u=u)
         )
-        assert Snr >= 0, "Snr should not be negative'"
+        assert s_nr >= 0, "Snr should not be negative'"
 
-        return Snr
+        return s_nr
 
     def _obj_fun(self, u: float, r: float) -> float:
         """
@@ -105,20 +105,20 @@ class Linear:
             method="Powell",
             options={"ftol": 1e-9},
         )
-        u_max_S: float = optimization_result["x"][0]
+        u_max_s: float = optimization_result["x"][0]
 
         # Update previous solution
-        self.previous_solution = u_max_S
+        self.previous_solution = u_max_s
 
         # Calculate sensitivity at the solution
-        max_S = self._calc_sensitivity(r=r, u=u_max_S)
+        max_s = self._calc_sensitivity(r=r, u=u_max_s)
 
         # Calculate other useful parameters at the solution
-        gamma: float = self.models.gamma_of_u(u_max_S) * 100
-        a2: float = self.calc_a2(r=r, u=u_max_S)
+        gamma: float = self.models.gamma_of_u(u_max_s) * 100
+        a2_wg: float = self.calc_a2_wg(r=r, u=u_max_s)
 
         # Return results to calling program
-        return max_S, u_max_S, gamma, a2
+        return max_s, u_max_s, gamma, a2_wg
 
     def analyze(self):
         """
@@ -127,15 +127,15 @@ class Linear:
         :return: None
         """
         # Analyse the sensor performance for all radii in the R domain
-        self.results = [self._find_max_sensitivity(r=r) for r in self.models.R]
+        self.results = [self._find_max_sensitivity(r=r) for r in self.models.r]
 
         # Unpack the analysis results as a function of radius into separate lists, the
         # order must be the same as in the find_max_sensitivity() return statement above
         [
-            self.S,
+            self.s,
             self.u,
             self.gamma,
-            self.a2,
+            self.a2_wg,
         ] = list(np.asarray(self.results).T)
 
         # Console message
