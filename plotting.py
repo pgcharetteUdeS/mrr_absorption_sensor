@@ -256,7 +256,8 @@ def _plot_spiral_optimization_results(
         plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
     )
     axs[axs_index].set_ylim(
-        0, np.ceil(models.α_wg_model["max"] * PER_UM_TO_DB_PER_CM) + 1
+        np.floor(models.α_wg_model["min"] * PER_UM_TO_DB_PER_CM),
+        np.ceil(models.α_wg_model["max"] * PER_UM_TO_DB_PER_CM),
     )
 
     # n turns @ max{S}
@@ -976,7 +977,8 @@ def _plot_linear_optimization_results(
         plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
     )
     axs[axs_index].set_ylim(
-        0, np.ceil(models.α_wg_model["max"] * PER_UM_TO_DB_PER_CM) + 1
+        np.floor(models.α_wg_model["min"] * PER_UM_TO_DB_PER_CM),
+        np.ceil(models.α_wg_model["max"] * PER_UM_TO_DB_PER_CM),
     )
 
     axs[axs_index].set_xlabel("Ring radius (μm)")
@@ -1111,7 +1113,8 @@ def _plot_mrr_optimization_results(
         plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
     )
     axs[axs_index].set_ylim(
-        0, np.ceil(models.α_wg_model["max"] * PER_UM_TO_DB_PER_CM) + 1
+        np.floor(models.α_wg_model["min"] * PER_UM_TO_DB_PER_CM),
+        np.ceil(models.α_wg_model["max"] * PER_UM_TO_DB_PER_CM),
     )
 
     axs[axs_index].set_xlabel("Ring radius (μm)")

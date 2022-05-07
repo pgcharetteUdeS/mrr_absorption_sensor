@@ -9,6 +9,7 @@ Data in files "*_MRR_2DMAPS_VS_GAMMA_and_R.xlsx" and "*_ALL_RESULTS.xlsx"
 import numpy as np
 import matplotlib.pyplot as plt
 from openpyxl import load_workbook, Workbook
+from pathlib import Path
 import sys
 
 
@@ -41,13 +42,19 @@ def _get_re_rw(wb_all_results: Workbook, gamma: float) -> tuple[float, float]:
     return re[index], rw[index]
 
 
-def figure_3(wb_2d_map: Workbook, wb_all_results: Workbook, gamma: float):
+def figure_3(
+    wb_2d_map: Workbook,
+    wb_all_results: Workbook,
+    gamma: float,
+    filename_path: Path,
+):
     """
 
     Args:
         wb_2d_map ():
         wb_all_results ():
         gamma ():
+        filename_path: Path,
 
     Returns:
 
@@ -100,6 +107,9 @@ def figure_3(wb_2d_map: Workbook, wb_all_results: Workbook, gamma: float):
     ax_lines = ax.get_legend_handles_labels()[0] + ax_r.get_legend_handles_labels()[0]
     ax_labels = ax.get_legend_handles_labels()[1] + ax_r.get_legend_handles_labels()[1]
     ax.legend(ax_lines, ax_labels, loc="upper left")
+
+    # Save figure to file
+    fig.savefig(filename_path.parent / f"{filename_path.stem}_FIG3.png")
 
 
 def _figure_5_line_profile_plot(
@@ -160,6 +170,7 @@ def figure_5(
     line_profile_gammas: np.ndarray,
     y_max_s: float,
     y_max_αl: float,
+    filename_path: Path,
 ):
     """
 
@@ -169,6 +180,7 @@ def figure_5(
         line_profile_gammas ():
         y_max_s ():
         y_max_αl ():
+        filename_path: Path,
 
     Returns:
 
@@ -181,7 +193,7 @@ def figure_5(
     )
 
     # Create figure with required number of subplots for the requested line profiles
-    fig, axs = plt.subplots(len(line_profile_gammas))
+    fig, axs = plt.subplots(nrows=len(line_profile_gammas), figsize=(9, 10))
     fig.suptitle("Figure 5")
 
     # Loop to generate the subplots of the line profiles in "line_profile_gammas"
@@ -198,12 +210,16 @@ def figure_5(
             last=i >= len(line_profile_gammas) - 1,
         )
 
+    # Save figure to file
+    fig.savefig(filename_path.parent / f"{filename_path.stem}_FIG5.png")
+
 
 def figure_6(
     wb_2d_map: Workbook,
     wb_all_results: Workbook,
     line_profile_gammas: np.ndarray,
     y_max_s: float,
+    filename_path: Path,
 ):
     """
 
@@ -212,13 +228,14 @@ def figure_6(
         wb_all_results ():
         line_profile_gammas ():
         y_max_s ():
+        filename_path ():
 
     Returns:
 
     """
 
     # Create the figure
-    fig, axs = plt.subplots(3)
+    fig, axs = plt.subplots(3, figsize=(9, 10))
     fig.suptitle("Figure 6")
 
     #
@@ -301,6 +318,9 @@ def figure_6(
     axs[2].legend(ax_lines, ax_labels, loc="center left")
     axs[2].text(max_s_max_r * 1.05, 0.45, r"max(max($S_{MRR}$))", color="red")
 
+    # Save figure to file
+    fig.savefig(filename_path.parent / f"{filename_path.stem}_FIG6.png")
+
 
 def _determine_y_plotting_extrema(
     wb_2d_map: Workbook, wb_all_results: Workbook
@@ -368,6 +388,7 @@ def main():
             "data/Tableau_REDUCED_TE_w07_dbrutes_R_MRR_2DMAPS_VS_GAMMA_and_R"
             + "__alpha_wg_variable.xlsx"
         )
+    filename_path: Path = Path(filename_all_results)
 
     # matplotlib initializations
     plt.rcParams.update(
@@ -388,19 +409,26 @@ def main():
     y_max_s, y_max_αl = _determine_y_plotting_extrema(
         wb_2d_map=wb_2d_map, wb_all_results=wb_all_results
     )
-    figure_3(wb_2d_map=wb_2d_map, wb_all_results=wb_all_results, gamma=30)
+    figure_3(
+        wb_2d_map=wb_2d_map,
+        wb_all_results=wb_all_results,
+        gamma=30,
+        filename_path=filename_path,
+    )
     figure_5(
         wb_2d_map=wb_2d_map,
         wb_all_results=wb_all_results,
         line_profile_gammas=line_profile_gammas_fig_5,
         y_max_s=y_max_s,
         y_max_αl=y_max_αl,
+        filename_path=filename_path,
     )
     figure_6(
         wb_2d_map=wb_2d_map,
         wb_all_results=wb_all_results,
         line_profile_gammas=line_profile_gammas_fig_6,
         y_max_s=y_max_s,
+        filename_path=filename_path,
     )
     plt.show()
 
