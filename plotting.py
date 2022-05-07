@@ -67,10 +67,10 @@ def _calc_plotting_extrema(models: Models, mrr: Mrr) -> dict:
 
     # Gamma domain extrema (%)
     plotting_extrema["gamma_plot_min"] = (
-        np.floor(models.gamma_of_u(u[0]) * 0.9 / 10) * 10
+        np.floor(models.gamma_of_u(u[-1]) * 0.9 * 10) * 10
     )
     plotting_extrema["gamma_plot_max"] = (
-        np.ceil(models.gamma_of_u(u[-1]) * 1.1 / 10) * 10
+        np.ceil(models.gamma_of_u(u[0]) * 1.1 * 10) * 10
     )
 
     # max{S} vertical marker
