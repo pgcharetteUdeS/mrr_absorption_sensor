@@ -163,10 +163,7 @@ class Mrr:
         Calculate sensitivity at radius r for a given core dimension u
         """
 
-        # Calculate sensitivity
-        s_nr: float = self.calc_s_nr(r=r, u=u)
-        s_e: float = self.calc_s_e(r=r, u=u)
-        s: float = s_nr * s_e
+        s: float = self.calc_s_nr(r=r, u=u) * self.calc_s_e(r=r, u=u)
         assert s >= 0, "S should not be negative!"
 
         return s
