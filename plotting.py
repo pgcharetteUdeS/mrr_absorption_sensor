@@ -65,6 +65,14 @@ def _calc_plotting_extrema(models: Models, mrr: Mrr) -> dict:
     plotting_extrema["u_plot_min"] = u[0] * 0.9
     plotting_extrema["u_plot_max"] = u[-1] * 1.1
 
+    # Gamma domain extrema (%)
+    plotting_extrema["gamma_plot_min"] = (
+        np.floor(models.gamma_of_u(u[0]) * 0.9 / 10) * 10
+    )
+    plotting_extrema["gamma_plot_max"] = (
+        np.ceil(models.gamma_of_u(u[-1]) * 1.1 / 10) * 10
+    )
+
     # max{S} vertical marker
     plotting_extrema["S_plot_max"] = 10 ** np.ceil(np.log10(mrr.max_s))
 
@@ -75,8 +83,6 @@ def _calc_plotting_extrema(models: Models, mrr: Mrr) -> dict:
     plotting_extrema["Finesse_plot_max"] = (
         np.ceil(np.amax(mrr.finesse / (2 * np.pi)) * 1.1 / 10) * 10
     )
-    plotting_extrema["gamma_plot_min"] = np.floor(np.amin(mrr.gamma) * 0.9 / 10) * 10
-    plotting_extrema["gamma_plot_max"] = np.ceil(np.amax(mrr.gamma) * 1.1 / 10) * 10
 
     return plotting_extrema
 
