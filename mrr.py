@@ -158,19 +158,18 @@ class Mrr:
             / (np.sqrt(self.calc_a2_wg(r=r, u=u)) * (1 - self.calc_a2_wg(r=r, u=u)))
         )
 
-    def calc_sensitivity(self, r: float, u: float) -> tuple[float, float, float, float]:
+    def calc_sensitivity(self, r: float, u: float) -> float:
         """
         Calculate sensitivity at radius r for a given core dimension u
         """
 
         # Calculate sensitivity
-        a2_wg: float = self.calc_a2_wg(r=r, u=u)
         s_nr: float = self.calc_s_nr(r=r, u=u)
         s_e: float = self.calc_s_e(r=r, u=u)
         s: float = s_nr * s_e
         assert s >= 0, "S should not be negative!"
 
-        return s, s_nr, s_e, a2_wg
+        return s
 
     def _obj_fun(self, u: float, r: float) -> float:
         """
@@ -182,7 +181,7 @@ class Mrr:
         u = max(u, self.models.u_domain_min)
 
         # Calculate sensitivity at current solution vector S(r, h)
-        s: float = self.calc_sensitivity(r=r, u=u)[0]
+        s: float = self.calc_sensitivity(r=r, u=u)
 
         return -s / 1000
 
@@ -233,21 +232,24 @@ class Mrr:
         self.previous_solution = u_max_s
 
         # Calculate sensitivity and other parameters at the solution
-        s, s_nr, s_e, a2_wg = self.calc_sensitivity(r=r, u=u_max_s)
+        s = self.calc_sensitivity(r=r, u=u_max_s)
 
         # Calculate other useful MRR parameters at the solution
+        a2_wg: float = self.calc_a2_wg(r=r, u=u_max_s)
         a: float = np.sqrt(a2_wg)
+        tau: float = (np.sqrt(3) * a2_wg - np.sqrt(3) - 2 * a) / (a2_wg - 3)
+        t_max: float = ((tau + a) / (1 + tau * a)) ** 2
+        t_min: float = ((tau - a) / (1 - tau * a)) ** 2
         gamma: float = self.models.gamma_of_u(u_max_s) * 100
         n_eff: float = self.models.n_eff_of_u(u_max_s)
-        tau: float = (np.sqrt(3) * a2_wg - np.sqrt(3) - 2 * a) / (a2_wg - 3)
         finesse: float = np.pi * (np.sqrt(tau * a)) / (1 - tau * a)
         q: float = (n_eff * (2 * np.pi * r) / self.models.lambda_res) * finesse
         fwhm: float = self.models.lambda_res / q
         fsr: float = finesse * fwhm
-        t_max: float = ((tau + a) / (1 + tau * a)) ** 2
-        t_min: float = ((tau - a) / (1 - tau * a)) ** 2
         contrast: float = t_max - t_min
         er: float = 10 * np.log10(t_max / t_min)
+        s_nr: float = self.calc_s_nr(r=r, u=u_max_s)
+        s_e: float = self.calc_s_e(r=r, u=u_max_s)
 
         # Return results to calling program
         return (

@@ -444,7 +444,7 @@ def _plot_2d_maps(
     # 2D map of S(u, R)
     s_2d_map = np.asarray(
         [
-            [mrr.calc_sensitivity(r=10**log10_R, u=u)[0] for log10_R in r_2d_map]
+            [mrr.calc_sensitivity(r=10**log10_R, u=u) for log10_R in r_2d_map]
             for u in u_2d_map
         ]
     )
