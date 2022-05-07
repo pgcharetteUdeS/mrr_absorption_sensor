@@ -45,13 +45,7 @@ class Linear:
         Calculate a2
         """
 
-        gamma: float = self.models.gamma_of_u(u)
-        α_prop: float = self.models.α_wg_of_u(u=u) + (
-            gamma * self.models.α_fluid
-        )
-        length: float = 2 * r
-
-        return np.e ** -(α_prop * length)
+        return np.e ** -(self.models.α_prop(u=u) * (2 * r))
 
     def _calc_sensitivity(self, r: float, u: float) -> float:
         """

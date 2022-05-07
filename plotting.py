@@ -70,7 +70,7 @@ def _calc_plotting_extrema(models: Models, mrr: Mrr) -> dict:
 
     # Other extrema for Mrr plots
     plotting_extrema["Se_plot_max"] = (
-            np.ceil(np.amax(mrr.s_e * np.sqrt(mrr.a2_wg)) * 1.1 / 10) * 10
+        np.ceil(np.amax(mrr.s_e * np.sqrt(mrr.a2_wg)) * 1.1 / 10) * 10
     )
     plotting_extrema["Finesse_plot_max"] = (
         np.ceil(np.amax(mrr.finesse / (2 * np.pi)) * 1.1 / 10) * 10
@@ -179,7 +179,7 @@ def _plot_spiral_optimization_results(
     """ """
 
     # Plot max{S}, u, gamma, n turns mas, L
-    fig, axs = plt.subplots(6)
+    fig, axs = plt.subplots(7)
     fig.suptitle(
         "Archimedes spiral\n"
         + f"{models.pol}"
@@ -234,6 +234,31 @@ def _plot_spiral_optimization_results(
     axs[axs_index].set_ylim(0, 100)
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
+    # a2 @ max{S}
+    axs_index += 1
+    axs[axs_index].set_ylabel(r"$a^2$")
+    axs[axs_index].semilogx(models.r, spiral.a2_wg)
+    axs[axs_index].plot([spiral.max_s_radius, spiral.max_s_radius], [0, 1], "--")
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
+    axs[axs_index].set_ylim(0, 1)
+    axs[axs_index].axes.get_xaxis().set_ticklabels([])
+
+    # alpha_wg @ max{S}
+    axs_index += 1
+    axs[axs_index].semilogx(
+        models.r,
+        np.asarray([models.α_wg_of_u(u) for u in spiral.u]) * PER_UM_TO_DB_PER_CM,
+    )
+    axs[axs_index].set_ylabel(r"α$_{wg}$")
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
+    axs[axs_index].set_ylim(
+        0, np.ceil(models.α_wg_model["max"] * PER_UM_TO_DB_PER_CM) + 1
+    )
+
     # n turns @ max{S}
     axs_index += 1
     n_turns_plot_max: float = np.ceil(np.amax(spiral.n_turns) * 1.1 / 10) * 10 * 2
@@ -246,17 +271,6 @@ def _plot_spiral_optimization_results(
         plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
     )
     axs[axs_index].set_ylim(0, n_turns_plot_max)
-    axs[axs_index].axes.get_xaxis().set_ticklabels([])
-
-    # a2 @ max{S}
-    axs_index += 1
-    axs[axs_index].set_ylabel(r"$a^2$")
-    axs[axs_index].semilogx(models.r, spiral.a2_wg)
-    axs[axs_index].plot([spiral.max_s_radius, spiral.max_s_radius], [0, 1], "--")
-    axs[axs_index].set_xlim(
-        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
-    )
-    axs[axs_index].set_ylim(0, 1)
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
     # L @ max{S}
@@ -673,7 +687,7 @@ def _plot_2d_maps(
         [
             [
                 mrr.calc_s_e(r=10**log10_R, u=u)
-                * np.sqrt(mrr.calc_a2_wg(r=10 ** log10_R, u=u))
+                * np.sqrt(mrr.calc_a2_wg(r=10**log10_R, u=u))
                 for log10_R in r_2d_map
             ]
             for u in u_2d_map
@@ -718,7 +732,7 @@ def _plot_2d_maps(
     # 2D map of a2(gamma, R)
     a2_wg_2d_map = np.asarray(
         [
-            [mrr.calc_a2_wg(r=10 ** log10_R, u=u) for log10_R in r_2d_map]
+            [mrr.calc_a2_wg(r=10**log10_R, u=u) for log10_R in r_2d_map]
             for u in u_2d_map
         ]
     )
@@ -773,7 +787,7 @@ def _plot_2d_maps(
     αl_2d_map = (
         np.asarray(
             [
-                [mrr.calc_α_l(r=10 ** log10_R, u=u) for log10_R in r_2d_map]
+                [mrr.calc_α_l(r=10**log10_R, u=u) for log10_R in r_2d_map]
                 for u in u_2d_map
             ]
         )
@@ -842,10 +856,7 @@ def _plot_2d_maps(
         α_prop_l_2d_map = (
             np.asarray(
                 [
-                    [
-                        mrr.calc_α_prop_l(r=10 ** log10_R, u=u)
-                        for log10_R in r_2d_map
-                    ]
+                    [mrr.calc_α_prop_l(r=10**log10_R, u=u) for log10_R in r_2d_map]
                     for u in u_2d_map
                 ]
             )
@@ -854,10 +865,7 @@ def _plot_2d_maps(
         α_bend_l_2d_map = (
             np.asarray(
                 [
-                    [
-                        mrr.calc_α_bend_l(r=10 ** log10_R, u=u)
-                        for log10_R in r_2d_map
-                    ]
+                    [mrr.calc_α_bend_l(r=10**log10_R, u=u) for log10_R in r_2d_map]
                     for u in u_2d_map
                 ]
             )
@@ -892,6 +900,89 @@ def _plot_2d_maps(
             ],
         )
         logger(f"Wrote '{filename.with_suffix('.xlsx')}'.")
+
+
+def _plot_linear_optimization_results(
+    models: Models,
+    linear: Linear,
+    plotting_extrema: dict,
+    filename_path: Path,
+    logger=print,
+):
+    """ """
+
+    # Create figure
+    fig, axs = plt.subplots(5)
+    fig.suptitle(
+        "Linear waveguide sensor\n"
+        + f"{models.pol}"
+        + f", λ = {models.lambda_res:.3f} μm"
+        + rf", min(α$_{{wg}}$) = {models.α_wg_db_per_cm:.1f} dB/cm"
+        + f", {models.core_v_name} = {models.core_v_value:.3f} μm"
+    )
+
+    # max{S}
+    axs_index: int = 0
+    axs[axs_index].set_ylabel(r"max$\{S\}$" + "\n" + r"(RIU$^{-1}$)")
+    axs[axs_index].loglog(models.r, linear.s)
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
+    axs[axs_index].set_ylim(100, plotting_extrema["S_plot_max"])
+    axs[axs_index].axes.get_xaxis().set_ticklabels([])
+
+    # u (h or w) @ max{S}
+    axs_index += 1
+    axs[axs_index].semilogx(models.r, linear.u)
+    axs[axs_index].set_ylabel(f"{models.core_u_name} (μm)")
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
+    axs[axs_index].set_ylim(
+        plotting_extrema["u_plot_min"], plotting_extrema["u_plot_max"]
+    )
+    axs[axs_index].axes.get_xaxis().set_ticklabels([])
+
+    # Gamma_fluid @ max{S}
+    axs_index += 1
+    axs[axs_index].semilogx(models.r, linear.gamma)
+    axs[axs_index].set_ylabel(r"$\Gamma_{fluide}$ ($\%$)")
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
+    axs[axs_index].set_ylim(
+        plotting_extrema["gamma_plot_min"], plotting_extrema["gamma_plot_max"]
+    )
+    axs[axs_index].axes.get_xaxis().set_ticklabels([])
+
+    # a2 @ max{S}
+    axs_index += 1
+    axs[axs_index].semilogx(models.r, linear.a2_wg)
+    axs[axs_index].set_ylabel(r"$a^2$")
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
+    axs[axs_index].set_ylim(0, 1)
+    axs[axs_index].axes.get_xaxis().set_ticklabels([])
+
+    # alpha_wg @ max{S}
+    axs_index += 1
+    axs[axs_index].semilogx(
+        models.r,
+        np.asarray([models.α_wg_of_u(u) for u in linear.u]) * PER_UM_TO_DB_PER_CM,
+    )
+    axs[axs_index].set_ylabel(r"α$_{wg}$")
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
+    axs[axs_index].set_ylim(
+        0, np.ceil(models.α_wg_model["max"] * PER_UM_TO_DB_PER_CM) + 1
+    )
+
+    axs[axs_index].set_xlabel("Ring radius (μm)")
+    filename: Path = filename_path.parent / f"{filename_path.stem}_LINEAR.png"
+    fig.savefig(filename)
+    logger(f"Wrote '{filename}'.")
 
 
 def _plot_mrr_optimization_results(
@@ -964,17 +1055,6 @@ def _plot_mrr_optimization_results(
     axs[axs_index].set_ylim(0, plotting_extrema["Se_plot_max"])
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
-    # a @ max{S}
-    axs_index += 1
-    axs[axs_index].semilogx(models.r, np.sqrt(mrr.a2_wg))
-    axs[axs_index].plot([mrr.max_s_radius, mrr.max_s_radius], [0, 1], "r--")
-    axs[axs_index].set_ylabel(r"$a$")
-    axs[axs_index].set_xlim(
-        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
-    )
-    axs[axs_index].set_ylim(0, 1)
-    axs[axs_index].axes.get_xaxis().set_ticklabels([])
-
     # u (h or w) @ max{S}
     axs_index += 1
     axs[axs_index].semilogx(models.r, mrr.u)
@@ -1009,17 +1089,30 @@ def _plot_mrr_optimization_results(
     )
     axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
+    # a2 @ max{S}
+    axs_index += 1
+    axs[axs_index].semilogx(models.r, mrr.a2_wg)
+    axs[axs_index].plot([mrr.max_s_radius, mrr.max_s_radius], [0, 1], "r--")
+    axs[axs_index].set_ylabel(r"$a^2$")
+    axs[axs_index].set_xlim(
+        plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
+    )
+    axs[axs_index].set_ylim(0, 1)
+    axs[axs_index].axes.get_xaxis().set_ticklabels([])
+
     # alpha_wg @ max{S}
     axs_index += 1
     axs[axs_index].semilogx(
         models.r,
-        np.asarray([mrr.models.α_wg_of_u(u) for u in mrr.u]) * PER_UM_TO_DB_PER_CM,
+        np.asarray([models.α_wg_of_u(u) for u in mrr.u]) * PER_UM_TO_DB_PER_CM,
     )
     axs[axs_index].set_ylabel(r"α$_{wg}$")
     axs[axs_index].set_xlim(
         plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
     )
-    axs[axs_index].set_ylim(bottom=0)
+    axs[axs_index].set_ylim(
+        0, np.ceil(models.α_wg_model["max"] * PER_UM_TO_DB_PER_CM) + 1
+    )
 
     axs[axs_index].set_xlabel("Ring radius (μm)")
     filename: Path = filename_path.parent / f"{filename_path.stem}_MRR_sens_parms.png"
@@ -1251,6 +1344,15 @@ def plot_results(
 
     # Calculate plotting extrema and max{S} vertical marker position
     plotting_extrema: dict = _calc_plotting_extrema(models, mrr=mrr)
+
+    # Plot/save linear waveguide sensor results
+    _plot_linear_optimization_results(
+        models,
+        linear=linear,
+        plotting_extrema=plotting_extrema,
+        filename_path=filename_path,
+        logger=logger,
+    )
 
     # Plot/save MRR optimization results
     _plot_mrr_optimization_results(

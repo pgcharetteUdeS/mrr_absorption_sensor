@@ -342,13 +342,8 @@ class Spiral:
         and number of turns
         """
 
-        # Determine waveguide core width & height
-        if self.models.core_v_name == "w":
-            h = u
-            w = self.models.core_v_value
-        else:
-            h = self.models.core_v_value
-            w = u
+        # Determine waveguide core width
+        w = self.models.core_v_value if self.models.core_v_name == "w" else u
 
         # Archimedes spiral: "r = a + b*theta", where "a" is the minimum radius of the
         # outer spiral and "2*pi*b" is the spacing between the lines pairs.
@@ -386,12 +381,7 @@ class Spiral:
         )
 
         # Calculate propagation losses in the spiral
-        gamma: float = self.models.gamma_of_u(
-            h if self.models.core_v_name == "w" else w
-        )
-        α_prop: float = self.models.α_wg_of_u(u=u) + (
-            gamma * self.models.α_fluid
-        )
+        α_prop: float = self.models.α_prop(u=u)
         prop_losses_spiral: float = α_prop * length
 
         # Calculate bending losses in the spiral by integration w/r to radius
@@ -429,9 +419,9 @@ class Spiral:
         l_sb2: float = np.pi * (outer_spiral_r_min / 2)
         prop_losses_joint: float = α_prop * (l_hc + l_sb1 + l_sb2)
         bend_losses_joint: float = (
-                self.models.α_bend(r=outer_spiral_r_min, u=u) * l_hc
-                + self.models.α_bend(r=inner_spiral_r_min / 2, u=u) * l_sb1
-                + self.models.α_bend(r=outer_spiral_r_min / 2, u=u) * l_sb2
+            self.models.α_bend(r=outer_spiral_r_min, u=u) * l_hc
+            + self.models.α_bend(r=inner_spiral_r_min / 2, u=u) * l_sb1
+            + self.models.α_bend(r=outer_spiral_r_min / 2, u=u) * l_sb2
         )
 
         # Total losses in the spiral
@@ -445,7 +435,12 @@ class Spiral:
 
         # Calculate the sensitivity of the spiral
         l_total: float = length + l_hc + l_sb1 + l_sb2
-        s_nr: float = (4 * np.pi / self.models.lambda_res) * l_total * gamma * a2_wg
+        s_nr: float = (
+            (4 * np.pi / self.models.lambda_res)
+            * l_total
+            * self.models.gamma_of_u(u)
+            * a2_wg
+        )
 
         return s_nr, outer_spiral_r_min, l_total, a2_wg
 

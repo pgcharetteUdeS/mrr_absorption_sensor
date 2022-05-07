@@ -76,7 +76,7 @@ class Mrr:
 
         α_bend: float = a * np.exp(-b * r)
         residual: float = 1 - r * (2 * np.pi) * (
-                self.α_prop(u=u) + (1 - b * r) * α_bend
+            self.models.α_prop(u=u) + (1 - b * r) * α_bend
         )
 
         return residual**2
@@ -93,7 +93,7 @@ class Mrr:
         α_bend_a, α_bend_b = self.models.calc_α_bend_a_and_b(gamma=gamma)
 
         # Re
-        w: float = lambertw(-e * self.α_prop(u=u) / α_bend_a, k=-1).real
+        w: float = lambertw(-e * self.models.α_prop(u=u) / α_bend_a, k=-1).real
         r_e: float = (1 / α_bend_b) * (1 - w)
 
         # Rw
@@ -107,21 +107,12 @@ class Mrr:
 
         return r_e, r_w, α_bend_a, α_bend_b
 
-    def α_prop(self, u: float) -> float:
-        """
-        α_prop = α_wg + gamma_fluid*α_fluid
-        """
-
-        return self.models.α_wg_of_u(u=u) + (
-            self.models.gamma_of_u(u) * self.models.α_fluid
-        )
-
     def calc_α_prop_l(self, r: float, u: float) -> float:
         """
         Propagation loss component of total round-trip losses : α_prop*L
         """
 
-        return self.α_prop(u=u) * (2 * np.pi * r)
+        return self.models.α_prop(u=u) * (2 * np.pi * r)
 
     def calc_α_bend_l(self, r: float, u: float) -> float:
         """
@@ -134,7 +125,7 @@ class Mrr:
         Total ring round-trip loss factor: αL = (α_prop + α_bend)*L
         """
 
-        return (self.α_prop(u=u) + self.models.α_bend(r=r, u=u)) * (
+        return (self.models.α_prop(u=u) + self.models.α_bend(r=r, u=u)) * (
             2 * np.pi * r
         )
 

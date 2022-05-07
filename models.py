@@ -4,6 +4,7 @@ Models class
 
 Exposed methods:
     - α_bend(r, u)
+    - α_prop(u)
     - α_wg_of_u(u)
     - calc_α_bend_a_and_b_(gamma)
     - gamma_of_u(u)
@@ -893,3 +894,13 @@ class Models:
         )[0]
 
         return np.exp(ln_a), -minus_b
+
+    #
+    # Propagation constant calculation methods
+    #
+    def α_prop(self, u: float) -> float:
+        """
+        α_prop = α_wg + gamma_fluid*α_fluid
+        """
+
+        return self.α_wg_of_u(u=u) + (self.gamma_of_u(u) * self.α_fluid)
