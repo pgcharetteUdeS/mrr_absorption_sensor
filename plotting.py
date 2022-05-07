@@ -533,9 +533,13 @@ def _plot_2d_maps(
         gamma_2d_map[: int(np.argmax(gamma_2d_map))] = gamma_2d_map[
             int(np.argmax(gamma_2d_map))
         ]
+        gamma_2d_map[int(np.argmin(gamma_2d_map)) :] = gamma_2d_map[
+            int(np.argmin(gamma_2d_map))
+        ]
         logger(
             f"{Fore.YELLOW}WARNING! Gamma({models.core_u_name}) is not monotonically "
-            + f"decreasing, first values replaced with gamma max!{Style.RESET_ALL}"
+            + "decreasing, first/last values replaced with gamma max/min!"
+            + f"{Style.RESET_ALL}"
         )
 
     # Indices for dashed lines at radii for max(Smrr)
