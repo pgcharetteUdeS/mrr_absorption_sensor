@@ -1019,6 +1019,7 @@ def _plot_mrr_optimization_results(
     axs[axs_index].set_xlim(
         plotting_extrema["r_plot_min"], plotting_extrema["r_plot_max"]
     )
+    axs[axs_index].set_ylim(bottom=0)
 
     axs[axs_index].set_xlabel("Ring radius (μm)")
     filename: Path = filename_path.parent / f"{filename_path.stem}_MRR_sens_parms.png"
@@ -1133,7 +1134,7 @@ def _plot_mrr_optimization_results(
     axs[axs_index].set_zorder(ax_right.get_zorder() + 1)
 
     # Write figure to file
-    filename = filename_path.parent / (filename_path.stem + "_MRR_ring_parms.png")
+    filename = filename_path.parent / f"{filename_path.stem}_MRR_ring_parms.png"
     fig.savefig(filename)
     logger(f"Wrote '{filename}'.")
 

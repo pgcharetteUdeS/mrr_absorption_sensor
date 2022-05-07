@@ -280,10 +280,12 @@ def figure_6(
     axs[1].axes.get_xaxis().set_ticklabels([])
 
     # h(R) and gamma(R) @ Smax
+    y_min_h: float = 0.1
+    y_max_h: float = 0.9
     axs[2].semilogx(r, h, "b", label="h")
     axs[2].set_ylabel(r"h (μm) @ max($S_{MRR}$)")
-    axs[2].set_ylim(0.1, 0.5)
-    axs[2].semilogx([max_s_max_r, max_s_max_r], [0.1, 0.5], "r--")
+    axs[2].set_ylim(y_min_h, y_max_h)
+    axs[2].semilogx([max_s_max_r, max_s_max_r], [y_min_h, y_max_h], "r--")
     ax_r = axs[2].twinx()
     ax_r.semilogx(r, gamma, "g--", label=r"$\Gamma_{fluid}$")
     ax_r.set_ylabel(r"$\Gamma_{fluid}$ $(\%)$ @ max($S_{MRR}$)")

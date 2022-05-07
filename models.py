@@ -165,9 +165,7 @@ class Models:
         """
         # If no height or width specified, return minimum alpha_wg value
         if u is None:
-            return [value.get("alpha_wg") for value in self.modes_data.values()][
-                -1
-            ] / PER_UM_TO_DB_PER_CM
+            return self.α_wg_model["min"]
 
         # Normal function return: polynomial model for alpha_wg(u)
         if not self.parameters["alpha_wg_exponential_model"]:
@@ -243,8 +241,8 @@ class Models:
         self.α_wg_model = {
             "name": "alpha_wg",
             "model": Polynomial.fit(x=u_data, y=α_wg_data, deg=self.α_wg_order),
-            "min": 0,
-            "max": 1,
+            "min": min(α_wg_data),
+            "max": max(α_wg_data),
         }
 
         # Polynomial models for gamma(u) and u(gamma) in the input mode solver data
@@ -271,8 +269,8 @@ class Models:
         self.n_eff_model = {
             "name": "neff",
             "model": Polynomial.fit(x=u_data, y=n_eff_data, deg=self.n_eff_order),
-            "min": np.amin(n_eff_data),
-            "max": np.amax(n_eff_data),
+            "min": min(n_eff_data),
+            "max": max(n_eff_data),
         }
 
         # Interpolation models for R(u) @ max(alpha_bend) and R(u) @ min(alpha_bend)
@@ -353,6 +351,7 @@ class Models:
                 + f", polynomial model order: {self.α_wg_order}"
             )
         axs[axs_index].set_ylabel(r"$\alpha_{wg}$ (dB/cm)")
+        axs[axs_index].set_ylim(bottom=0)
         axs[axs_index].set_xlabel("".join([f"{self.core_u_name} (μm)"]))
 
         # Complete plot formatting
