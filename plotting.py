@@ -1333,12 +1333,12 @@ class Plotting:
         fig, ax = plt.subplots()
         ax.set_title(
             "Maximum sensitivity for MRR and linear sensors"
+            if self.models.parameters["no_spiral"]
+            else "Maximum sensitivity for MRR, linear, and spiral sensors"
             + f"\n{self.models.pol}"
             + f", λ = {self.models.lambda_res:.3f} μm"
             + rf", min(α$_{{wg}}$) = {self.models.α_wg_db_per_cm:.1f} dB/cm"
-            + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μ"
-            if self.models.parameters["no_spiral"]
-            else "Maximum sensitivity for MRR, spiral, and linear sensors"
+            + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
         )
 
         # MRR
