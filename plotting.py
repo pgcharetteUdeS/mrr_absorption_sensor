@@ -190,7 +190,55 @@ class Plotting:
         )
         self.logger(f"Wrote '{filename}'.")
 
-    def _plot_spiral_optimization_results(self):
+    def _write_spiral_waveguide_coordinates_to_excel_file(
+        self, spiral_waveguide_coordinates: dict
+    ):
+        """
+        Write the spiral inner and outer waveguide x/y coordinates to an Excel file
+        """
+
+        filename = (
+            self.filename_path.parent
+            / f"{self.filename_path.stem}_SPIRAL_SCHEMATIC.xlsx"
+        )
+        wb = Workbook()
+        outer_spiral_sheet = wb["Sheet"]
+        outer_spiral_sheet.title = "Outer waveguide"
+        outer_spiral_sheet.append(
+            [
+                "Outer edge x (um)",
+                "Outer edge y (um)",
+                "Inner edge x (um)",
+                "Inner edge y (um)",
+            ]
+        )
+        for row in zip(
+            spiral_waveguide_coordinates["outer_spiral_x_out"],
+            spiral_waveguide_coordinates["outer_spiral_y_out"],
+            spiral_waveguide_coordinates["outer_spiral_x_in"],
+            spiral_waveguide_coordinates["outer_spiral_y_in"],
+        ):
+            outer_spiral_sheet.append(row)
+        inner_spiral_sheet = wb.create_sheet("Inner waveguide")
+        inner_spiral_sheet.append(
+            [
+                "Outer edge x (um)",
+                "Outer edge y (um)",
+                "Inner edge x (um)",
+                "Inner edge y (um)",
+            ]
+        )
+        for row in zip(
+            spiral_waveguide_coordinates["inner_spiral_x_out"],
+            spiral_waveguide_coordinates["inner_spiral_y_out"],
+            spiral_waveguide_coordinates["inner_spiral_x_in"],
+            spiral_waveguide_coordinates["inner_spiral_y_in"],
+        ):
+            inner_spiral_sheet.append(row)
+        wb.save(filename=filename)
+        self.logger(f"Wrote '{filename}'.")
+
+    def _plot_spiral_results_at_optimum(self):
         """
 
         Returns:
@@ -316,58 +364,8 @@ class Plotting:
         )
         axs[axs_index].set_ylim(100, self.plotting_extrema["S_plot_max"])
         axs[axs_index].set_xlabel("Ring radius (μm)")
-        filename = (
-            self.filename_path.parent / f"{self.filename_path.stem}_self.spiral.png"
-        )
+        filename = self.filename_path.parent / f"{self.filename_path.stem}_SPIRAL.png"
         fig.savefig(filename)
-        self.logger(f"Wrote '{filename}'.")
-
-    def _write_spiral_waveguide_coordinates_to_excel_file(
-        self, spiral_waveguide_coordinates: dict
-    ):
-        """
-        Write the spiral inner and outer waveguide x/y coordinates to an Excel file
-        """
-
-        filename = (
-            self.filename_path.parent
-            / f"{self.filename_path.stem}_SPIRAL_SCHEMATIC.xlsx"
-        )
-        wb = Workbook()
-        outer_spiral_sheet = wb["Sheet"]
-        outer_spiral_sheet.title = "Outer waveguide"
-        outer_spiral_sheet.append(
-            [
-                "Outer edge x (um)",
-                "Outer edge y (um)",
-                "Inner edge x (um)",
-                "Inner edge y (um)",
-            ]
-        )
-        for row in zip(
-            spiral_waveguide_coordinates["outer_spiral_x_out"],
-            spiral_waveguide_coordinates["outer_spiral_y_out"],
-            spiral_waveguide_coordinates["outer_spiral_x_in"],
-            spiral_waveguide_coordinates["outer_spiral_y_in"],
-        ):
-            outer_spiral_sheet.append(row)
-        inner_spiral_sheet = wb.create_sheet("Inner waveguide")
-        inner_spiral_sheet.append(
-            [
-                "Outer edge x (um)",
-                "Outer edge y (um)",
-                "Inner edge x (um)",
-                "Inner edge y (um)",
-            ]
-        )
-        for row in zip(
-            spiral_waveguide_coordinates["inner_spiral_x_out"],
-            spiral_waveguide_coordinates["inner_spiral_y_out"],
-            spiral_waveguide_coordinates["inner_spiral_x_in"],
-            spiral_waveguide_coordinates["inner_spiral_y_in"],
-        ):
-            inner_spiral_sheet.append(row)
-        wb.save(filename=filename)
         self.logger(f"Wrote '{filename}'.")
 
     def plot_spiral_optimization_results(self):
@@ -378,7 +376,7 @@ class Plotting:
         """
 
         # Plot spiral optimization results: u, gamma, n turns, a2, L @max(S)
-        self._plot_spiral_optimization_results()
+        self._plot_spiral_results_at_optimum()
 
         # Draw the spiral with the greatest number of turns found in the optimization
         if self.models.parameters["draw_largest_spiral"]:
@@ -410,6 +408,84 @@ class Plotting:
         # Write sequence of consecutive spirals with n turns > self.spiral.n_turns_min
         if self.models.parameters["write_spiral_sequence_to_file"]:
             self._write_spiral_sequence_to_file()
+
+    def plot_linear_optimization_results(self):
+        """ " """
+
+        # Create figure
+        fig, axs = plt.subplots(5)
+        fig.suptitle(
+            "Linear waveguide sensor\n"
+            + f"{self.models.pol}"
+            + f", λ = {self.models.lambda_res:.3f} μm"
+            + rf", min(α$_{{wg}}$) = {self.models.α_wg_db_per_cm:.1f} dB/cm"
+            + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
+        )
+
+        # max{S}
+        axs_index: int = 0
+        axs[axs_index].set_ylabel(r"max$\{S\}$" + "\n" + r"(RIU$^{-1}$)")
+        axs[axs_index].loglog(self.models.r, self.linear.s)
+        axs[axs_index].set_xlim(
+            self.plotting_extrema["r_plot_min"], self.plotting_extrema["r_plot_max"]
+        )
+        axs[axs_index].set_ylim(100, self.plotting_extrema["S_plot_max"])
+        axs[axs_index].axes.get_xaxis().set_ticklabels([])
+
+        # u (h or w) @ max{S}
+        axs_index += 1
+        axs[axs_index].semilogx(self.models.r, self.linear.u)
+        axs[axs_index].set_ylabel(f"{self.models.core_u_name} (μm)")
+        axs[axs_index].set_xlim(
+            self.plotting_extrema["r_plot_min"], self.plotting_extrema["r_plot_max"]
+        )
+        axs[axs_index].set_ylim(
+            self.plotting_extrema["u_plot_min"], self.plotting_extrema["u_plot_max"]
+        )
+        axs[axs_index].axes.get_xaxis().set_ticklabels([])
+
+        # Gamma_fluid @ max{S}
+        axs_index += 1
+        axs[axs_index].semilogx(self.models.r, self.linear.gamma)
+        axs[axs_index].set_ylabel(r"$\Gamma_{fluide}$ ($\%$)")
+        axs[axs_index].set_xlim(
+            self.plotting_extrema["r_plot_min"], self.plotting_extrema["r_plot_max"]
+        )
+        axs[axs_index].set_ylim(0, 100)
+        axs[axs_index].axes.get_xaxis().set_ticklabels([])
+
+        # a2 @ max{S}
+        axs_index += 1
+        axs[axs_index].semilogx(self.models.r, self.linear.a2_wg)
+        axs[axs_index].set_ylabel(r"$a^2$")
+        axs[axs_index].set_xlim(
+            self.plotting_extrema["r_plot_min"], self.plotting_extrema["r_plot_max"]
+        )
+        axs[axs_index].set_ylim(0, 1)
+        axs[axs_index].axes.get_xaxis().set_ticklabels([])
+
+        # alpha_wg @ max{S}
+        axs_index += 1
+        axs[axs_index].semilogx(
+            self.models.r,
+            np.asarray([self.models.α_wg_of_u(u) for u in self.linear.u])
+            * PER_UM_TO_DB_PER_CM,
+        )
+        axs[axs_index].set_ylabel(r"α$_{wg}$")
+        axs[axs_index].set_xlim(
+            self.plotting_extrema["r_plot_min"], self.plotting_extrema["r_plot_max"]
+        )
+        axs[axs_index].set_ylim(
+            np.floor(self.models.α_wg_model["min"] * PER_UM_TO_DB_PER_CM),
+            np.ceil(self.models.α_wg_model["max"] * PER_UM_TO_DB_PER_CM),
+        )
+
+        axs[axs_index].set_xlabel("Ring radius (μm)")
+        filename: Path = (
+            self.filename_path.parent / f"{self.filename_path.stem}_LINEAR.png"
+        )
+        fig.savefig(filename)
+        self.logger(f"Wrote '{filename}'.")
 
     def _plot_mrr_result_maps(self):
         """
@@ -961,87 +1037,6 @@ class Plotting:
             )
             self.logger(f"Wrote '{filename.with_suffix('.xlsx')}'.")
 
-    def plot_linear_optimization_results(self):
-        """ " """
-
-        # Create figure
-        fig, axs = plt.subplots(5)
-        fig.suptitle(
-            "Linear waveguide sensor\n"
-            + f"{self.models.pol}"
-            + f", λ = {self.models.lambda_res:.3f} μm"
-            + rf", min(α$_{{wg}}$) = {self.models.α_wg_db_per_cm:.1f} dB/cm"
-            + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
-        )
-
-        # max{S}
-        axs_index: int = 0
-        axs[axs_index].set_ylabel(r"max$\{S\}$" + "\n" + r"(RIU$^{-1}$)")
-        axs[axs_index].loglog(self.models.r, self.linear.s)
-        axs[axs_index].set_xlim(
-            self.plotting_extrema["r_plot_min"], self.plotting_extrema["r_plot_max"]
-        )
-        axs[axs_index].set_ylim(100, self.plotting_extrema["S_plot_max"])
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
-
-        # u (h or w) @ max{S}
-        axs_index += 1
-        axs[axs_index].semilogx(self.models.r, self.linear.u)
-        axs[axs_index].set_ylabel(f"{self.models.core_u_name} (μm)")
-        axs[axs_index].set_xlim(
-            self.plotting_extrema["r_plot_min"], self.plotting_extrema["r_plot_max"]
-        )
-        axs[axs_index].set_ylim(
-            self.plotting_extrema["u_plot_min"], self.plotting_extrema["u_plot_max"]
-        )
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
-
-        # Gamma_fluid @ max{S}
-        axs_index += 1
-        axs[axs_index].semilogx(self.models.r, self.linear.gamma)
-        axs[axs_index].set_ylabel(r"$\Gamma_{fluide}$ ($\%$)")
-        axs[axs_index].set_xlim(
-            self.plotting_extrema["r_plot_min"], self.plotting_extrema["r_plot_max"]
-        )
-        axs[axs_index].set_ylim(
-            self.plotting_extrema["gamma_plot_min"],
-            self.plotting_extrema["gamma_plot_max"],
-        )
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
-
-        # a2 @ max{S}
-        axs_index += 1
-        axs[axs_index].semilogx(self.models.r, self.linear.a2_wg)
-        axs[axs_index].set_ylabel(r"$a^2$")
-        axs[axs_index].set_xlim(
-            self.plotting_extrema["r_plot_min"], self.plotting_extrema["r_plot_max"]
-        )
-        axs[axs_index].set_ylim(0, 1)
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
-
-        # alpha_wg @ max{S}
-        axs_index += 1
-        axs[axs_index].semilogx(
-            self.models.r,
-            np.asarray([self.models.α_wg_of_u(u) for u in self.linear.u])
-            * PER_UM_TO_DB_PER_CM,
-        )
-        axs[axs_index].set_ylabel(r"α$_{wg}$")
-        axs[axs_index].set_xlim(
-            self.plotting_extrema["r_plot_min"], self.plotting_extrema["r_plot_max"]
-        )
-        axs[axs_index].set_ylim(
-            np.floor(self.models.α_wg_model["min"] * PER_UM_TO_DB_PER_CM),
-            np.ceil(self.models.α_wg_model["max"] * PER_UM_TO_DB_PER_CM),
-        )
-
-        axs[axs_index].set_xlabel("Ring radius (μm)")
-        filename: Path = (
-            self.filename_path.parent / f"{self.filename_path.stem}_self.linear.png"
-        )
-        fig.savefig(filename)
-        self.logger(f"Wrote '{filename}'.")
-
     def _plot_mrr_sensing_parameters_at_optimum(self):
         """
 
@@ -1412,7 +1407,7 @@ class Plotting:
         # Save figure
         filename = (
             self.filename_path.parent
-            / f"{self.filename_path.stem}_MRR_VS_SPIRAL_VS_SWGD.png"
+            / f"{self.filename_path.stem}_MRR_VS_LINEAR_VS_SPIRAL.png"
         )
         fig.savefig(filename)
         self.logger(f"Wrote '{filename}'.")
