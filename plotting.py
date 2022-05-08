@@ -1406,8 +1406,7 @@ class Plotting:
 
         # Save figure
         filename = (
-            self.filename_path.parent
-            / f"{self.filename_path.stem}_MRR_VS_LINEAR_VS_SPIRAL.png"
+            self.filename_path.parent / f"{self.filename_path.stem}_ALL_RESULTS.png"
         )
         fig.savefig(filename)
         self.logger(f"Wrote '{filename}'.")
