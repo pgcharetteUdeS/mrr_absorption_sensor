@@ -20,7 +20,7 @@ from .models import Models
 from .mrr import Mrr
 from .linear import Linear
 from .spiral import Spiral
-from .plotting import plot_results
+from .plotting import Plotting
 from .fileio import load_toml_file, validate_excel_output_file, write_excel_results_file
 from .version import __version__
 
@@ -96,34 +96,35 @@ def analyze(
     else:
         excel_output_fname = ""
 
-    # Instantiate, then analyze the MRR sensor
+    # Instantiate sensor classes
     mrr = Mrr(models=models, logger=logger)
-    mrr.analyze()
-
-    # Instantiate, then analyze the linear sensor
     linear = Linear(models=models, logger=logger)
-    linear.analyze()
+    spiral = Spiral(models=models, logger=logger)
 
-    # Instantiate, then if required analyze the spiral sensor
-    spiral = Spiral(
-        models=models,
-        parameters=parameters,
-        logger=logger,
-    )
+    # Analyze sensors
+    mrr.analyze()
+    linear.analyze()
     if not parameters["no_spiral"]:
         spiral.analyze()
 
-    # Plot results
-    plot_results(
+    # Instantiate Plotting class (must come after MRR sensor analysis)
+    plotting = Plotting(
         models=models,
-        mrr=mrr,
         linear=linear,
+        mrr=mrr,
         spiral=spiral,
         filename_path=output_filenames_path,
         logger=logger,
     )
 
-    # If required, write the analysis results to the output Excel file
+    # Plot results for the different sensors
+    plotting.plot_mrr_optimization_results()
+    plotting.plot_linear_optimization_results()
+    if not parameters["no_spiral"]:
+        plotting.plot_spiral_optimization_results()
+    plotting.plot_combined_linear_spiral_mrr_results()
+
+    # Write the analysis results to the output Excel file
     if parameters["write_excel_files"]:
         write_excel_results_file(
             excel_output_fname=excel_output_fname,
