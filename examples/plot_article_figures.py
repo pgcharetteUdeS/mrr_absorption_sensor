@@ -277,9 +277,7 @@ def figure_6(
     α_bend, α_wg = np.asarray(
         [
             (val[0].value, val[1].value)
-            for val in wb_all_results["MRR"].iter_rows(
-                min_row=2, min_col=6, max_col=7
-            )
+            for val in wb_all_results["MRR"].iter_rows(min_row=2, min_col=6, max_col=7)
         ]
     ).T
     h, gamma = np.asarray(
@@ -333,7 +331,7 @@ def figure_6(
     axs[3].set_xlim(r[0], r[-1])
     axs[3].set_ylim(0, 10)
     axs[3].axes.get_xaxis().set_ticklabels([])
-    axs[3].legend(loc="top right")
+    axs[3].legend(loc="upper right")
 
     # Bottom horizontal axis labels
     axs[3].set_xlabel("Radius (μm)")
