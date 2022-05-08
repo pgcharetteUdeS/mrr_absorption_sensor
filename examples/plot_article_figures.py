@@ -260,7 +260,7 @@ def figure_6(
     axs[0].set_ylabel(r"S$_{MRR}$")
     axs[0].set_xlim(r[0], r[-1])
     axs[0].set_ylim(0, y_max_s)
-    axs[0].legend(loc="upper right")
+    axs[0].legend(loc="upper left")
 
     #
     # 6b & 6c
