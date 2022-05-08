@@ -1368,7 +1368,7 @@ class Plotting:
         ax.set_xlim(
             self.plotting_extrema["r_plot_min"], self.plotting_extrema["r_plot_max"]
         )
-        ax.set_ylim(100, self.plotting_extrema["S_plot_max"])
+        ax.set_ylim(100, 1000000)
 
         # Spiral and MRR/spiral sensitivity ratio, if required
         if not self.models.parameters["no_spiral"]:
