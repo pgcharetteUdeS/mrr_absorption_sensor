@@ -411,7 +411,7 @@ class Plotting:
         if self.models.parameters["write_spiral_sequence_to_file"]:
             self._write_spiral_sequence_to_file()
 
-    def _plot_mrr_results_2d_maps(self):
+    def _plot_mrr_result_maps(self):
         """
 
         Returns:
@@ -1042,12 +1042,12 @@ class Plotting:
         fig.savefig(filename)
         self.logger(f"Wrote '{filename}'.")
 
-    def plot_mrr_optimization_results(self):
-        """ " """
+    def _plot_mrr_sensing_parameters_at_optimum(self):
+        """
 
-        #
-        # Plot of sensing parameters
-        #
+        Returns:
+
+        """
 
         # max{S}, S_NR, Se, a, u, gamma, Finesse
         fig, axs = plt.subplots(7)
@@ -1180,9 +1180,12 @@ class Plotting:
         fig.savefig(filename)
         self.logger(f"Wrote '{filename}'.")
 
-        #
-        # Plot of ring parameters
-        #
+    def _plot_mrr_ring_parameters_at_optimum(self):
+        """
+
+        Returns:
+
+        """
 
         # max{S}, Q, Finesse, FWHM, FSR, contrast
         fig, axs = plt.subplots(6)
@@ -1306,11 +1309,18 @@ class Plotting:
         fig.savefig(filename)
         self.logger(f"Wrote '{filename}'.")
 
-        # plot 2D maps of results, if required
-        if self.models.parameters["write_2D_maps"]:
-            self._plot_mrr_results_2d_maps()
+    def plot_mrr_optimization_results(self):
+        """
 
-    def plot_combined_linear_spiral_mrr_results(self):
+        Returns:
+
+        """
+        self._plot_mrr_sensing_parameters_at_optimum()
+        self._plot_mrr_ring_parameters_at_optimum()
+        if self.models.parameters["write_2D_maps"]:
+            self._plot_mrr_result_maps()
+
+    def plot_combined_linear_mrr_spiral_optimization_results(self):
         """
 
         Returns:
@@ -1324,7 +1334,7 @@ class Plotting:
             / self.models.parameters["min_delta_ni"]
         )
 
-        # Plot...
+        # Create plot figure
         fig, ax = plt.subplots()
         ax.set_title(
             "Maximum sensitivity for MRR and linear sensors"

@@ -122,7 +122,7 @@ def analyze(
     plotting.plot_linear_optimization_results()
     if not parameters["no_spiral"]:
         plotting.plot_spiral_optimization_results()
-    plotting.plot_combined_linear_spiral_mrr_results()
+    plotting.plot_combined_linear_mrr_spiral_optimization_results()
 
     # Write the analysis results to the output Excel file
     if parameters["write_excel_files"]:

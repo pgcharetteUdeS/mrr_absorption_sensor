@@ -193,7 +193,9 @@ def figure_5(
     )
 
     # Create figure with required number of subplots for the requested line profiles
-    fig, axs = plt.subplots(nrows=len(line_profile_gammas), figsize=(9, 10))
+    fig, axs = plt.subplots(
+        nrows=len(line_profile_gammas), figsize=(9, 10), constrained_layout=True
+    )
     fig.suptitle("Figure 5")
 
     # Loop to generate the subplots of the line profiles in "line_profile_gammas"
