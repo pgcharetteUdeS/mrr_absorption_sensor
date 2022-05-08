@@ -76,7 +76,7 @@ def figure_3(
 
     # Create the figure
     fig, ax = plt.subplots(constrained_layout=True)
-    fig.suptitle("Figure 3")
+    fig.suptitle(f"Figure 3 ('{filename_path.stem}*')")
 
     # PLot line profiles
     ax.semilogx(r, s, "b-", label=r"$S_{MRR}$")
@@ -196,7 +196,7 @@ def figure_5(
     fig, axs = plt.subplots(
         nrows=len(line_profile_gammas), figsize=(9, 10), constrained_layout=True
     )
-    fig.suptitle("Figure 5")
+    fig.suptitle(f"Figure 5 ('{filename_path.stem}*')")
 
     # Loop to generate the subplots of the line profiles in "line_profile_gammas"
     for i, gamma in enumerate(line_profile_gammas):
@@ -238,7 +238,7 @@ def figure_6(
 
     # Create the figure
     fig, axs = plt.subplots(4, figsize=(9, 12))
-    fig.suptitle("Figure 6")
+    fig.suptitle(f"Figure 6 ('{filename_path.stem}*')")
 
     #
     # 6a

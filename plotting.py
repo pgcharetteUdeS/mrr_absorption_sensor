@@ -251,7 +251,6 @@ class Plotting:
             "Archimedes spiral\n"
             + f"{self.models.pol}"
             + f", λ = {self.models.lambda_res:.3f} μm"
-            + rf", min(α$_{{wg}}$) = {self.models.α_wg_db_per_cm:.1f} dB/cm"
             + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
             + f", spacing = {self.spiral.spacing:.0f} μm"
             + f", min turns = {self.spiral.turns_min:.2}\n"
@@ -418,7 +417,6 @@ class Plotting:
             "Linear waveguide sensor\n"
             + f"{self.models.pol}"
             + f", λ = {self.models.lambda_res:.3f} μm"
-            + rf", min(α$_{{wg}}$) = {self.models.α_wg_db_per_cm:.1f} dB/cm"
             + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
         )
 
@@ -552,7 +550,6 @@ class Plotting:
             f"MRR sensitivity as a function of {self.models.core_u_name} and R\n"
             + f"{self.models.pol}"
             + f", λ = {self.models.lambda_res:.3f} μm"
-            + rf", min(α$_{{wg}}$) = {self.models.α_wg_db_per_cm:.1f} dB/cm"
             + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
         )
         ax.set_xlabel("log(R) (μm)")
@@ -654,7 +651,6 @@ class Plotting:
             r"MRR sensitivity, $S_{MRR}$, as a function of $\Gamma_{fluid}$ and $R$"
             + f"\n{self.models.pol}"
             + f", λ = {self.models.lambda_res:.3f} μm"
-            + rf", min(α$_{{wg}}$) = {self.models.α_wg_db_per_cm:.1f} dB/cm"
             + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
         )
         ax.set_xlabel("log(R) (μm)")
@@ -743,7 +739,6 @@ class Plotting:
             r"MRR $S_{NR}$ as a function of $\Gamma_{fluid}$ and $R$"
             + f"\n{self.models.pol}"
             + f", λ = {self.models.lambda_res:.3f} μm"
-            + rf", min(α$_{{wg}}$) = {self.models.α_wg_db_per_cm:.1f} dB/cm"
             + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
         )
         ax.set_xlabel("log(R) (μm)")
@@ -786,7 +781,6 @@ class Plotting:
             r"MRR $S_e$ as a function of $\Gamma_{fluid}$ and $R$"
             + f"\n{self.models.pol}"
             + f", λ = {self.models.lambda_res:.3f} μm"
-            + rf", min(α$_{{wg}}$) = {self.models.α_wg_db_per_cm:.1f} dB/cm"
             + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
         )
         ax.set_xlabel("log(R) (μm)")
@@ -833,7 +827,6 @@ class Plotting:
             r"MRR $S_e \times a$ as a function of $\Gamma_{fluid}$ and $R$"
             + f"\n{self.models.pol}"
             + f", λ = {self.models.lambda_res:.3f} μm"
-            + rf", min(α$_{{wg}}$) = {self.models.α_wg_db_per_cm:.1f} dB/cm"
             + f", {self.models.core_v_name} = {self.models.core_v_value:.3f}μm"
         )
         ax.set_xlabel("log(R) (μm)")
@@ -890,7 +883,6 @@ class Plotting:
             r"MRR $a^2$ as a function of $\Gamma_{fluid}$ and $R$"
             + f"\n{self.models.pol}"
             + f", λ = {self.models.lambda_res:.3f} μm"
-            + rf", min(α$_{{wg}}$) = {self.models.α_wg_db_per_cm:.1f} dB/cm"
             + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
         )
         ax.set_xlabel("log(R) (μm)")
@@ -961,7 +953,6 @@ class Plotting:
             r"MRR $\alpha L$ as a function of $\Gamma_{fluid}$ and $R$"
             + f"\n{self.models.pol}"
             + f", λ = {self.models.lambda_res:.3f} μm"
-            + rf", min(α$_{{wg}}$) = {self.models.α_wg_db_per_cm:.1f} dB/cm"
             + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
         )
         ax.set_xlabel("log(R) (μm)")
@@ -1050,7 +1041,6 @@ class Plotting:
             "MRR - Sensing parameters\n"
             + f"{self.models.pol}"
             + f", λ = {self.models.lambda_res:.3f} μm"
-            + rf", min(α$_{{wg}}$) = {self.models.α_wg_db_per_cm:.1f} dB/cm"
             + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm\n"
             + rf"max{{max{{$S$}}}} = {self.mrr.max_s:.0f} (RIU$^{{-1}}$)"
             + rf" @ $R$ = {self.mrr.max_s_radius:.0f} μm"
@@ -1188,7 +1178,6 @@ class Plotting:
             "MRR - Ring parameters"
             + f"\n{self.models.pol}"
             + f", λ = {self.models.lambda_res:.3f} μm"
-            + rf", min(α$_{{wg}}$) = {self.models.α_wg_db_per_cm:.1f} dB/cm"
             + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm\n"
             + rf"max{{max{{$S$}}}} = {self.mrr.max_s:.0f} (RIU$^{{-1}}$)"
             + rf" @ $R$ = {self.mrr.max_s_radius:.0f} μm"
@@ -1337,7 +1326,6 @@ class Plotting:
             else "Maximum sensitivity for MRR, linear, and spiral sensors"
             + f"\n{self.models.pol}"
             + f", λ = {self.models.lambda_res:.3f} μm"
-            + rf", min(α$_{{wg}}$) = {self.models.α_wg_db_per_cm:.1f} dB/cm"
             + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
         )
 

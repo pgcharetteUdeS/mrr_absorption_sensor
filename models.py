@@ -467,13 +467,10 @@ class Models:
                     "\n",
                     r"Surface : $\alpha_{prop}$",
                     f"({self.core_u_name})",
-                    r" = $\alpha_{wg}$ ",
+                    rf" = α$_{{wg}}$({self.core_u_name})",
                     r"+ $\Gamma_{fluide}",
                     f"({self.core_u_name})",
                     r"\times\alpha_{fluid}$, where ",
-                    r"min($\alpha_{wg}$)",
-                    f" = {self.α_wg_of_u():.2e} ",
-                    r"$\mu$m$^{-1}$ and ",
                     r"$\alpha_{fluid}$",
                     f" = {self.α_fluid:.2e} ",
                     r"$\mu$m$^{-1}$",
@@ -807,7 +804,6 @@ class Models:
                 ]
             )
             + "".join([r", $\lambda$", f" = {self.lambda_res:.3f} ", r"$\mu$m"])
-            + "".join([r", min($\alpha_{wg}$)", f" = {self.α_wg_db_per_cm:.1f} dB/cm"])
             + "".join([f", {self.core_v_name} = {self.core_v_value:.3f} ", r"$\mu$m"])
             + (
                 "".join(
