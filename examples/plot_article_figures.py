@@ -237,7 +237,7 @@ def figure_6(
     """
 
     # Create the figure
-    fig, axs = plt.subplots(3, figsize=(9, 10))
+    fig, axs = plt.subplots(4, figsize=(9, 12))
     fig.suptitle("Figure 6")
 
     #
@@ -274,11 +274,19 @@ def figure_6(
             for val in wb_all_results["MRR"].iter_rows(min_row=2, min_col=3, max_col=3)
         ]
     )
+    α_bend, α_wg = np.asarray(
+        [
+            (val[0].value, val[1].value)
+            for val in wb_all_results["MRR"].iter_rows(
+                min_row=2, min_col=6, max_col=7
+            )
+        ]
+    ).T
     h, gamma = np.asarray(
         [
             (val[0].value, val[1].value)
             for val in wb_all_results["MRR"].iter_rows(
-                min_row=2, min_col=12, max_col=13
+                min_row=2, min_col=14, max_col=15
             )
         ]
     ).T
@@ -309,8 +317,6 @@ def figure_6(
     ax_r.semilogx(r, gamma, "g--", label=r"$\Gamma_{fluid}$")
     ax_r.set_ylabel(r"$\Gamma_{fluid}$ $(\%)$ @ max($S_{MRR}$)")
     ax_r.set_ylim(0, 80)
-    axs[2].set_xlabel("Radius (μm)")
-    axs[2].set_xlim(r[0], r[-1])
     ax_lines = (
         axs[2].get_legend_handles_labels()[0] + ax_r.get_legend_handles_labels()[0]
     )
@@ -319,6 +325,19 @@ def figure_6(
     )
     axs[2].legend(ax_lines, ax_labels, loc="center left")
     axs[2].text(max_s_max_r * 1.05, 0.45, r"max(max($S_{MRR}$))", color="red")
+
+    # α_bend & α_wg
+    axs[3].semilogx(r, α_bend, label=r"α$_{bend}$")
+    axs[3].semilogx(r, α_wg, label=r"α$_{wg}$")
+    axs[3].set_ylabel(r"α$_{bend}$ and α$_{wg}$ (dB/cm)")
+    axs[3].set_xlim(r[0], r[-1])
+    axs[3].set_ylim(0, 10)
+    axs[3].axes.get_xaxis().set_ticklabels([])
+    axs[3].legend(loc="top right")
+
+    # Bottom horizontal axis labels
+    axs[3].set_xlabel("Radius (μm)")
+    axs[3].set_xlim(r[0], r[-1])
 
     # Save figure to file
     fig.savefig(filename_path.parent / f"{filename_path.stem}_FIG6.png")

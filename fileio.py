@@ -28,6 +28,7 @@ from .mrr import Mrr
 from .linear import Linear
 from .spiral import Spiral
 from .version import __version__
+from .constants import PER_UM_TO_DB_PER_CM
 
 
 def _check_mode_solver_data(modes_data: dict, bending_loss_data: dict, filename: Path):
@@ -313,6 +314,8 @@ def write_excel_results_file(
         "maxS_RIU_inv": mrr.s,
         "Se": mrr.s_e,
         "Snr_RIU_inv": mrr.s_nr,
+        "alpha_bend_dB_per_cm": mrr.α_bend * PER_UM_TO_DB_PER_CM,
+        "alpha_wg_dB_per_cm": mrr.α_wg * PER_UM_TO_DB_PER_CM,
         "a2": mrr.a2_wg,
         "tau": mrr.tau,
         "T_max": mrr.t_max,

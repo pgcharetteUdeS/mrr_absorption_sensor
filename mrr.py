@@ -44,6 +44,8 @@ class Mrr:
         # Define class instance result variables and arrays
         self.α_bend_a: np.ndarray = np.ndarray([])
         self.α_bend_b: np.ndarray = np.ndarray([])
+        self.α_bend: np.ndarray = np.ndarray([])
+        self.α_wg: np.ndarray = np.ndarray([])
         self.a2_wg: np.ndarray = np.ndarray([])
         self.er: np.ndarray = np.ndarray([])
         self.contrast: np.ndarray = np.ndarray([])
@@ -201,6 +203,8 @@ class Mrr:
         float,
         float,
         float,
+        float,
+        float,
     ]:
         """
         Calculate maximum sensitivity at radius "r" over all u
@@ -250,6 +254,8 @@ class Mrr:
         er: float = 10 * np.log10(t_max / t_min)
         s_nr: float = self.calc_s_nr(r=r, u=u_max_s)
         s_e: float = self.calc_s_e(r=r, u=u_max_s)
+        α_bend: float = self.models.α_bend(r=r, u=u_max_s)
+        α_wg: float = self.models.α_wg_of_u(u=u_max_s)
 
         # Return results to calling program
         return (
@@ -258,6 +264,8 @@ class Mrr:
             gamma,
             s_nr,
             s_e,
+            α_bend,
+            α_wg,
             a2_wg,
             tau,
             t_max,
@@ -288,6 +296,8 @@ class Mrr:
             self.gamma,
             self.s_nr,
             self.s_e,
+            self.α_bend,
+            self.α_wg,
             self.a2_wg,
             self.tau,
             self.t_max,
