@@ -309,6 +309,7 @@ def figure_6(
     y_max_h: float = 0.9
     axs[2].semilogx(r, h, "b", label="h")
     axs[2].set_ylabel(r"h (μm) @ max($S_{MRR}$)")
+    axs[2].set_xlim(r[0], r[-1])
     axs[2].set_ylim(y_min_h, y_max_h)
     axs[2].semilogx([max_s_max_r, max_s_max_r], [y_min_h, y_max_h], "r--")
     ax_r = axs[2].twinx()
@@ -321,8 +322,9 @@ def figure_6(
     ax_labels = (
         axs[2].get_legend_handles_labels()[1] + ax_r.get_legend_handles_labels()[1]
     )
-    axs[2].legend(ax_lines, ax_labels, loc="center left")
+    axs[2].legend(ax_lines, ax_labels, loc="upper left")
     axs[2].text(max_s_max_r * 1.05, 0.45, r"max(max($S_{MRR}$))", color="red")
+    axs[2].axes.get_xaxis().set_ticklabels([])
 
     # α_bend & α_wg
     axs[3].semilogx(r, α_bend, label=r"α$_{bend}$")
@@ -330,12 +332,10 @@ def figure_6(
     axs[3].set_ylabel(r"α$_{bend}$ and α$_{wg}$ (dB/cm)")
     axs[3].set_xlim(r[0], r[-1])
     axs[3].set_ylim(0, 10)
-    axs[3].axes.get_xaxis().set_ticklabels([])
     axs[3].legend(loc="upper right")
 
     # Bottom horizontal axis labels
     axs[3].set_xlabel("Radius (μm)")
-    axs[3].set_xlim(r[0], r[-1])
 
     # Save figure to file
     fig.savefig(filename_path.parent / f"{filename_path.stem}_FIG6.png")
