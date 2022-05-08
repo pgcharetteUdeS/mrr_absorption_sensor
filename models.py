@@ -362,7 +362,7 @@ class Models:
         out_filename: str = str(
             (
                 self.filename_path.parent
-                / f"{self.filename_path.stem}_POLY_1D_MODELS.png"
+                / f"{self.filename_path.stem}_FITTING_1D_POLY_MODELS.png"
             )
         )
         fig.savefig(out_filename)
@@ -645,7 +645,7 @@ class Models:
         self._α_bend_model_fig["out_filename"] = str(
             (
                 self.filename_path.parent
-                / f"{self.filename_path.stem}_POLY_3D_MODEL_FIT.png"
+                / f"{self.filename_path.stem}_FITTING_3D_POLY_MODEL.png"
             )
         )
 
@@ -835,7 +835,7 @@ class Models:
                 self.filename_path.parent
                 / "".join(
                     [
-                        f"{self.filename_path.stem}_"
+                        f"{self.filename_path.stem}_FITTING_"
                         + f"{'H' if self.core_v_name == 'w' else 'W'}_SRCH_LOWR_BND.png"
                     ]
                 )
@@ -856,7 +856,6 @@ class Models:
             )
 
     def u_search_domain(self, r: float) -> tuple[float, float]:
-        # sourcery skip: remove-unnecessary-else, swap-if-else-branches
         """
         Determine u search domain extrema, see _set_u_search_lower_bound()
 
@@ -864,18 +863,17 @@ class Models:
         :return: (u_min, u_max) u search domain extrema (um)
         """
 
-        if not self.disable_u_search_lower_bound:
-            if r < self.r_min_for_u_search_lower_bound:
-                u_min = self.u_domain_max
-            elif r > self.r_max_for_u_search_lower_bound:
-                u_min = self.u_domain_min
-            else:
-                u_min = min(float(self.u_lower_bound(r)), self.u_domain_max)
-                u_min = max(u_min, self.u_domain_min)
-            u_max = self.u_domain_max
-            return u_min, u_max
-        else:
+        if self.disable_u_search_lower_bound:
             return self.u_domain_min, self.u_domain_max
+        if r < self.r_min_for_u_search_lower_bound:
+            u_min = self.u_domain_max
+        elif r > self.r_max_for_u_search_lower_bound:
+            u_min = self.u_domain_min
+        else:
+            u_min = min(float(self.u_lower_bound(r)), self.u_domain_max)
+            u_min = max(u_min, self.u_domain_min)
+        u_max = self.u_domain_max
+        return u_min, u_max
 
     def calc_α_bend_a_and_b(self, gamma: float) -> tuple[float, float]:
         """

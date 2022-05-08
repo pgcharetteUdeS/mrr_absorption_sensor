@@ -126,9 +126,10 @@ def load_toml_file(
         "spiral_turns_min": toml_data.get("spiral_turns_min", 0.5),
         "spiral_turns_max": toml_data.get("spiral_turns_max", 25.0),
         # Model fitting parameters
+        "alpha_wg_order": toml_data.get("alpha_wg_order", 3),
         "gamma_order": toml_data.get("gamma_order", 4),
         "neff_order": toml_data.get("neff_order", 3),
-        "alpha_wg_order": toml_data.get("alpha_wg_order", 3),
+        "optimization_method": toml_data.get("optimization_method", "Powell"),
         # Analysis parameters
         "alpha_bend_threshold": toml_data.get("alpha_bend_threshold", 0.01),
         "min_delta_ni": toml_data.get("min_delta_ni", 1.0e-6),

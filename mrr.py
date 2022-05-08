@@ -215,15 +215,18 @@ class Mrr:
         u0 = u_max if self.previous_solution == -1 else self.previous_solution
 
         # Find u that maximizes S at radius r.
-        optimization_result = optimize.minimize(
-            fun=self._obj_fun,
-            x0=np.asarray([u0]),
-            bounds=((u_min, u_max),),
-            args=(r,),
-            method="Powell",
-            options={"ftol": 1e-9},
-        )
-        u_max_s: float = optimization_result["x"][0]
+        if u_min != u_max:
+            optimization_result = optimize.minimize(
+                fun=self._obj_fun,
+                x0=np.asarray([u0]),
+                bounds=((u_min, u_max),),
+                args=(r,),
+                method=self.models.parameters["optimization_method"],
+                options={"ftol": 1e-12},
+            )
+            u_max_s = optimization_result["x"][0]
+        else:
+            u_max_s = u0
 
         # Update previous solution
         self.previous_solution = u_max_s

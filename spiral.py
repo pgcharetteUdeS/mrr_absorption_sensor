@@ -509,8 +509,8 @@ class Spiral:
                 x0=np.asarray([u0, n_turns_0]),
                 bounds=((u_min, u_max), (self.turns_min, n_turns_max)),
                 args=(r,),
-                method="Powell",
-                options={"ftol": 1e-9},
+                method=self.models.parameters["optimization_method"],
+                options={"ftol": 1e-12},
             )
             u_max_s = optimization_result["x"][0]
             n_turns_max_s = optimization_result["x"][1]

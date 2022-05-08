@@ -96,8 +96,8 @@ class Linear:
             x0=np.asarray([u0]),
             bounds=((u_min, u_max),),
             args=(r,),
-            method="Powell",
-            options={"ftol": 1e-9},
+            method=self.models.parameters["optimization_method"],
+            options={"ftol": 1e-12},
         )
         u_max_s: float = optimization_result["x"][0]
 
