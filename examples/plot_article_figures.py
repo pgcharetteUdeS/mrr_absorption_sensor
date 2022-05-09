@@ -123,7 +123,7 @@ def _figure_5_line_profile_plot(
     y_max_αl: float,
     last: bool,
 ):
-    # Calcule the row index in the sheets for the requested gamma value
+    # Calculate the row index in the sheets for the requested gamma value
     index = int(np.argmin(np.abs(gammas - gamma)) + 1)
 
     # Fetch line profiles data from the worksheets

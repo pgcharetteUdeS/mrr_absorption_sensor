@@ -27,7 +27,7 @@ from .mrr import Mrr
 from .linear import Linear
 from .spiral import Spiral
 from .fileio import write_image_data_to_excel
-from .constants import PER_UM_TO_DB_PER_CM
+from .constants import LINE_STYLES, PER_UM_TO_DB_PER_CM
 
 
 class Plotting:
@@ -485,29 +485,12 @@ class Plotting:
         fig.savefig(filename)
         self.logger(f"Wrote '{filename}'.")
 
-    def _plot_mrr_result_maps(self):
+    def _plot_mrr_result_2d_maps(self):
         """
 
         Returns:
 
         """
-
-        # Define extra line styles, see:
-        # "https://matplotlib.org/3.5.1/gallery/lines_bars_and_markers/linestyles.html"
-        linestyles: dict = {
-            "loosely dotted": (0, (1, 10)),
-            "dotted": (0, (1, 1)),
-            "densely dotted": (0, (1, 1)),
-            "loosely dashed": (0, (5, 10)),
-            "dashed": (0, (5, 5)),
-            "densely dashed": (0, (5, 1)),
-            "loosely dashdotted": (0, (3, 10, 1, 10)),
-            "dashdotted": (0, (3, 5, 1, 5)),
-            "densely dashdotted": (0, (3, 1, 1, 1)),
-            "dashdotdotted": (0, (3, 5, 1, 5, 1, 5)),
-            "loosely dashdotdotted": (0, (3, 10, 1, 10, 1, 10)),
-            "densely dashdotdotted": (0, (3, 1, 1, 1, 1, 1)),
-        }
 
         # Generate 2D map data R,u arrays (x/y)
         r_2d_map = np.linspace(
@@ -572,7 +555,7 @@ class Plotting:
             [r_2d_map[0], np.log10(self.mrr.max_s_radius)],
             [r_max_s_mrr_u, r_max_s_mrr_u],
             color=self.models.parameters["map2D_overlay_color_light"],
-            linestyle=linestyles["loosely dashdotted"],
+            linestyle=LINE_STYLES["loosely dashdotted"],
             label=rf"max{{max{{$S_{{MRR}}$}}}} = {self.mrr.max_s:.0f} RIU $^{{-1}}$"
             + f" @ R = {self.mrr.max_s_radius:.0f} μm"
             + f", {self.models.core_u_name} = {r_max_s_mrr_u:.3f} μm",
@@ -673,7 +656,7 @@ class Plotting:
             [r_2d_map[0], np.log10(self.mrr.max_s_radius)],
             [r_max_s_mrr_gamma, r_max_s_mrr_gamma],
             color=self.models.parameters["map2D_overlay_color_light"],
-            linestyle=linestyles["loosely dashdotted"],
+            linestyle=LINE_STYLES["loosely dashdotted"],
             label=rf"max{{max{{$S_{{MRR}}$}}}} = {self.mrr.max_s:.0f} RIU$^{{-1}}$"
             + f" @ R = {self.mrr.max_s_radius:.0f} μm"
             + rf", $\Gamma$ = {r_max_s_mrr_gamma:.0f}$\%$",
@@ -700,7 +683,7 @@ class Plotting:
                 ],
                 [line, line],
                 color=self.models.parameters["map2D_overlay_color_light"],
-                linestyle=linestyles["loosely dotted"],
+                linestyle=LINE_STYLES["loosely dotted"],
             )
         ax.set_xlim(
             left=np.log10(self.plotting_extrema["r_plot_min"]),
@@ -947,7 +930,7 @@ class Plotting:
                 ],
                 [line, line],
                 color=self.models.parameters["map2D_overlay_color_dark"],
-                linestyle=linestyles["loosely dotted"],
+                linestyle=LINE_STYLES["loosely dotted"],
             )
         ax.set_title(
             r"MRR $\alpha L$ as a function of $\Gamma_{fluid}$ and $R$"
@@ -1302,7 +1285,7 @@ class Plotting:
         self._plot_mrr_sensing_parameters_at_optimum()
         self._plot_mrr_ring_parameters_at_optimum()
         if self.models.parameters["write_2D_maps"]:
-            self._plot_mrr_result_maps()
+            self._plot_mrr_result_2d_maps()
 
     def plot_combined_linear_mrr_spiral_optimization_results(self):
         """
