@@ -6,7 +6,8 @@ Exposed methods:
     - α_bend(r, u)
     - α_prop(u)
     - α_wg_of_u(u)
-    - calc_α_bend_a_and_b_(gamma)
+    - calculate_plotting_extrema()
+    - calc_α_bend_a_and_b(gamma)
     - gamma_of_u(u)
     - n_eff_of_u(u)
     - u_of_gamma(gamma)
@@ -74,6 +75,9 @@ class Models:
         self.r_min: float = parameters["Rmin"]
         self.r_max: float = parameters["Rmax"]
         self.r_samples_per_decade: int = parameters["R_samples_per_decade"]
+
+        # Initialize other class parameters
+        self.plotting_extrema: dict = {}
 
         # Define the array of radii to be analyzed (R domain)
         self.r: np.ndarray = np.logspace(
@@ -898,3 +902,30 @@ class Models:
         """
 
         return self.α_wg_of_u(u=u) + (self.gamma_of_u(u) * self.α_fluid)
+
+    def calculate_plotting_extrema(self, max_s: float):
+        """
+
+        Returns:
+
+        """
+
+        # R domain extrema (complete decades)
+        self.plotting_extrema["r_plot_min"] = 10 ** (np.floor(np.log10(self.r_min)))
+        self.plotting_extrema["r_plot_max"] = 10 ** (np.ceil(np.log10(self.r_max)))
+
+        # u domain extrema
+        u: np.ndarray = np.asarray(list(self.bending_loss_data.keys()))
+        self.plotting_extrema["u_plot_min"] = u[0] * 0.9
+        self.plotting_extrema["u_plot_max"] = u[-1] * 1.1
+
+        # Gamma domain extrema (%)
+        self.plotting_extrema["gamma_plot_min"] = (
+            np.floor(self.gamma_of_u(u[-1]) * 0.9 * 10) * 10
+        )
+        self.plotting_extrema["gamma_plot_max"] = (
+            np.ceil(self.gamma_of_u(u[0]) * 1.1 * 10) * 10
+        )
+
+        # max{S} vertical marker
+        self.plotting_extrema["S_plot_max"] = 10 ** np.ceil(np.log10(max_s))

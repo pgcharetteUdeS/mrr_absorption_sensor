@@ -4,9 +4,6 @@ File I/O utilities
 
 Exposed methods:
    - load_toml_file()
-   - validate_excel_output_file()
-   - write_excel_output_file()
-   - write_image_data_to_Excel()
 
 All lengths are in units of um
 
@@ -16,19 +13,12 @@ All lengths are in units of um
 # Standard library
 from colorama import Fore, Style
 import numpy as np
-from openpyxl.workbook import Workbook
 from pathlib import Path
-import sys
 import toml
 from typing import Callable
 
 # Package modules
-from .models import Models
-from .mrr import Mrr
-from .linear import Linear
-from .spiral import Spiral
 from .version import __version__
-from .constants import PER_UM_TO_DB_PER_CM
 
 
 def _check_mode_solver_data(modes_data: dict, bending_loss_data: dict, filename: Path):
@@ -249,183 +239,3 @@ def load_toml_file(
         modes_data,
         bending_loss_data,
     )
-
-
-def validate_excel_output_file(filename_path: Path) -> str:
-    """
-    Define output Excel filename string from a Path object. Test to see if the file is
-    already open, if so return an exception. This function is useful to run before any
-    serious works starts because if the script tries to open a file that's already open,
-    say in Excel, this causes the script to halt with an exception and the work done
-    up to that point is lost.
-
-    :param filename_path: Excel filename (Path)
-    :return: Excel filename (str)
-    """
-
-    excel_output_filename: str = str(
-        filename_path.parent / f"{filename_path.stem}_ALL_RESULTS.xlsx"
-    )
-
-    try:
-        with open(excel_output_filename, "w"):
-            pass
-    except IOError:
-        print(
-            f"{Fore.YELLOW}Could not open '{excel_output_filename}', close it "
-            + f"if it's already open!{Style.RESET_ALL}"
-        )
-        sys.exit()
-
-    return excel_output_filename
-
-
-def write_excel_results_file(
-    excel_output_fname: str,
-    models: Models,
-    mrr: Mrr,
-    linear: Linear,
-    spiral: Spiral,
-    no_spiral: bool = False,
-    logger: Callable = print,
-):
-    """
-    Write the analysis results to the output Excel file from a dictionary of
-    key:value pairs, where the keys are the Excel file column header text strings
-    and the values are the corresponding column data arrays
-
-    :param excel_output_fname:
-    :param models:
-    :param mrr:
-    :param linear:
-    :param spiral:
-    :param no_spiral:
-    :param logger:
-    :return: None
-    """
-
-    # Create Excel workbook
-    wb = Workbook()
-
-    # Save the MMR data to a sheet
-    mrr_data_dict = {
-        "R_um": models.r,
-        "neff": mrr.n_eff,
-        "maxS_RIU_inv": mrr.s,
-        "Se": mrr.s_e,
-        "Snr_RIU_inv": mrr.s_nr,
-        "alpha_bend_dB_per_cm": mrr.α_bend * PER_UM_TO_DB_PER_CM,
-        "alpha_wg_dB_per_cm": mrr.α_wg * PER_UM_TO_DB_PER_CM,
-        "a2": mrr.a2_wg,
-        "tau": mrr.tau,
-        "T_max": mrr.t_max,
-        "T_min": mrr.t_min,
-        "ER_dB": mrr.er,
-        "contrast": mrr.contrast,
-        f"{models.core_u_name}_um": mrr.u,
-        "gamma_percent": mrr.gamma,
-        "Finesse": mrr.finesse,
-        "Q": mrr.q,
-        "FWHM_um": mrr.fwhm,
-        "FSR_um": mrr.fsr,
-    }
-    mrr_data: np.ndarray = np.asarray(list(mrr_data_dict.values())).T
-    mrr_sheet = wb["Sheet"]
-    mrr_sheet.title = "MRR"
-    mrr_sheet.append(list(mrr_data_dict.keys()))
-    for row in mrr_data:
-        mrr_sheet.append(row.tolist())
-
-    # Save the Re(gamma) & Rw(gamma) arrays to a sheet
-    re_rw_sheet = wb.create_sheet("Re and Rw")
-    re_rw_sheet.append(
-        [
-            "gamma_percent",
-            f"{models.core_u_name}_um",
-            "Re_um",
-            "Rw_um",
-            "A_um_inv",
-            "B_um_inv",
-        ]
-    )
-    for line in zip(
-        mrr.gamma_resampled * 100,
-        mrr.u_resampled,
-        mrr.r_e,
-        mrr.r_w,
-        mrr.α_bend_a,
-        mrr.α_bend_b,
-    ):
-        re_rw_sheet.append(line)
-
-    # Save the linear waveguide data to a sheet
-    linear_data_dict = {
-        "R_um": models.r,
-        "maxS_RIU_inv": linear.s,
-        f"{models.core_u_name}_um": linear.u,
-        "gamma_percent": linear.gamma,
-        "L_um": 2 * models.r,
-        "a2": linear.a2_wg,
-    }
-    linear_data: np.ndarray = np.asarray(list(linear_data_dict.values())).T
-    linear_sheet = wb.create_sheet("Linear")
-    linear_sheet.append(list(linear_data_dict.keys()))
-    for row in linear_data:
-        linear_sheet.append(row.tolist())
-
-    # If required, save the spiral data to a sheet
-    if not no_spiral:
-        spiral_data_dict = {
-            "R_um": models.r,
-            "maxS_RIU_inv": spiral.s,
-            f"{models.core_u_name}_um": spiral.u,
-            "gamma_percent": spiral.gamma,
-            "n_revs": spiral.n_turns * 2,
-            "Rmin_um": spiral.outer_spiral_r_min,
-            "L_um": spiral.L,
-            "a2": spiral.a2_wg,
-        }
-        spiral_data: np.ndarray = np.asarray(list(spiral_data_dict.values())).T
-        spiral_sheet = wb.create_sheet("Spiral")
-        spiral_sheet.append(list(spiral_data_dict.keys()))
-        for row in spiral_data:
-            spiral_sheet.append(row.tolist())
-
-    # Save the Excel file to disk
-    wb.save(filename=excel_output_fname)
-    logger(f"Wrote '{excel_output_fname}'.")
-
-
-def write_image_data_to_excel(
-    filename: str,
-    x_array: np.ndarray,
-    x_label: str,
-    y_array: np.ndarray,
-    y_label: str,
-    z_array: list,
-    z_labels: list,
-):
-    """
-    Write image data to Excel file
-    """
-
-    wb = Workbook()
-
-    # X sheet
-    x_sheet = wb["Sheet"]
-    x_sheet.title = x_label
-    x_sheet.append(x_array.tolist())
-
-    # Y sheet
-    y_sheet = wb.create_sheet(y_label)
-    for y in y_array:
-        y_sheet.append([y])
-
-    # Z sheets
-    for i, Z in enumerate(z_array):
-        z_sheet = wb.create_sheet(z_labels[i])
-        for z in Z:
-            z_sheet.append(z.tolist())
-
-    # Save file
-    wb.save(filename=filename)

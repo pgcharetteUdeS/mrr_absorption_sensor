@@ -3,21 +3,25 @@
 Spiral sensor class
 
 Exposed methods:
-    - draw_spiral()
     - analyze()
+    - plot_optimization_results()
 
 """
 
 
 # Standard library packages
 from colorama import Fore, Style
+import io
 import matplotlib.pyplot as plt
 import numpy as np
+from openpyxl.workbook import Workbook
+from PIL import Image, TiffImagePlugin
 from scipy import optimize, integrate
 from typing import Callable
 
 # Package modules
 from .models import Models
+from .constants import PER_UM_TO_DB_PER_CM
 
 
 class Spiral:
@@ -124,7 +128,326 @@ class Spiral:
         # return length and updated x,y arrays
         return np.append(spiral_x, x), np.append(spiral_y, y)
 
-    def draw_spiral(
+    @staticmethod
+    def _append_image_to_seq(images: list, fig: plt.Figure):
+        """
+        Append a matplotlib Figure to a list of PIL Image objects (from figs2tiff.py)
+
+        NB: An empty list must be declared in the calling program prior to
+            the first call to the function.
+
+        Parameters
+        ----------
+        images :
+            List of PIL Image objects to which to append the figure.
+        fig : matplotlib.pyplot.Figure
+            matplotlib Figure object to append to the List.
+
+        Returns
+        -------
+        None.
+
+        """
+
+        with io.BytesIO() as buffer:
+            # Convert Figure to PIL Image using an intermediate memory buffer
+            fig.savefig(buffer, format="tif")
+            img: Image = Image.open(buffer)
+
+            # Initialize Image encoderinfo, encoderconfig, and mode (RGB)
+            # properties as required for a multi-image TIFF file
+            img = img.convert("RGB")
+            img.encoderinfo = {"tiffinfo": TiffImagePlugin.ImageFileDirectory()}
+            img.encoderconfig = ()
+
+            # Append Image object to the List
+            images.append(img)
+
+    def _write_spiral_sequence_to_file(self):
+        """
+        Write sequence of consecutive spirals with n turns > self.n_turns_min
+        """
+
+        # Calculate spiral sequence looping indices (min, max, index)
+        biggest_spiral_index: int = int(np.argmax(self.n_turns))
+        index_min: int = int(
+            np.argmax(self.n_turns[:biggest_spiral_index] > self.turns_min)
+        )
+        index_max: int = (
+            int(np.argmax(self.n_turns[biggest_spiral_index:] < 1))
+            + biggest_spiral_index
+        )
+        indices: range = range(index_min, index_max)
+
+        # Check for adequate range of spirals in sequence, else exit with warning
+        if len(indices) <= 2:
+            self.logger(
+                f"{Fore.YELLOW}WARNING! Insufficient range in number of spiral turns "
+                + f"(array indices: [{indices[0]}, {indices[-1]}]), max number "
+                + f"of turns = {self.n_turns[biggest_spiral_index]:.1f}, "
+                + f"no sequence written!{Style.RESET_ALL}"
+            )
+            return
+
+        # Loop to write generate the spiral images in the sequence
+        fig, _ = plt.subplots()
+        images: list = []
+        for index in indices:
+            fig, *_ = self._draw_spiral(
+                r_outer=self.models.r[index],
+                h=self.u[index]
+                if self.models.core_v_name == "w"
+                else self.models.core_v_value,
+                w=self.models.core_v_value
+                if self.models.core_v_name == "w"
+                else self.u[index],
+                n_turns=self.n_turns[index],
+                r_window=(self.models.r[index_max] // 25 + 1) * 25,
+                figure=fig,
+            )
+            self._append_image_to_seq(images=images, fig=fig)
+        plt.close(fig)
+
+        # Save sequence to tiff multi-image file
+        filename = (
+            self.models.filename_path.parent
+            / f"{self.models.filename_path.stem}_SPIRAL_sequence.tif"
+        )
+        images[0].save(
+            str(filename),
+            save_all=True,
+            append_images=images[1:],
+            duration=40,
+        )
+        self.logger(f"Wrote '{filename}'.")
+
+    def _write_spiral_waveguide_coordinates_to_excel_file(
+        self, spiral_waveguide_coordinates: dict
+    ):
+        """
+        Write the spiral inner and outer waveguide x/y coordinates to an Excel file
+        """
+
+        filename = (
+            self.models.filename_path.parent
+            / f"{self.models.filename_path.stem}_SPIRAL_SCHEMATIC.xlsx"
+        )
+        wb = Workbook()
+        outer_spiral_sheet = wb["Sheet"]
+        outer_spiral_sheet.title = "Outer waveguide"
+        outer_spiral_sheet.append(
+            [
+                "Outer edge x (um)",
+                "Outer edge y (um)",
+                "Inner edge x (um)",
+                "Inner edge y (um)",
+            ]
+        )
+        for row in zip(
+            spiral_waveguide_coordinates["outer_spiral_x_out"],
+            spiral_waveguide_coordinates["outer_spiral_y_out"],
+            spiral_waveguide_coordinates["outer_spiral_x_in"],
+            spiral_waveguide_coordinates["outer_spiral_y_in"],
+        ):
+            outer_spiral_sheet.append(row)
+        inner_spiral_sheet = wb.create_sheet("Inner waveguide")
+        inner_spiral_sheet.append(
+            [
+                "Outer edge x (um)",
+                "Outer edge y (um)",
+                "Inner edge x (um)",
+                "Inner edge y (um)",
+            ]
+        )
+        for row in zip(
+            spiral_waveguide_coordinates["inner_spiral_x_out"],
+            spiral_waveguide_coordinates["inner_spiral_y_out"],
+            spiral_waveguide_coordinates["inner_spiral_x_in"],
+            spiral_waveguide_coordinates["inner_spiral_y_in"],
+        ):
+            inner_spiral_sheet.append(row)
+        wb.save(filename=filename)
+        self.logger(f"Wrote '{filename}'.")
+
+    def _plot_spiral_results_at_optimum(self):
+        """
+
+        Returns:
+
+        """
+
+        # Plot max{S}, u, gamma, n turns mas, L
+        fig, axs = plt.subplots(7)
+        fig.suptitle(
+            "Archimedes spiral\n"
+            + f"{self.models.pol}"
+            + f", λ = {self.models.lambda_res:.3f} μm"
+            + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
+            + f", spacing = {self.spacing:.0f} μm"
+            + f", min turns = {self.turns_min:.2}\n"
+            + rf"max{{max{{$S$}}}} = {self.max_s:.0f} (RIU$^{{-1}}$)"
+            + rf" @ $R$ = {self.max_s_radius:.0f} μm"
+        )
+        # max{S}
+        axs_index = 0
+        axs[axs_index].set_ylabel(r"max$\{S\}$" + "\n" + r"(RIU$^{-1}$)")
+        axs[axs_index].loglog(self.models.r, self.s)
+        axs[axs_index].plot(
+            [self.max_s_radius, self.max_s_radius],
+            [100, self.models.plotting_extrema["S_plot_max"]],
+            "--",
+        )
+        axs[axs_index].set_ylim(100, self.models.plotting_extrema["S_plot_max"])
+        axs[axs_index].set_xlim(
+            self.models.plotting_extrema["r_plot_min"],
+            self.models.plotting_extrema["r_plot_max"],
+        )
+        axs[axs_index].axes.get_xaxis().set_ticklabels([])
+
+        # u @ max{S}
+        axs_index += 1
+        axs[axs_index].set_ylabel(f"{self.models.core_u_name} (μm)")
+        axs[axs_index].semilogx(self.models.r, self.u)
+        axs[axs_index].plot(
+            [self.max_s_radius, self.max_s_radius],
+            [
+                self.models.plotting_extrema["u_plot_min"],
+                self.models.plotting_extrema["u_plot_max"],
+            ],
+            "--",
+        )
+        axs[axs_index].set_xlim(
+            self.models.plotting_extrema["r_plot_min"],
+            self.models.plotting_extrema["r_plot_max"],
+        )
+        axs[axs_index].set_ylim(
+            self.models.plotting_extrema["u_plot_min"],
+            self.models.plotting_extrema["u_plot_max"],
+        )
+        axs[axs_index].axes.get_xaxis().set_ticklabels([])
+
+        # gamma_fluid @ max{S}
+        axs_index += 1
+        axs[axs_index].set_ylabel(r"$\Gamma_{fluide}$ ($\%$)")
+        axs[axs_index].semilogx(self.models.r, self.gamma)
+        axs[axs_index].plot([self.max_s_radius, self.max_s_radius], [0, 100], "--")
+        axs[axs_index].set_xlim(
+            self.models.plotting_extrema["r_plot_min"],
+            self.models.plotting_extrema["r_plot_max"],
+        )
+        axs[axs_index].set_ylim(0, 100)
+        axs[axs_index].axes.get_xaxis().set_ticklabels([])
+
+        # a2 @ max{S}
+        axs_index += 1
+        axs[axs_index].set_ylabel(r"$a^2$")
+        axs[axs_index].semilogx(self.models.r, self.a2_wg)
+        axs[axs_index].plot([self.max_s_radius, self.max_s_radius], [0, 1], "--")
+        axs[axs_index].set_xlim(
+            self.models.plotting_extrema["r_plot_min"],
+            self.models.plotting_extrema["r_plot_max"],
+        )
+        axs[axs_index].set_ylim(0, 1)
+        axs[axs_index].axes.get_xaxis().set_ticklabels([])
+
+        # alpha_wg @ max{S}
+        axs_index += 1
+        axs[axs_index].semilogx(
+            self.models.r,
+            np.asarray([self.models.α_wg_of_u(u) for u in self.u])
+            * PER_UM_TO_DB_PER_CM,
+        )
+        axs[axs_index].set_ylabel(r"α$_{wg}$")
+        axs[axs_index].set_xlim(
+            self.models.plotting_extrema["r_plot_min"],
+            self.models.plotting_extrema["r_plot_max"],
+        )
+        axs[axs_index].set_ylim(
+            np.floor(self.models.α_wg_model["min"] * PER_UM_TO_DB_PER_CM),
+            np.ceil(self.models.α_wg_model["max"] * PER_UM_TO_DB_PER_CM),
+        )
+
+        # n turns @ max{S}
+        axs_index += 1
+        n_turns_plot_max: float = np.ceil(np.amax(self.n_turns) * 1.1 / 10) * 10 * 2
+        axs[axs_index].set_ylabel("n turns\n(inner+outer)")
+        axs[axs_index].semilogx(self.models.r, self.n_turns * 2)
+        axs[axs_index].plot(
+            [self.max_s_radius, self.max_s_radius],
+            [0, n_turns_plot_max],
+            "--",
+        )
+        axs[axs_index].set_xlim(
+            self.models.plotting_extrema["r_plot_min"],
+            self.models.plotting_extrema["r_plot_max"],
+        )
+        axs[axs_index].set_ylim(0, n_turns_plot_max)
+        axs[axs_index].axes.get_xaxis().set_ticklabels([])
+
+        # L @ max{S}
+        axs_index += 1
+        axs[axs_index].set_ylabel("L (μm)")
+        axs[axs_index].loglog(self.models.r, self.L)
+        axs[axs_index].plot(
+            [self.max_s_radius, self.max_s_radius],
+            [100, self.models.plotting_extrema["S_plot_max"]],
+            "--",
+        )
+        axs[axs_index].set_xlim(
+            self.models.plotting_extrema["r_plot_min"],
+            self.models.plotting_extrema["r_plot_max"],
+        )
+        axs[axs_index].set_ylim(100, self.models.plotting_extrema["S_plot_max"])
+        axs[axs_index].set_xlabel("Ring radius (μm)")
+        filename = (
+            self.models.filename_path.parent
+            / f"{self.models.filename_path.stem}_SPIRAL.png"
+        )
+        fig.savefig(filename)
+        self.logger(f"Wrote '{filename}'.")
+
+    def plot_optimization_results(self):
+        """
+
+        Returns:
+
+        """
+
+        # Plot spiral optimization results: u, gamma, n turns, a2, L @max(S)
+        self._plot_spiral_results_at_optimum()
+
+        # Draw the spiral with the greatest number of turns found in the optimization
+        if self.models.parameters["draw_largest_spiral"]:
+            largest_spiral_index: int = int(np.argmax(self.n_turns))
+            (fig, spiral_waveguide_coordinates,) = self._draw_spiral(
+                r_outer=self.models.r[largest_spiral_index],
+                h=self.u[largest_spiral_index]
+                if self.models.core_v_name == "w"
+                else self.models.core_v_value,
+                w=self.models.core_v_value
+                if self.models.core_v_name == "w"
+                else self.u[largest_spiral_index],
+                n_turns=self.n_turns[largest_spiral_index],
+                r_window=(self.models.r[largest_spiral_index] // 25 + 1) * 25,
+            )
+            filename = (
+                self.models.filename_path.parent
+                / f"{self.models.filename_path.stem}_SPIRAL_SCHEMATIC.png"
+            )
+            fig.savefig(fname=filename)
+            self.logger(f"Wrote '{filename}'.")
+
+            # Write spiral inner and outer waveguide x/y coordinates to an Excel file
+            if self.models.parameters["write_excel_files"]:
+                self._write_spiral_waveguide_coordinates_to_excel_file(
+                    spiral_waveguide_coordinates=spiral_waveguide_coordinates
+                )
+
+        # Write sequence of consecutive spirals with n turns > self.n_turns_min
+        if self.models.parameters["write_spiral_sequence_to_file"]:
+            self._write_spiral_sequence_to_file()
+
+    def _draw_spiral(
         self,
         r_outer: float,
         h: float,

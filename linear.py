@@ -4,17 +4,21 @@ Linear waveguide sensor class
 
 Exposed methods:
     - analyze()
+    - plot_optimization_results()
 
 """
 
 
 # Standard library packages
+import matplotlib.pyplot as plt
 import numpy as np
+from pathlib import Path
 from scipy import optimize
 from typing import Callable
 
 # Package modules
 from .models import Models
+from .constants import PER_UM_TO_DB_PER_CM
 
 
 class Linear:
@@ -40,7 +44,91 @@ class Linear:
         self.a2_wg: np.ndarray = np.ndarray([])
         self.results: list = []
 
-    def calc_a2_wg(self, r: float, u: float) -> float:
+    def plot_optimization_results(self):
+        """ " """
+
+        # Create figure
+        fig, axs = plt.subplots(5)
+        fig.suptitle(
+            "Linear waveguide sensor\n"
+            + f"{self.models.pol}"
+            + f", λ = {self.models.lambda_res:.3f} μm"
+            + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
+        )
+
+        # max{S}
+        axs_index: int = 0
+        axs[axs_index].set_ylabel(r"max$\{S\}$" + "\n" + r"(RIU$^{-1}$)")
+        axs[axs_index].loglog(self.models.r, self.s)
+        axs[axs_index].set_xlim(
+            self.models.plotting_extrema["r_plot_min"],
+            self.models.plotting_extrema["r_plot_max"],
+        )
+        axs[axs_index].set_ylim(100, self.models.plotting_extrema["S_plot_max"])
+        axs[axs_index].axes.get_xaxis().set_ticklabels([])
+
+        # u (h or w) @ max{S}
+        axs_index += 1
+        axs[axs_index].semilogx(self.models.r, self.u)
+        axs[axs_index].set_ylabel(f"{self.models.core_u_name} (μm)")
+        axs[axs_index].set_xlim(
+            self.models.plotting_extrema["r_plot_min"],
+            self.models.plotting_extrema["r_plot_max"],
+        )
+        axs[axs_index].set_ylim(
+            self.models.plotting_extrema["u_plot_min"],
+            self.models.plotting_extrema["u_plot_max"],
+        )
+        axs[axs_index].axes.get_xaxis().set_ticklabels([])
+
+        # Gamma_fluid @ max{S}
+        axs_index += 1
+        axs[axs_index].semilogx(self.models.r, self.gamma)
+        axs[axs_index].set_ylabel(r"$\Gamma_{fluide}$ ($\%$)")
+        axs[axs_index].set_xlim(
+            self.models.plotting_extrema["r_plot_min"],
+            self.models.plotting_extrema["r_plot_max"],
+        )
+        axs[axs_index].set_ylim(0, 100)
+        axs[axs_index].axes.get_xaxis().set_ticklabels([])
+
+        # a2 @ max{S}
+        axs_index += 1
+        axs[axs_index].semilogx(self.models.r, self.a2_wg)
+        axs[axs_index].set_ylabel(r"$a^2$")
+        axs[axs_index].set_xlim(
+            self.models.plotting_extrema["r_plot_min"],
+            self.models.plotting_extrema["r_plot_max"],
+        )
+        axs[axs_index].set_ylim(0, 1)
+        axs[axs_index].axes.get_xaxis().set_ticklabels([])
+
+        # alpha_wg @ max{S}
+        axs_index += 1
+        axs[axs_index].semilogx(
+            self.models.r,
+            np.asarray([self.models.α_wg_of_u(u) for u in self.u])
+            * PER_UM_TO_DB_PER_CM,
+        )
+        axs[axs_index].set_ylabel(r"α$_{wg}$")
+        axs[axs_index].set_xlim(
+            self.models.plotting_extrema["r_plot_min"],
+            self.models.plotting_extrema["r_plot_max"],
+        )
+        axs[axs_index].set_ylim(
+            np.floor(self.models.α_wg_model["min"] * PER_UM_TO_DB_PER_CM),
+            np.ceil(self.models.α_wg_model["max"] * PER_UM_TO_DB_PER_CM),
+        )
+
+        axs[axs_index].set_xlabel("Ring radius (μm)")
+        filename: Path = (
+            self.models.filename_path.parent
+            / f"{self.models.filename_path.stem}_LINEAR.png"
+        )
+        fig.savefig(filename)
+        self.logger(f"Wrote '{filename}'.")
+
+    def _calc_a2_wg(self, r: float, u: float) -> float:
         """
         Calculate a2
         """
@@ -57,7 +145,7 @@ class Linear:
             (4 * np.pi / self.models.lambda_res)
             * (2 * r)
             * self.models.gamma_of_u(u)
-            * self.calc_a2_wg(r=r, u=u)
+            * self._calc_a2_wg(r=r, u=u)
         )
         assert s_nr >= 0, "Snr should not be negative'"
 
@@ -109,7 +197,7 @@ class Linear:
 
         # Calculate other useful parameters at the solution
         gamma: float = self.models.gamma_of_u(u_max_s) * 100
-        a2_wg: float = self.calc_a2_wg(r=r, u=u_max_s)
+        a2_wg: float = self._calc_a2_wg(r=r, u=u_max_s)
 
         # Return results to calling program
         return max_s, u_max_s, gamma, a2_wg
