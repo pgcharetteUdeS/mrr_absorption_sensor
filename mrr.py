@@ -86,7 +86,7 @@ class Mrr:
     def _calculate_plotting_extrema(self):
         # Other extrema for Mrr plots
         self.plotting_extrema["Se_plot_max"] = (
-                np.ceil(np.amax(self.s_e * np.sqrt(self.wg_a2)) * 1.1 / 10) * 10
+            np.ceil(np.amax(self.s_e * np.sqrt(self.wg_a2)) * 1.1 / 10) * 10
         )
         self.plotting_extrema["Finesse_plot_max"] = (
             np.ceil(np.amax(self.finesse / (2 * np.pi)) * 1.1 / 10) * 10
@@ -94,13 +94,13 @@ class Mrr:
 
     @staticmethod
     def _write_image_data_to_excel(
-            filename: str,
-            x_array: np.ndarray,
-            x_label: str,
-            y_array: np.ndarray,
-            y_label: str,
-            z_array: list,
-            z_labels: list,
+        filename: str,
+        x_array: np.ndarray,
+        x_label: str,
+        y_array: np.ndarray,
+        y_label: str,
+        z_array: list,
+        z_labels: list,
     ):
         """
         Write image data to Excel file
@@ -426,7 +426,7 @@ class Mrr:
             [
                 [
                     self._calc_s_e(r=10**log10_R, u=u)
-                    * np.sqrt(self._calc_wg_a2(r=10 ** log10_R, u=u))
+                    * np.sqrt(self._calc_wg_a2(r=10**log10_R, u=u))
                     for log10_R in r_2d_map
                 ]
                 for u in u_2d_map
@@ -470,7 +470,7 @@ class Mrr:
         # 2D map of a2(gamma, R)
         wg_a2_map = np.asarray(
             [
-                [self._calc_wg_a2(r=10 ** log10_R, u=u) for log10_R in r_2d_map]
+                [self._calc_wg_a2(r=10**log10_R, u=u) for log10_R in r_2d_map]
                 for u in u_2d_map
             ]
         )
@@ -1047,15 +1047,36 @@ class Mrr:
         fig.savefig(filename)
         self.logger(f"Wrote '{filename}'.")
 
-    def _objfun_r_w(self, r: float, u: float, a: float, b: float) -> float:
+    def _calc_α_bend_a_and_b(self, gamma: float) -> tuple[float, float]:
+        """
+        Fit A & B model parameters to alpha_bend(R) = A*exp(-B*R) @ gamma
+        """
+
+        u: float = self.models.u_of_gamma(gamma=gamma)
+        r: np.ndarray = np.arange(
+            self.models.r_α_bend_min_interp(u),
+            self.models.r_α_bend_max_interp(u),
+            (self.models.r_α_bend_max_interp(u) - self.models.r_α_bend_min_interp(u))
+            / 10,
+        )
+        α_bend: np.ndarray = np.asarray([self.models.α_bend(r=r, u=u) for r in r])
+        minus_b, ln_a = np.linalg.lstsq(
+            a=np.vstack([r, np.ones(len(r))]).T, b=np.log(α_bend), rcond=None
+        )[0]
+
+        return np.exp(ln_a), -minus_b
+
+    def _objfun_r_w(
+        self, r: float, u: float, α_bend_a: float, α_bend_b: float
+    ) -> float:
         """
         Calculate the residual squared with the current solution for Rw,
         using equation (15) in the paper.
         """
 
-        α_bend: float = a * np.exp(-b * r)
+        α_bend: float = α_bend_a * np.exp(-α_bend_b * r)
         residual: float = 1 - r * (2 * np.pi) * (
-            self.α_prop(u=u) + (1 - b * r) * α_bend
+            self.α_prop(u=u) + (1 - α_bend_b * r) * α_bend
         )
 
         return residual**2
@@ -1069,7 +1090,7 @@ class Mrr:
         u: float = self.models.u_of_gamma(gamma=gamma)
 
         # alpha_bend(R) = A*exp(-BR) model parameters @gamma
-        α_bend_a, α_bend_b = self.models.calc_α_bend_a_and_b(gamma=gamma)
+        α_bend_a, α_bend_b = self._calc_α_bend_a_and_b(gamma=gamma)
 
         # Re
         w: float = lambertw(-e * self.α_prop(u=u) / α_bend_a, k=-1).real
@@ -1117,9 +1138,7 @@ class Mrr:
         Total ring round-trip loss factor: αL = (α_prop + α_bend)*L
         """
 
-        return (self.α_prop(u=u) + self.models.α_bend(r=r, u=u)) * (
-            2 * np.pi * r
-        )
+        return (self.α_prop(u=u) + self.models.α_bend(r=r, u=u)) * (2 * np.pi * r)
 
     def _calc_wg_a2(self, r: float, u: float) -> float:
         """

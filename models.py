@@ -7,7 +7,6 @@ Exposed methods:
     - α_prop(u)
     - α_wg_of_u(u)
     - calculate_plotting_extrema()
-    - calc_α_bend_a_and_b(gamma)
     - gamma_of_u(u)
     - n_eff_of_u(u)
     - u_of_gamma(gamma)
@@ -874,24 +873,6 @@ class Models:
             u_min = max(u_min, self.u_domain_min)
         u_max = self.u_domain_max
         return u_min, u_max
-
-    def calc_α_bend_a_and_b(self, gamma: float) -> tuple[float, float]:
-        """
-        Calculate A*B model parameters for alpha_bend = A*exp(-B*R)
-        """
-
-        u: float = self.u_of_gamma(gamma=gamma)
-        r: np.ndarray = np.arange(
-            self.r_α_bend_min_interp(u),
-            self.r_α_bend_max_interp(u),
-            (self.r_α_bend_max_interp(u) - self.r_α_bend_min_interp(u)) / 10,
-        )
-        α_bend: np.ndarray = np.asarray([self.α_bend(r=r, u=u) for r in r])
-        minus_b, ln_a = np.linalg.lstsq(
-            a=np.vstack([r, np.ones(len(r))]).T, b=np.log(α_bend), rcond=None
-        )[0]
-
-        return np.exp(ln_a), -minus_b
 
     #
     # Calculate shared values for sensor Class instance plotting
