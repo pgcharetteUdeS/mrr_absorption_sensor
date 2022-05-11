@@ -54,7 +54,7 @@ class Mrr:
         self.α_bend_b: np.ndarray = np.ndarray([])
         self.α_bend: np.ndarray = np.ndarray([])
         self.α_wg: np.ndarray = np.ndarray([])
-        self.a2_wg: np.ndarray = np.ndarray([])
+        self.wg_a2: np.ndarray = np.ndarray([])
         self.er: np.ndarray = np.ndarray([])
         self.contrast: np.ndarray = np.ndarray([])
         self.finesse: np.ndarray = np.ndarray([])
@@ -79,10 +79,14 @@ class Mrr:
         self.u: np.ndarray = np.ndarray([])
         self.u_resampled: np.ndarray = np.ndarray([])
 
+    #
+    # Plotting
+    #
+
     def _calculate_plotting_extrema(self):
         # Other extrema for Mrr plots
         self.plotting_extrema["Se_plot_max"] = (
-            np.ceil(np.amax(self.s_e * np.sqrt(self.a2_wg)) * 1.1 / 10) * 10
+                np.ceil(np.amax(self.s_e * np.sqrt(self.wg_a2)) * 1.1 / 10) * 10
         )
         self.plotting_extrema["Finesse_plot_max"] = (
             np.ceil(np.amax(self.finesse / (2 * np.pi)) * 1.1 / 10) * 10
@@ -422,7 +426,7 @@ class Mrr:
             [
                 [
                     self._calc_s_e(r=10**log10_R, u=u)
-                    * np.sqrt(self._calc_a2_wg(r=10**log10_R, u=u))
+                    * np.sqrt(self._calc_wg_a2(r=10 ** log10_R, u=u))
                     for log10_R in r_2d_map
                 ]
                 for u in u_2d_map
@@ -464,9 +468,9 @@ class Mrr:
         self.logger(f"Wrote '{filename}'.")
 
         # 2D map of a2(gamma, R)
-        a2_wg_2d_map = np.asarray(
+        wg_a2_map = np.asarray(
             [
-                [self._calc_a2_wg(r=10**log10_R, u=u) for log10_R in r_2d_map]
+                [self._calc_wg_a2(r=10 ** log10_R, u=u) for log10_R in r_2d_map]
                 for u in u_2d_map
             ]
         )
@@ -474,7 +478,7 @@ class Mrr:
         cm = ax.pcolormesh(
             r_2d_map,
             gamma_2d_map,
-            a2_wg_2d_map,
+            wg_a2_map,
             cmap=self.models.parameters["map2D_colormap"],
         )
         ax.plot(
@@ -698,7 +702,7 @@ class Mrr:
 
         # Se @ max{S}
         axs_index += 1
-        axs[axs_index].semilogx(self.models.r, self.s_e * np.sqrt(self.a2_wg))
+        axs[axs_index].semilogx(self.models.r, self.s_e * np.sqrt(self.wg_a2))
         axs[axs_index].plot(
             [self.max_s_radius, self.max_s_radius],
             [0, self.plotting_extrema["Se_plot_max"]],
@@ -758,7 +762,7 @@ class Mrr:
 
         # a2 @ max{S}
         axs_index += 1
-        axs[axs_index].semilogx(self.models.r, self.a2_wg)
+        axs[axs_index].semilogx(self.models.r, self.wg_a2)
         axs[axs_index].plot([self.max_s_radius, self.max_s_radius], [0, 1], "r--")
         axs[axs_index].set_ylabel(r"$a^2$")
         axs[axs_index].set_xlim(
@@ -830,7 +834,7 @@ class Mrr:
         axs_index += 1
         axs[axs_index].semilogx(self.models.r, self.tau, color="blue", label="τ")
         axs[axs_index].semilogx(
-            self.models.r, np.sqrt(self.a2_wg), color="green", label="a"
+            self.models.r, np.sqrt(self.wg_a2), color="green", label="a"
         )
         axs[axs_index].semilogx(
             self.models.r, self.contrast, color="red", label="contrast"
@@ -879,7 +883,7 @@ class Mrr:
         axs_index += 1
         axs[axs_index].semilogx(
             self.models.r,
-            self.finesse / (2 * np.pi) / (self.s_e * np.sqrt(self.a2_wg)),
+            self.finesse / (2 * np.pi) / (self.s_e * np.sqrt(self.wg_a2)),
         )
         axs[axs_index].set_ylim(0, 2.5)
         axs[axs_index].set_xlim(
@@ -1051,7 +1055,7 @@ class Mrr:
 
         α_bend: float = a * np.exp(-b * r)
         residual: float = 1 - r * (2 * np.pi) * (
-            self.models.α_prop(u=u) + (1 - b * r) * α_bend
+            self.α_prop(u=u) + (1 - b * r) * α_bend
         )
 
         return residual**2
@@ -1068,7 +1072,7 @@ class Mrr:
         α_bend_a, α_bend_b = self.models.calc_α_bend_a_and_b(gamma=gamma)
 
         # Re
-        w: float = lambertw(-e * self.models.α_prop(u=u) / α_bend_a, k=-1).real
+        w: float = lambertw(-e * self.α_prop(u=u) / α_bend_a, k=-1).real
         r_e: float = (1 / α_bend_b) * (1 - w)
 
         # Rw
@@ -1082,12 +1086,25 @@ class Mrr:
 
         return r_e, r_w, α_bend_a, α_bend_b
 
+    #
+    # Optimization
+    #
+
+    def α_prop(self, u: float) -> float:
+        """
+        α_prop = α_wg + gamma_fluid*α_fluid
+        """
+
+        return self.models.α_wg_of_u(u=u) + (
+            self.models.gamma_of_u(u) * self.models.α_fluid
+        )
+
     def _calc_α_prop_l(self, r: float, u: float) -> float:
         """
         Propagation loss component of total round-trip losses : α_prop*L
         """
 
-        return self.models.α_prop(u=u) * (2 * np.pi * r)
+        return self.α_prop(u=u) * (2 * np.pi * r)
 
     def _calc_α_bend_l(self, r: float, u: float) -> float:
         """
@@ -1100,11 +1117,11 @@ class Mrr:
         Total ring round-trip loss factor: αL = (α_prop + α_bend)*L
         """
 
-        return (self.models.α_prop(u=u) + self.models.α_bend(r=r, u=u)) * (
+        return (self.α_prop(u=u) + self.models.α_bend(r=r, u=u)) * (
             2 * np.pi * r
         )
 
-    def _calc_a2_wg(self, r: float, u: float) -> float:
+    def _calc_wg_a2(self, r: float, u: float) -> float:
         """
         Ring round trio losses: a2 = e**(-α*L)
         """
@@ -1119,7 +1136,7 @@ class Mrr:
             (4 * np.pi / self.models.lambda_res)
             * (2 * np.pi * r)
             * self.models.gamma_of_u(u)
-            * self._calc_a2_wg(r=r, u=u)
+            * self._calc_wg_a2(r=r, u=u)
         )
 
     def _calc_s_e(self, r: float, u: float) -> float:
@@ -1130,7 +1147,7 @@ class Mrr:
         return (
             2
             / (3 * np.sqrt(3))
-            / (np.sqrt(self._calc_a2_wg(r=r, u=u)) * (1 - self._calc_a2_wg(r=r, u=u)))
+            / (np.sqrt(self._calc_wg_a2(r=r, u=u)) * (1 - self._calc_wg_a2(r=r, u=u)))
         )
 
     def _calc_sensitivity(self, r: float, u: float) -> float:
@@ -1212,9 +1229,9 @@ class Mrr:
         s = self._calc_sensitivity(r=r, u=u_max_s)
 
         # Calculate other useful MRR parameters at the solution
-        a2_wg: float = self._calc_a2_wg(r=r, u=u_max_s)
-        a: float = np.sqrt(a2_wg)
-        tau: float = (np.sqrt(3) * a2_wg - np.sqrt(3) - 2 * a) / (a2_wg - 3)
+        wg_a2: float = self._calc_wg_a2(r=r, u=u_max_s)
+        a: float = np.sqrt(wg_a2)
+        tau: float = (np.sqrt(3) * wg_a2 - np.sqrt(3) - 2 * a) / (wg_a2 - 3)
         t_max: float = ((tau + a) / (1 + tau * a)) ** 2
         t_min: float = ((tau - a) / (1 - tau * a)) ** 2
         gamma: float = self.models.gamma_of_u(u_max_s) * 100
@@ -1239,7 +1256,7 @@ class Mrr:
             s_e,
             α_bend,
             α_wg,
-            a2_wg,
+            wg_a2,
             tau,
             t_max,
             t_min,
@@ -1271,7 +1288,7 @@ class Mrr:
             self.s_e,
             self.α_bend,
             self.α_wg,
-            self.a2_wg,
+            self.wg_a2,
             self.tau,
             self.t_max,
             self.t_min,

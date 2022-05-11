@@ -41,8 +41,12 @@ class Linear:
         self.s: np.ndarray = np.ndarray([])
         self.u: np.ndarray = np.ndarray([])
         self.gamma: np.ndarray = np.ndarray([])
-        self.a2_wg: np.ndarray = np.ndarray([])
+        self.wg_a2: np.ndarray = np.ndarray([])
         self.results: list = []
+
+    #
+    # Plotting
+    #
 
     def plot_optimization_results(self):
         """ " """
@@ -94,7 +98,7 @@ class Linear:
 
         # a2 @ max{S}
         axs_index += 1
-        axs[axs_index].semilogx(self.models.r, self.a2_wg)
+        axs[axs_index].semilogx(self.models.r, self.wg_a2)
         axs[axs_index].set_ylabel(r"$a^2$")
         axs[axs_index].set_xlim(
             self.models.plotting_extrema["r_plot_min"],
@@ -128,12 +132,25 @@ class Linear:
         fig.savefig(filename)
         self.logger(f"Wrote '{filename}'.")
 
-    def _calc_a2_wg(self, r: float, u: float) -> float:
+    #
+    # Optimization
+    #
+
+    def α_prop(self, u: float) -> float:
+        """
+        α_prop = α_wg + gamma_fluid*α_fluid
+        """
+
+        return self.models.α_wg_of_u(u=u) + (
+            self.models.gamma_of_u(u) * self.models.α_fluid
+        )
+
+    def _calc_wg_a2(self, r: float, u: float) -> float:
         """
         Calculate a2
         """
 
-        return np.e ** -(self.models.α_prop(u=u) * (2 * r))
+        return np.e ** -(self.α_prop(u=u) * (2 * r))
 
     def _calc_sensitivity(self, r: float, u: float) -> float:
         """
@@ -145,7 +162,7 @@ class Linear:
             (4 * np.pi / self.models.lambda_res)
             * (2 * r)
             * self.models.gamma_of_u(u)
-            * self._calc_a2_wg(r=r, u=u)
+            * self._calc_wg_a2(r=r, u=u)
         )
         assert s_nr >= 0, "Snr should not be negative'"
 
@@ -197,10 +214,10 @@ class Linear:
 
         # Calculate other useful parameters at the solution
         gamma: float = self.models.gamma_of_u(u_max_s) * 100
-        a2_wg: float = self._calc_a2_wg(r=r, u=u_max_s)
+        wg_a2: float = self._calc_wg_a2(r=r, u=u_max_s)
 
         # Return results to calling program
-        return max_s, u_max_s, gamma, a2_wg
+        return max_s, u_max_s, gamma, wg_a2
 
     def analyze(self):
         """
@@ -217,7 +234,7 @@ class Linear:
             self.s,
             self.u,
             self.gamma,
-            self.a2_wg,
+            self.wg_a2,
         ] = list(np.asarray(self.results).T)
 
         # Console message

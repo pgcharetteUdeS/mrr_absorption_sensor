@@ -85,10 +85,14 @@ class Spiral:
         self.outer_spiral_r_min: np.ndarray = np.ndarray([])
         self.L: np.ndarray = np.ndarray([])
         self.gamma: np.ndarray = np.ndarray([])
-        self.a2_wg: np.ndarray = np.ndarray([])
+        self.wg_a2: np.ndarray = np.ndarray([])
         self.max_s: float = 0
         self.max_s_radius: float = 0
         self.results: list = []
+
+    #
+    # Plotting
+    #
 
     def _calc_spiral_parameters(self, w: float) -> tuple[float, float, float]:
         """
@@ -341,7 +345,7 @@ class Spiral:
         # a2 @ max{S}
         axs_index += 1
         axs[axs_index].set_ylabel(r"$a^2$")
-        axs[axs_index].semilogx(self.models.r, self.a2_wg)
+        axs[axs_index].semilogx(self.models.r, self.wg_a2)
         axs[axs_index].plot([self.max_s_radius, self.max_s_radius], [0, 1], "--")
         axs[axs_index].set_xlim(
             self.models.plotting_extrema["r_plot_min"],
@@ -640,6 +644,19 @@ class Spiral:
             spiral_waveguide_coordinates,
         )
 
+    #
+    # Optimization
+    #
+
+    def α_prop(self, u: float) -> float:
+        """
+        α_prop = α_wg + gamma_fluid*α_fluid
+        """
+
+        return self.models.α_wg_of_u(u=u) + (
+            self.models.gamma_of_u(u) * self.models.α_fluid
+        )
+
     def _line_element(self, r: float, w: float) -> float:
         """
         Line element for numerical integration in polar coordinates (r, theta)
@@ -705,7 +722,7 @@ class Spiral:
         )
 
         # Calculate propagation losses in the spiral
-        α_prop: float = self.models.α_prop(u=u)
+        α_prop: float = self.α_prop(u=u)
         prop_losses_spiral: float = α_prop * length
 
         # Calculate bending losses in the spiral by integration w/r to radius
@@ -755,7 +772,7 @@ class Spiral:
             + prop_losses_joint
             + bend_losses_joint
         )
-        a2_wg: float = np.e**-total_losses
+        wg_a2: float = np.e**-total_losses
 
         # Calculate the sensitivity of the spiral
         l_total: float = length + l_hc + l_sb1 + l_sb2
@@ -763,10 +780,10 @@ class Spiral:
             (4 * np.pi / self.models.lambda_res)
             * l_total
             * self.models.gamma_of_u(u)
-            * a2_wg
+            * wg_a2
         )
 
-        return s_nr, outer_spiral_r_min, l_total, a2_wg
+        return s_nr, outer_spiral_r_min, l_total, wg_a2
 
     def _obj_fun(self, x, r: float) -> float:
         """
@@ -880,7 +897,7 @@ class Spiral:
             self.outer_spiral_r_min,
             self.L,
             self.gamma,
-            self.a2_wg,
+            self.wg_a2,
         ] = list(np.asarray(self.results).T)
 
         # Find maximum sensitivity overall and corresponding radius

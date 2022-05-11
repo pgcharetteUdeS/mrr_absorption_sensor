@@ -31,15 +31,19 @@ from .constants import PER_UM_TO_DB_PER_CM
 def _validate_excel_output_file(filename_path: Path) -> str:
     """
     Define output Excel filename string from a Path object. Test to see if the file is
-    already open, if so return an exception. This function is useful to run before any
-    serious works starts because if the script tries to open a file that's already open,
-    say in Excel, this causes the script to halt with an exception and the work done
-    up to that point is lost.
+    already open, if so return an exception.
 
-    :param filename_path: Excel filename (Path)
-    :return: Excel filename (str)
+    This function is useful to run before any serious works starts because if the script
+    tries to open a file that's already open, say in Excel, this causes the script to
+    halt with an exception and the work done up to that point is lost.
+
+    Args:
+        filename_path (Path): filename path object to test for openness, conversion
+
+    Returns:
+        str: filename path string
+
     """
-
     excel_output_filename: str = str(
         filename_path.parent / f"{filename_path.stem}_ALL_RESULTS.xlsx"
     )
@@ -63,7 +67,7 @@ def _write_excel_results_file(
     mrr: Mrr,
     linear: Linear,
     spiral: Spiral,
-    no_spiral: bool = False,
+    parameters: dict,
     logger: Callable = print,
 ):
     """
@@ -71,16 +75,18 @@ def _write_excel_results_file(
     key:value pairs, where the keys are the Excel file column header text strings
     and the values are the corresponding column data arrays
 
-    :param excel_output_fname:
-    :param models:
-    :param mrr:
-    :param linear:
-    :param spiral:
-    :param no_spiral:
-    :param logger:
-    :return: None
-    """
+    Args:
+        excel_output_fname (str):
+        models (MOdels):
+        mrr (Mrr):
+        linear (Linear):
+        spiral (Spiral):
+        parameters (dict):
+        logger (Callable):
 
+    Returns: None
+
+    """
     # Create Excel workbook
     wb = Workbook()
 
@@ -93,7 +99,7 @@ def _write_excel_results_file(
         "Snr_RIU_inv": mrr.s_nr,
         "alpha_bend_dB_per_cm": mrr.α_bend * PER_UM_TO_DB_PER_CM,
         "alpha_wg_dB_per_cm": mrr.α_wg * PER_UM_TO_DB_PER_CM,
-        "a2": mrr.a2_wg,
+        "a2": mrr.wg_a2,
         "tau": mrr.tau,
         "T_max": mrr.t_max,
         "T_min": mrr.t_min,
@@ -142,7 +148,7 @@ def _write_excel_results_file(
         f"{models.core_u_name}_um": linear.u,
         "gamma_percent": linear.gamma,
         "L_um": 2 * models.r,
-        "a2": linear.a2_wg,
+        "a2": linear.wg_a2,
     }
     linear_data: np.ndarray = np.asarray(list(linear_data_dict.values())).T
     linear_sheet = wb.create_sheet("Linear")
@@ -151,7 +157,7 @@ def _write_excel_results_file(
         linear_sheet.append(row.tolist())
 
     # If required, save the spiral data to a sheet
-    if not no_spiral:
+    if not parameters["no_spiral"]:
         spiral_data_dict = {
             "R_um": models.r,
             "maxS_RIU_inv": spiral.s,
@@ -160,7 +166,7 @@ def _write_excel_results_file(
             "n_revs": spiral.n_turns * 2,
             "Rmin_um": spiral.outer_spiral_r_min,
             "L_um": spiral.L,
-            "a2": spiral.a2_wg,
+            "a2": spiral.wg_a2,
         }
         spiral_data: np.ndarray = np.asarray(list(spiral_data_dict.values())).T
         spiral_sheet = wb.create_sheet("Spiral")
@@ -175,7 +181,7 @@ def _write_excel_results_file(
 
 def analyze(
     toml_input_file: str,
-    logger=print,
+    logger: Callable = print,
 ) -> tuple[Models, Mrr | None, Linear | None, Spiral | None]:
     """
     Calculate the maximum achievable sensitivities over a range of radii for micro-ring
@@ -184,12 +190,17 @@ def analyze(
     The waveguides core geometry has a fixed dimension "v", the other "u" is allowed
     to vary over a specified range to find the maximum sensitivity at each radius.
 
-    :param toml_input_file: input file containing the problem data (.toml format)
-    :param logger: console logger (optional), for example from the "logging" package
-    :return: None
+    Args:
+        toml_input_file (str):
+        logger (Callable):
+
+    Returns:
+        Models: Models class instance
+        Mrr Mrr class instance
+        Linear: Linear class instance
+        Spiral: Spiral class instance
 
     """
-
     # Initialize the colorama package to print colored text to the Windows console
     colorama.init()
 
@@ -273,7 +284,7 @@ def analyze(
             mrr=mrr,
             linear=linear,
             spiral=spiral,
-            no_spiral=parameters["no_spiral"],
+            parameters=parameters,
             logger=logger,
         ),
 

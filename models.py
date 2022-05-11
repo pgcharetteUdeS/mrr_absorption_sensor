@@ -894,14 +894,8 @@ class Models:
         return np.exp(ln_a), -minus_b
 
     #
-    # Propagation constant calculation methods
+    # Calculate shared values for sensor Class instance plotting
     #
-    def α_prop(self, u: float) -> float:
-        """
-        α_prop = α_wg + gamma_fluid*α_fluid
-        """
-
-        return self.α_wg_of_u(u=u) + (self.gamma_of_u(u) * self.α_fluid)
 
     def calculate_plotting_extrema(self, max_s: float):
         """
