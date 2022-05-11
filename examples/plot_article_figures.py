@@ -251,7 +251,7 @@ def figure_6(
     )
 
     # Loop to generate the subplots of the line profiles in "line_profile_gammas"
-    for g in np.insert(line_profile_gammas, 0, min(gammas)):
+    for g in line_profile_gammas:
         index = int(np.argmin(np.abs(gammas - g)) + 1)
         s = np.asarray([c.value for c in wb_2d_map["S (RIU-1)"][index]])
         axs[0].semilogx(r, s, label=rf"$\Gamma$ = {g:.0f}%")
@@ -391,21 +391,16 @@ def main():
 
     """
 
-    # Discrete gamma value arrays for plotting
-    line_profile_gammas_fig_5: np.ndarray = np.asarray([20, 45, 65, 75])
-    line_profile_gammas_fig_6: np.ndarray = np.asarray([20, 30, 45, 55, 60, 65, 70, 75])
+    # Discrete gamma value array for figure 5
 
     # Read Excel filenames from the command line, else define them locally
     if len(sys.argv) == 3:
         filename_all_results: str = sys.argv[1]
         filename_mrr_2d_maps_vs_gamma_and_r: str = sys.argv[2]
     else:
-        filename_all_results: str = (
-            "data/Tableau_REDUCED_TE_w07_dbrutes_R_ALL_RESULTS.xlsx"
-        )
+        filename_all_results: str = "data/Tableau_TE_w07_ALL_RESULTS.xlsx"
         filename_mrr_2d_maps_vs_gamma_and_r: str = (
-            "data/Tableau_REDUCED_TE_w07_dbrutes_R_MRR_2DMAPS_VS_GAMMA_and_R"
-            + "__alpha_wg_variable.xlsx"
+            "data/Tableau_TE_w07_MRR_2DMAPS_VS_GAMMA_and_R.xlsx"
         )
     filename_path: Path = Path(filename_all_results)
 
@@ -423,6 +418,23 @@ def main():
     wb_2d_map: Workbook = load_workbook(
         filename_mrr_2d_maps_vs_gamma_and_r, read_only=True
     )
+
+    # User-defined discrete gamma value array for figure 5
+    line_profile_gammas_fig_5: np.ndarray = np.asarray([20, 45, 65, 75])
+
+    # Generate discrete gamma value array for figure 6
+    gamma = np.asarray(
+        [val[0].value for val in wb_2d_map["gamma (%)"].iter_rows(max_col=1)]
+    )
+    line_profile_gammas_fig_6: np.ndarray = np.arange(
+        np.ceil(gamma[-1] / 10) * 10, np.floor(gamma[0] / 10) * 10 + 10, 10
+    )
+    if int(gamma[-1]) != line_profile_gammas_fig_6[0]:
+        line_profile_gammas_fig_6 = np.insert(
+            line_profile_gammas_fig_6, 0, int(gamma[-1])
+        )
+    if int(gamma[0]) != line_profile_gammas_fig_6[-1]:
+        line_profile_gammas_fig_6 = np.append(line_profile_gammas_fig_6, int(gamma[0]))
 
     # Generate figures
     y_max_s, y_max_αl = _determine_y_plotting_extrema(
