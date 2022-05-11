@@ -331,7 +331,7 @@ def figure_6(
     axs[3].semilogx(r, α_wg, label=r"α$_{wg}$")
     axs[3].set_ylabel(r"α$_{bend}$ and α$_{wg}$ (dB/cm)")
     axs[3].set_xlim(r[0], r[-1])
-    axs[3].set_ylim(0, 10)
+    axs[3].set_ylim(0, 5)
     axs[3].legend(loc="upper right")
 
     # Bottom horizontal axis labels

@@ -4,7 +4,6 @@ Models class
 
 Exposed methods:
     - α_bend(r, u)
-    - α_prop(u)
     - α_wg_of_u(u)
     - calculate_plotting_extrema()
     - gamma_of_u(u)
