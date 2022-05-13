@@ -18,7 +18,7 @@ import toml
 from typing import Callable
 
 # Package modules
-from mrr_absorption_sensor import __version__
+from .constants import __version__
 
 
 def _check_mode_solver_data(modes_data: dict, bending_loss_data: dict, filename: Path):

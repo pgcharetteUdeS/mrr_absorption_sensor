@@ -19,14 +19,11 @@ import sys
 from typing import Callable
 
 # Package modules
-from mrr_absorption_sensor import (
-    Models,
-    Mrr,
-    Linear,
-    Spiral,
-    __version__,
-    constants,
-)
+from .models import Models
+from .mrr import Mrr
+from .linear import Linear
+from .spiral import Spiral
+from .constants import constants, __version__
 from .fileio import load_toml_file
 
 

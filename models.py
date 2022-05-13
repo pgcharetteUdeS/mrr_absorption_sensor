@@ -34,7 +34,7 @@ from sympy import functions, lambdify, symbols
 from typing import Callable
 
 # Package modules
-from mrr_absorption_sensor import constants
+from .constants import constants
 
 
 class Models:

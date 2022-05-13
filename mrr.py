@@ -22,13 +22,11 @@ from scipy.special import lambertw
 from typing import Callable
 
 # Package modules
-from mrr_absorption_sensor import (
-    Models,
-    Linear,
-    Spiral,
-    LINE_STYLES,
-    constants,
-)
+from .models import Models
+from .linear import Linear
+from .spiral import Spiral
+from .constants import constants, __version__
+from .fileio import load_toml_file
 
 
 class Mrr:

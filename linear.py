@@ -17,7 +17,8 @@ from scipy import optimize
 from typing import Callable
 
 # Package modules
-from mrr_absorption_sensor import Models, constants
+from .models import Models
+from .constants import constants
 
 
 class Linear:
