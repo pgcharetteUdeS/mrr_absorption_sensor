@@ -25,8 +25,7 @@ from typing import Callable
 from .models import Models
 from .linear import Linear
 from .spiral import Spiral
-from .constants import constants, __version__
-from .fileio import load_toml_file
+from .constants import constants, LINE_STYLES
 
 
 class Mrr:
