@@ -167,7 +167,7 @@ def _write_excel_results_file(
             "gamma_percent": spiral.gamma,
             "n_revs": spiral.n_turns * 2,
             "Rmin_um": spiral.outer_spiral_r_min,
-            "L_um": spiral.L,
+            "L_um": spiral.l,
             "a2": spiral.wg_a2,
         }
         spiral_data: np.ndarray = np.asarray(list(spiral_data_dict.values())).T

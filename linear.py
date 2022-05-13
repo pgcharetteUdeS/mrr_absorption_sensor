@@ -135,7 +135,7 @@ class Linear:
     # Optimization
     #
 
-    def α_prop(self, u: float) -> float:
+    def _α_prop(self, u: float) -> float:
         """
         α_prop = α_wg + gamma_fluid*α_fluid
         """
@@ -149,7 +149,7 @@ class Linear:
         Calculate a2
         """
 
-        return np.e ** -(self.α_prop(u=u) * (2 * r))
+        return np.e ** -(self._α_prop(u=u) * (2 * r))
 
     def _calc_sensitivity(self, r: float, u: float) -> float:
         """

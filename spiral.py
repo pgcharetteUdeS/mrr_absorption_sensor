@@ -82,7 +82,7 @@ class Spiral:
         self.u: np.ndarray = np.ndarray([])
         self.n_turns: np.ndarray = np.ndarray([])
         self.outer_spiral_r_min: np.ndarray = np.ndarray([])
-        self.L: np.ndarray = np.ndarray([])
+        self.l: np.ndarray = np.ndarray([])
         self.gamma: np.ndarray = np.ndarray([])
         self.wg_a2: np.ndarray = np.ndarray([])
         self.max_s: float = 0
@@ -390,7 +390,7 @@ class Spiral:
         # L @ max{S}
         axs_index += 1
         axs[axs_index].set_ylabel("L (μm)")
-        axs[axs_index].loglog(self.models.r, self.L)
+        axs[axs_index].loglog(self.models.r, self.l)
         axs[axs_index].plot(
             [self.max_s_radius, self.max_s_radius],
             [100, self.models.plotting_extrema["S_plot_max"]],
@@ -647,7 +647,7 @@ class Spiral:
     # Optimization
     #
 
-    def α_prop(self, u: float) -> float:
+    def _α_prop(self, u: float) -> float:
         """
         α_prop = α_wg + gamma_fluid*α_fluid
         """
@@ -721,7 +721,7 @@ class Spiral:
         )
 
         # Calculate propagation losses in the spiral
-        α_prop: float = self.α_prop(u=u)
+        α_prop: float = self._α_prop(u=u)
         prop_losses_spiral: float = α_prop * length
 
         # Calculate bending losses in the spiral by integration w/r to radius
@@ -894,7 +894,7 @@ class Spiral:
             self.u,
             self.n_turns,
             self.outer_spiral_r_min,
-            self.L,
+            self.l,
             self.gamma,
             self.wg_a2,
         ] = list(np.asarray(self.results).T)
