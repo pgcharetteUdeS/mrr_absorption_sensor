@@ -22,10 +22,13 @@ from scipy.special import lambertw
 from typing import Callable
 
 # Package modules
-from .models import Models
-from .linear import Linear
-from .spiral import Spiral
-from .constants import LINE_STYLES, PER_UM_TO_DB_PER_CM
+from mrr_absorption_sensor import (
+    Models,
+    Linear,
+    Spiral,
+    LINE_STYLES,
+    constants,
+)
 
 
 class Mrr:
@@ -777,7 +780,7 @@ class Mrr:
         axs[axs_index].semilogx(
             self.models.r,
             np.asarray([self.models.α_wg_of_u(u) for u in self.u])
-            * PER_UM_TO_DB_PER_CM,
+            * constants.PER_UM_TO_DB_PER_CM,
         )
         axs[axs_index].set_ylabel(r"α$_{wg}$")
         axs[axs_index].set_xlim(
@@ -785,8 +788,8 @@ class Mrr:
             self.models.plotting_extrema["r_plot_max"],
         )
         axs[axs_index].set_ylim(
-            np.floor(self.models.α_wg_model["min"] * PER_UM_TO_DB_PER_CM),
-            np.ceil(self.models.α_wg_model["max"] * PER_UM_TO_DB_PER_CM),
+            np.floor(self.models.α_wg_model["min"] * constants.PER_UM_TO_DB_PER_CM),
+            np.ceil(self.models.α_wg_model["max"] * constants.PER_UM_TO_DB_PER_CM),
         )
 
         axs[axs_index].set_xlabel("Ring radius (μm)")

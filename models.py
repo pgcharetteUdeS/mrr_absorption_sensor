@@ -34,7 +34,7 @@ from sympy import functions, lambdify, symbols
 from typing import Callable
 
 # Package modules
-from .constants import PER_UM_TO_DB_PER_CM
+from mrr_absorption_sensor import constants
 
 
 class Models:
@@ -114,7 +114,7 @@ class Models:
         self.u_model: dict = {}
         self.n_eff_model: dict = {}
         self._fit_1d_models()
-        self.α_wg_db_per_cm: float = self.α_wg_of_u() * PER_UM_TO_DB_PER_CM
+        self.α_wg_db_per_cm: float = self.α_wg_of_u() * constants.PER_UM_TO_DB_PER_CM
 
         # Check that the bending loss mode solver data covers the required h & R ranges
         α_prop_min: float = self.α_wg_of_u() + (
@@ -185,7 +185,7 @@ class Models:
             * np.exp(
                 -(u - self.u_domain_min) / (self.u_domain_max - self.u_domain_min) * 5
             )
-        ) / PER_UM_TO_DB_PER_CM
+        ) / constants.PER_UM_TO_DB_PER_CM
 
     # gamma(u), u(gamma), neff(u) wrappers for model-specific calls to _interpolate()
     def gamma_of_u(self, u: float) -> float:
@@ -239,7 +239,7 @@ class Models:
         u_data = np.asarray([value.get("u") for value in self.modes_data.values()])
         α_wg_data = (
             np.asarray([value.get("alpha_wg") for value in self.modes_data.values()])
-            / PER_UM_TO_DB_PER_CM
+            / constants.PER_UM_TO_DB_PER_CM
         )
         self.α_wg_model = {
             "name": "alpha_wg",
@@ -339,7 +339,7 @@ class Models:
 
         # Plot of alpha_wg(u)
         alpha_wg_modeled = np.asarray([self.α_wg_of_u(u) for u in u_interp]) * (
-            PER_UM_TO_DB_PER_CM
+            constants.PER_UM_TO_DB_PER_CM
         )
         axs[axs_index].plot(u_interp, alpha_wg_modeled)
         if self.parameters["alpha_wg_exponential_model"]:
@@ -347,7 +347,7 @@ class Models:
                 rf"$\alpha_{{wg}}$ ({self.core_u_name}), exponential model"
             )
         else:
-            axs[axs_index].plot(u_data, α_wg_data * PER_UM_TO_DB_PER_CM, ".")
+            axs[axs_index].plot(u_data, α_wg_data * constants.PER_UM_TO_DB_PER_CM, ".")
             axs[axs_index].set_title(
                 r"$\alpha_{wg}$"
                 + f"({self.core_u_name})"

@@ -19,13 +19,15 @@ import sys
 from typing import Callable
 
 # Package modules
-from .models import Models
-from .mrr import Mrr
-from .linear import Linear
-from .spiral import Spiral
+from mrr_absorption_sensor import (
+    Models,
+    Mrr,
+    Linear,
+    Spiral,
+    __version__,
+    constants,
+)
 from .fileio import load_toml_file
-from .version import __version__
-from .constants import PER_UM_TO_DB_PER_CM
 
 
 def _validate_excel_output_file(filename_path: Path) -> str:
@@ -97,8 +99,8 @@ def _write_excel_results_file(
         "maxS_RIU_inv": mrr.s,
         "Se": mrr.s_e,
         "Snr_RIU_inv": mrr.s_nr,
-        "alpha_bend_dB_per_cm": mrr.α_bend * PER_UM_TO_DB_PER_CM,
-        "alpha_wg_dB_per_cm": mrr.α_wg * PER_UM_TO_DB_PER_CM,
+        "alpha_bend_dB_per_cm": mrr.α_bend * constants.PER_UM_TO_DB_PER_CM,
+        "alpha_wg_dB_per_cm": mrr.α_wg * constants.PER_UM_TO_DB_PER_CM,
         "a2": mrr.wg_a2,
         "tau": mrr.tau,
         "T_max": mrr.t_max,

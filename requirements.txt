@@ -1,10 +1,10 @@
-###### Requirements without Version Specifiers ######
-colorama
-matplotlib
-numpy
-openpyxl
-pathlib
-PIL
-scipy
-sympy
-toml
+argparse>=1.4.0
+colorama>=0.4.4
+matplotlib>=3.5.2
+numpy>=1.22.3
+openpyxl>=3.0.9
+pathlib>=1.0.1
+pillow>=9.1.0
+scipy>=1.8.0
+sympy>=1.10.1
+toml>=0.10.2
