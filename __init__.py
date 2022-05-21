@@ -4,8 +4,8 @@ __init__.py
 
 """
 
+from .analyze import analyze
 from .models import Models
 from .linear import Linear
-from .spiral import Spiral
 from .mrr import Mrr
-from .analyze import analyze
+from .spiral import Spiral

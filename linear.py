@@ -9,16 +9,15 @@ Exposed methods:
 """
 
 
-# Standard library packages
-import matplotlib.pyplot as plt
-import numpy as np
 from pathlib import Path
-from scipy import optimize
 from typing import Callable
 
-# Package modules
-from .models import Models
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy import optimize
+
 from .constants import constants
+from .models import Models
 
 
 class Linear:

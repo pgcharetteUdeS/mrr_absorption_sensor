@@ -20,20 +20,20 @@ Exposed methods:
        see the "USER-DEFINABLE MODEL-SPECIFIC SECTION" code section.
 
 """
-from colorama import Fore, Style
+from pathlib import Path
+from typing import Callable
+
 import matplotlib.pyplot as plt
+import numpy as np
+from colorama import Fore, Style
 from matplotlib import colors
 from matplotlib.collections import PolyCollection
 from matplotlib.widgets import Button, CheckButtons
-import numpy as np
 from numpy.polynomial import Polynomial
-from pathlib import Path
 from scipy import interpolate
 from scipy.linalg import lstsq
 from sympy import functions, lambdify, symbols
-from typing import Callable
 
-# Package modules
 from .constants import constants
 
 

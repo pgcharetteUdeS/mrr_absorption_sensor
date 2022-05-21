@@ -49,15 +49,14 @@ IDEs issues/notes:
 
 # Standard library packages
 import argparse
-import colorama as colorama
-from colorama import Fore, Style
 import logging
-import matplotlib.pyplot as plt
-from pathlib import Path
 import sys
 import time
+from pathlib import Path
 
-
+import colorama as colorama
+import matplotlib.pyplot as plt
+from colorama import Fore, Style
 # mrr_absorption_sensor package
 from mrr_absorption_sensor import analyze
 

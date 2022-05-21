@@ -16,5 +16,4 @@ plt.rcParams.update(
         "axes.linewidth": 0.5,
     },
 )
-#analyze("example.toml")
-analyze("Tableau_TE_h03.toml")
+analyze("example.toml")

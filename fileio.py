@@ -10,14 +10,13 @@ All lengths are in units of um
 """
 
 
-# Standard library
-from colorama import Fore, Style
-import numpy as np
 from pathlib import Path
-import toml
 from typing import Callable
 
-# Package modules
+import numpy as np
+import toml
+from colorama import Fore, Style
+
 from .constants import __version__
 
 
@@ -213,7 +212,7 @@ def load_toml_file(
             "alpha_bend": value["alpha_bend"],
         }
 
-    # Check the validity of the mode solver data, exit if problem found
+    # Check the validity of the mode solver data
     _check_mode_solver_data(
         modes_data=modes_data,
         bending_loss_data=bending_loss_data,

@@ -9,19 +9,18 @@ Exposed methods:
 """
 
 
-# Standard library packages
-from colorama import Fore, Style
 import io
-import matplotlib.pyplot as plt
-import numpy as np
-from openpyxl.workbook import Workbook
-from PIL import Image, TiffImagePlugin
-from scipy import optimize, integrate
 from typing import Callable
 
-# Package modules
-from .models import Models
+import matplotlib.pyplot as plt
+import numpy as np
+from PIL import Image, TiffImagePlugin
+from colorama import Fore, Style
+from openpyxl.workbook import Workbook
+from scipy import optimize, integrate
+
 from .constants import constants
+from .models import Models
 
 
 class Spiral:

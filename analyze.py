@@ -8,23 +8,22 @@ Exposed methods:
 """
 
 
-# Standard library
-import colorama as colorama
-from colorama import Fore, Style
-import matplotlib.pyplot as plt
-import numpy as np
-from openpyxl.workbook import Workbook
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import Callable
 
-# Package modules
-from .models import Models
-from .mrr import Mrr
-from .linear import Linear
-from .spiral import Spiral
+import colorama as colorama
+import matplotlib.pyplot as plt
+import numpy as np
+from colorama import Fore, Style
+from openpyxl.workbook import Workbook
+
 from .constants import constants, __version__
 from .fileio import load_toml_file
+from .linear import Linear
+from .models import Models
+from .mrr import Mrr
+from .spiral import Spiral
 
 
 def _validate_excel_output_file(filename_path: Path) -> str:

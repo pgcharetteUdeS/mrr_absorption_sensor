@@ -10,22 +10,21 @@ Exposed methods:
 """
 
 
-# Standard library packages
-from colorama import Fore, Style
 from math import e
-import matplotlib.pyplot as plt
-import numpy as np
-from openpyxl.workbook import Workbook
 from pathlib import Path
-from scipy import optimize
-from scipy.special import lambertw
 from typing import Callable
 
-# Package modules
-from .models import Models
-from .linear import Linear
-from .spiral import Spiral
+import matplotlib.pyplot as plt
+import numpy as np
+from colorama import Fore, Style
+from openpyxl.workbook import Workbook
+from scipy import optimize
+from scipy.special import lambertw
+
 from .constants import constants, LINE_STYLES
+from .linear import Linear
+from .models import Models
+from .spiral import Spiral
 
 
 class Mrr:

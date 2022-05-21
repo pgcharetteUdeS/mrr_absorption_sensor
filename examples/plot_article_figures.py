@@ -6,11 +6,12 @@ Data in files "*_MRR_2DMAPS_VS_GAMMA_and_R.xlsx" and "*_ALL_RESULTS.xlsx"
 
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
-from openpyxl import load_workbook, Workbook
-from pathlib import Path
 import sys
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+from openpyxl import load_workbook, Workbook
 
 
 def _get_re_rw(wb_all_results: Workbook, gamma: float) -> tuple[float, float]:
