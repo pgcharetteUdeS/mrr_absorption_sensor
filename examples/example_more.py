@@ -58,7 +58,7 @@ import colorama as colorama
 import matplotlib.pyplot as plt
 from colorama import Fore, Style
 # mrr_absorption_sensor package
-from mrr_absorption_sensor import analyze
+from mrr_absorption_sensor.mrr_absorption_sensor import analyze
 
 
 def mrr_absorption_sensor_vs_spiral(toml_input_filename: str):

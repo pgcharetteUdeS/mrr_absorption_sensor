@@ -6,7 +6,7 @@
 #
 
 import matplotlib.pyplot as plt
-from mrr_absorption_sensor import analyze
+from mrr_absorption_sensor.mrr_absorption_sensor import analyze
 
 plt.rcParams.update(
     {
