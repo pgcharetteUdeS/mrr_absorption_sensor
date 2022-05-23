@@ -16,7 +16,7 @@ Main interface method:
 - analyze.analyze()
 
 Classes:
-- Models: polynomial interpolation of gamma(h), neff(h), alpha_bend(r, h)
+- Models: interpolation of gamma(h), neff(h), alpha_prop(u), alpha_bend(r, u)
 - Mrr, Linear, Spiral: sensor-specific variables and methods
 
 Notes:
@@ -26,7 +26,7 @@ Notes:
    fileio.load_toml_file().
 
 2) The return value from analyze.analyze() MUST be stored in a local variable in the
-   calling script for the buttons to work in the 3D graph of alpha_bend(r, h).
+   calling script for the buttons to work in the 3D graph of alpha_bend(r, u).
 
 3) The alpha_bend(r, u) model is hardcoded in models.Models.fit_alpha_bend_model()
    but the code is structured in such a way that it is relatively easy to change, see
@@ -37,5 +37,4 @@ Notes:
 
 Known issues:
 
-1) KLUDGE in spiral._find_max_sensitivity(): factor of 1.1 eliminates glitches at low
-   radii for spiral analysis at fixed height, needs looking into...
+...
