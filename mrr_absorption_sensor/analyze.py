@@ -30,6 +30,7 @@ from .spiral import Spiral
 
 def analyze(
     toml_input_file: str,
+    block: bool = False,
     logger: Callable = print,
 ) -> tuple[Models, Mrr | None, Linear | None, Spiral | None]:
     """
@@ -42,6 +43,7 @@ def analyze(
 
     Args:
         toml_input_file (str):
+        block (bool):
         logger (Callable):
 
     Returns:
@@ -139,5 +141,5 @@ def analyze(
         ),
 
     # SHow plots, return instantiated models class
-    plt.show()
+    plt.show(block=block)
     return models, mrr, linear, spiral

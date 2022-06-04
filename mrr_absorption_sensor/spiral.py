@@ -849,10 +849,10 @@ class Spiral:
                 bounds=((u_min, u_max), (self.turns_min, n_turns_max)),
                 args=(r,),
                 method=self.models.parameters["optimization_method"],
-                options={"ftol": 1e-12},
+                tol=1e-9,
             )
-            u_max_s = optimization_result["x"][0]
-            n_turns_max_s = optimization_result["x"][1]
+            u_max_s = optimization_result.x[0]
+            n_turns_max_s = optimization_result.x[1]
 
             # Calculate maximum sensitivity at the solution
             s, outer_spiral_r_min, length, a2 = self._calc_sensitivity(

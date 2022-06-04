@@ -119,6 +119,8 @@ def load_toml_file(
         "lambda_res": toml_data.get("lambda_res", 0.633),
         "ni_op": toml_data.get("ni_op", 1.0e-6),
         "pol": toml_data.get("pol", "TE"),
+        # MRR physical parameters
+        "lc": toml_data.get("lc", 0),
         # Spiral physical parameters
         "spiral_spacing": toml_data.get("spiral_spacing", 5.0),
         "spiral_turns_min": toml_data.get("spiral_turns_min", 0.5),
@@ -127,6 +129,7 @@ def load_toml_file(
         "alpha_wg_order": toml_data.get("alpha_wg_order", 3),
         "gamma_order": toml_data.get("gamma_order", 4),
         "neff_order": toml_data.get("neff_order", 3),
+        "optimization_local": toml_data.get("optimization_local", True),
         "optimization_method": toml_data.get("optimization_method", "Powell"),
         # Analysis parameters
         "alpha_bend_threshold": toml_data.get("alpha_bend_threshold", 0.01),

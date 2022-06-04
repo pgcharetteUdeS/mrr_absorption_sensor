@@ -6,7 +6,8 @@
 #
 
 import matplotlib.pyplot as plt
-from mrr_absorption_sensor.mrr_absorption_sensor import analyze
+#from mrr_absorption_sensor.mrr_absorption_sensor import analyze
+from mrr_absorption_sensor import analyze
 
 plt.rcParams.update(
     {
@@ -16,4 +17,5 @@ plt.rcParams.update(
         "axes.linewidth": 0.5,
     },
 )
-analyze("example.toml")
+#analyze("example.toml")
+analyze("Tableau_TE_h03.toml")

@@ -46,6 +46,7 @@ class Mrr:
         self.logger: Callable = logger
 
         # Define class instance internal variables
+        self.lc: float = self.models.parameters["lc"]
         self.previous_solution: float = -1
 
         # Define class instance result variables and arrays
@@ -133,13 +134,13 @@ class Mrr:
 
         """
 
-        # Generate 2D map data R,u arrays (x/y)
-        r_2d_map = np.linspace(
+        # Generate 2D map row/column index R,u arrays (x/y)
+        r_2d_map_indices = np.linspace(
             np.log10(self.models.r[0]),
             np.log10(self.models.r[-1]),
             self.models.parameters["map2D_n_grid_points"],
         )
-        u_2d_map = np.linspace(
+        u_2d_map_indices = np.linspace(
             list(self.models.bending_loss_data)[0],
             list(self.models.bending_loss_data)[-1],
             self.models.parameters["map2D_n_grid_points"],
@@ -158,13 +159,19 @@ class Mrr:
         # 2D map of S(u, R)
         s_2d_map = np.asarray(
             [
-                [self._calc_sensitivity(r=10**log10_R, u=u) for log10_R in r_2d_map]
-                for u in u_2d_map
+                [
+                    self._calc_sensitivity(r=10**log10_R, u=u)
+                    for log10_R in r_2d_map_indices
+                ]
+                for u in u_2d_map_indices
             ]
         )
         fig, ax = plt.subplots()
         cm = ax.pcolormesh(
-            r_2d_map, u_2d_map, s_2d_map, cmap=self.models.parameters["map2D_colormap"]
+            r_2d_map_indices,
+            u_2d_map_indices,
+            s_2d_map,
+            cmap=self.models.parameters["map2D_colormap"],
         )
         ax.invert_yaxis()
         ax.set_title(
@@ -176,11 +183,22 @@ class Mrr:
         ax.set_xlabel("log(R) (μm)")
         ax.set_ylabel(f"{self.models.core_u_name} (μm)")
         fig.colorbar(cm, label=r"S (RIU $^{-1}$)")
+        max_s_u_min_index: int = np.where(self.s > self.max_s / 25)[0][0]
         ax.plot(
-            np.log10(self.models.r),
-            self.u,
+            np.log10(self.models.r[max_s_u_min_index:]),
+            self.u[max_s_u_min_index:],
             color=self.models.parameters["map2D_overlay_color_light"],
             label=r"max$\{S(h, R)\}$",
+        )
+        max_s_u_line_search: np.ndarray = u_2d_map_indices[np.argmax(s_2d_map, axis=0)]
+        max_s_u_line_search_min_index: int = np.where(
+            np.amax(s_2d_map, axis=0) > self.max_s / 25
+        )[0][0]
+        ax.plot(
+            r_2d_map_indices[max_s_u_line_search_min_index:],
+            max_s_u_line_search[max_s_u_line_search_min_index:],
+            "k--",
+            label=r"max$\{S(h, R)\}$ - line search",
         )
         """
         ax.plot(
@@ -190,7 +208,7 @@ class Mrr:
         )
         """
         ax.plot(
-            [r_2d_map[0], np.log10(self.max_s_radius)],
+            [r_2d_map_indices[0], np.log10(self.max_s_radius)],
             [r_max_s_mrr_u, r_max_s_mrr_u],
             color=self.models.parameters["map2D_overlay_color_light"],
             linestyle=LINE_STYLES["loosely dashdotted"],
@@ -227,9 +245,9 @@ class Mrr:
             )
             self._write_image_data_to_excel(
                 filename=str(self.models.filename_path.parent / fname),
-                x_array=10**r_2d_map,
+                x_array=10**r_2d_map_indices,
                 x_label="R (um)",
-                y_array=u_2d_map,
+                y_array=u_2d_map_indices,
                 y_label=f"{self.models.core_u_name} (um)",
                 z_array=[s_2d_map],
                 z_labels=["S (RIU-1)"],
@@ -243,7 +261,9 @@ class Mrr:
         # Generate gamma(u) array matching u array. If the values are not monotonically
         # decreasing due to positive curvature of the modeled values at the beginning of
         # the array, flag as warning and replace values, else pcolormesh() complains.
-        gamma_2d_map = np.asarray([self.models.gamma_of_u(u) * 100 for u in u_2d_map])
+        gamma_2d_map = np.asarray(
+            [self.models.gamma_of_u(u) * 100 for u in u_2d_map_indices]
+        )
         if np.any(np.diff(gamma_2d_map) > 0):
             gamma_2d_map[: int(np.argmax(gamma_2d_map))] = gamma_2d_map[
                 int(np.argmax(gamma_2d_map))
@@ -263,7 +283,7 @@ class Mrr:
         # 2D map of Smrr(gamma, R)
         fig, ax = plt.subplots()
         cm = ax.pcolormesh(
-            r_2d_map,
+            r_2d_map_indices,
             gamma_2d_map,
             s_2d_map,
             cmap=self.models.parameters["map2D_colormap"],
@@ -291,7 +311,7 @@ class Mrr:
         )
         """
         ax.plot(
-            [r_2d_map[0], np.log10(self.max_s_radius)],
+            [r_2d_map_indices[0], np.log10(self.max_s_radius)],
             [r_max_s_mrr_gamma, r_max_s_mrr_gamma],
             color=self.models.parameters["map2D_overlay_color_light"],
             linestyle=LINE_STYLES["loosely dashdotted"],
@@ -339,13 +359,13 @@ class Mrr:
         # 2D map of Snr(gamma, R)
         s_nr_2d_map = np.asarray(
             [
-                [self._calc_s_nr(r=10**log10_R, u=u) for log10_R in r_2d_map]
-                for u in u_2d_map
+                [self._calc_s_nr(r=10**log10_R, u=u) for log10_R in r_2d_map_indices]
+                for u in u_2d_map_indices
             ]
         )
         fig, ax = plt.subplots()
         cm = ax.pcolormesh(
-            r_2d_map,
+            r_2d_map_indices,
             gamma_2d_map,
             s_nr_2d_map,
             cmap=self.models.parameters["map2D_colormap"],
@@ -381,13 +401,13 @@ class Mrr:
         # 2D map of Se(gamma, R)
         s_e_2d_map = np.asarray(
             [
-                [self._calc_s_e(r=10**log10_R, u=u) for log10_R in r_2d_map]
-                for u in u_2d_map
+                [self._calc_s_e(r=10**log10_R, u=u) for log10_R in r_2d_map_indices]
+                for u in u_2d_map_indices
             ]
         )
         fig, ax = plt.subplots()
         cm = ax.pcolormesh(
-            r_2d_map,
+            r_2d_map_indices,
             gamma_2d_map,
             s_e_2d_map,
             cmap=self.models.parameters["map2D_colormap"],
@@ -426,14 +446,14 @@ class Mrr:
                 [
                     self._calc_s_e(r=10**log10_R, u=u)
                     * np.sqrt(self._calc_wg_a2(r=10**log10_R, u=u))
-                    for log10_R in r_2d_map
+                    for log10_R in r_2d_map_indices
                 ]
-                for u in u_2d_map
+                for u in u_2d_map_indices
             ]
         )
         fig, ax = plt.subplots()
         cm = ax.pcolormesh(
-            r_2d_map,
+            r_2d_map_indices,
             gamma_2d_map,
             s_e_times_a_2d_map,
             cmap=self.models.parameters["map2D_colormap"],
@@ -469,13 +489,13 @@ class Mrr:
         # 2D map of a2(gamma, R)
         wg_a2_map = np.asarray(
             [
-                [self._calc_wg_a2(r=10**log10_R, u=u) for log10_R in r_2d_map]
-                for u in u_2d_map
+                [self._calc_wg_a2(r=10**log10_R, u=u) for log10_R in r_2d_map_indices]
+                for u in u_2d_map_indices
             ]
         )
         fig, ax = plt.subplots()
         cm = ax.pcolormesh(
-            r_2d_map,
+            r_2d_map_indices,
             gamma_2d_map,
             wg_a2_map,
             cmap=self.models.parameters["map2D_colormap"],
@@ -527,15 +547,18 @@ class Mrr:
         αl_2d_map = (
             np.asarray(
                 [
-                    [self._calc_α_l(r=10**log10_R, u=u) for log10_R in r_2d_map]
-                    for u in u_2d_map
+                    [
+                        self._calc_α_l(r=10**log10_R, u=u)
+                        for log10_R in r_2d_map_indices
+                    ]
+                    for u in u_2d_map_indices
                 ]
             )
             / db_per_cm_to_per_cm
         )
         fig, ax = plt.subplots()
         cm = ax.pcolormesh(
-            r_2d_map,
+            r_2d_map_indices,
             gamma_2d_map,
             αl_2d_map,
             cmap=self.models.parameters["map2D_colormap"],
@@ -600,9 +623,9 @@ class Mrr:
                     [
                         [
                             self._calc_α_prop_l(r=10**log10_R, u=u)
-                            for log10_R in r_2d_map
+                            for log10_R in r_2d_map_indices
                         ]
-                        for u in u_2d_map
+                        for u in u_2d_map_indices
                     ]
                 )
                 / db_per_cm_to_per_cm
@@ -612,9 +635,9 @@ class Mrr:
                     [
                         [
                             self._calc_α_bend_l(r=10**log10_R, u=u)
-                            for log10_R in r_2d_map
+                            for log10_R in r_2d_map_indices
                         ]
-                        for u in u_2d_map
+                        for u in u_2d_map_indices
                     ]
                 )
                 / db_per_cm_to_per_cm
@@ -626,7 +649,7 @@ class Mrr:
                     self.models.filename_path.parent
                     / f"{self.models.filename_path.stem}_MRR_2DMAPS_VS_GAMMA_and_R.xlsx"
                 ),
-                x_array=10**r_2d_map,
+                x_array=10**r_2d_map_indices,
                 x_label="R (um)",
                 y_array=gamma_2d_map,
                 y_label="gamma (%)",
@@ -662,7 +685,8 @@ class Mrr:
             "MRR - Sensing parameters\n"
             + f"{self.models.pol}"
             + f", λ = {self.models.lambda_res:.3f} μm"
-            + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm\n"
+            + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
+            + f", Lc = {self.lc:.1f} μm\n"
             + rf"max{{max{{$S$}}}} = {self.max_s:.0f} (RIU$^{{-1}}$)"
             + rf" @ $R$ = {self.max_s_radius:.0f} μm"
         )
@@ -1075,7 +1099,7 @@ class Mrr:
 
         α_bend: float = α_bend_a * np.exp(-α_bend_b * r)
         residual: float = 1 - r * (2 * np.pi) * (
-                self._α_prop(u=u) + (1 - α_bend_b * r) * α_bend
+            self._α_prop(u=u) + (1 - α_bend_b * r) * α_bend
         )
 
         return residual**2
@@ -1124,7 +1148,7 @@ class Mrr:
         Propagation loss component of total round-trip losses : α_prop*L
         """
 
-        return self._α_prop(u=u) * (2 * np.pi * r)
+        return self._α_prop(u=u) * ((2 * np.pi * r) + (2 * self.lc))
 
     def _calc_α_bend_l(self, r: float, u: float) -> float:
         """
@@ -1137,7 +1161,7 @@ class Mrr:
         Total ring round-trip loss factor: αL = (α_prop + α_bend)*L
         """
 
-        return (self._α_prop(u=u) + self.models.α_bend(r=r, u=u)) * (2 * np.pi * r)
+        return self._calc_α_prop_l(r=r, u=u) + self._calc_α_bend_l(r=r, u=u)
 
     def _calc_wg_a2(self, r: float, u: float) -> float:
         """
@@ -1152,7 +1176,7 @@ class Mrr:
         """
         return (
             (4 * np.pi / self.models.lambda_res)
-            * (2 * np.pi * r)
+            * ((2 * np.pi * r) + (2 * self.lc))
             * self.models.gamma_of_u(u)
             * self._calc_wg_a2(r=r, u=u)
         )
@@ -1178,10 +1202,13 @@ class Mrr:
 
         return s
 
-    def _obj_fun(self, u: float, r: float) -> float:
+    def _obj_fun(self, u: float, *args) -> float:
         """
         Objective function for the non-linear minimization in find_max_sensitivity()
         """
+
+        # Fetch additional parameters
+        r = args[0]
 
         # Minimizer sometimes tries values of the solution vector outside the bounds...
         u = min(u, self.models.u_domain_max)
@@ -1228,15 +1255,24 @@ class Mrr:
 
         # Find u that maximizes S at radius r.
         if u_min != u_max:
-            optimization_result = optimize.minimize(
-                fun=self._obj_fun,
-                x0=np.asarray([u0]),
-                bounds=((u_min, u_max),),
-                args=(r,),
-                method=self.models.parameters["optimization_method"],
-                options={"ftol": 1e-12},
-            )
-            u_max_s = optimization_result["x"][0]
+            if self.models.parameters["optimization_local"]:
+                optimization_result = optimize.minimize(
+                    fun=self._obj_fun,
+                    x0=np.asarray([u0]),
+                    bounds=((u_min, u_max),),
+                    args=(r,),
+                    method=self.models.parameters["optimization_method"],
+                    tol=1e-9,
+                )
+            else:
+                optimization_result = optimize.shgo(
+                    func=self._obj_fun,
+                    bounds=[(u_min, u_max)],
+                    args=(r,),
+                    iters=3,
+                    options={"minimize_every_iter": True},
+                )
+            u_max_s = optimization_result.x[0]
         else:
             u_max_s = u0
 

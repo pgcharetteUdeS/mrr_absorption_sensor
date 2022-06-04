@@ -7,6 +7,7 @@ Data in files "*_MRR_2DMAPS_VS_GAMMA_and_R.xlsx" and "*_ALL_RESULTS.xlsx"
 """
 
 import sys
+import argparse
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -392,18 +393,12 @@ def main():
 
     """
 
-    # Discrete gamma value array for figure 5
-
-    # Read Excel filenames from the command line, else define them locally
-    if len(sys.argv) == 3:
-        filename_all_results: str = sys.argv[1]
-        filename_mrr_2d_maps_vs_gamma_and_r: str = sys.argv[2]
-    else:
-        filename_all_results: str = "data/Tableau_TE_w07_ALL_RESULTS.xlsx"
-        filename_mrr_2d_maps_vs_gamma_and_r: str = (
-            "data/Tableau_TE_w07_MRR_2DMAPS_VS_GAMMA_and_R.xlsx"
-        )
-    filename_path: Path = Path(filename_all_results)
+    # Parser for command line parameter input (ex: running from .bat file)
+    parser = argparse.ArgumentParser(description="Plot article figures")
+    parser.add_argument("--results_file", type=str)
+    parser.add_argument("--maps_file", type=str)
+    parser.add_argument("--no_pause", action="store_true")
+    args = parser.parse_args()
 
     # matplotlib initializations
     plt.rcParams.update(
@@ -415,10 +410,8 @@ def main():
     plt.ion()
 
     # Load Excel workbooks
-    wb_all_results: Workbook = load_workbook(filename_all_results, read_only=True)
-    wb_2d_map: Workbook = load_workbook(
-        filename_mrr_2d_maps_vs_gamma_and_r, read_only=True
-    )
+    wb_all_results: Workbook = load_workbook(args.results_file, read_only=True)
+    wb_2d_map: Workbook = load_workbook(args.maps_file, read_only=True)
 
     # User-defined discrete gamma value array for figure 5
     line_profile_gammas_fig_5: np.ndarray = np.asarray([20, 45, 65, 75])
@@ -438,6 +431,7 @@ def main():
         line_profile_gammas_fig_6 = np.append(line_profile_gammas_fig_6, int(gamma[0]))
 
     # Generate figures
+    filename_path: Path = Path(args.results_file)
     y_max_s, y_max_αl = _determine_y_plotting_extrema(
         wb_2d_map=wb_2d_map, wb_all_results=wb_all_results
     )
@@ -468,8 +462,10 @@ def main():
     # visible. If running in PyCharm debugger, set breakpoint here.
     if sys.gettrace() is not None:
         print("Breakpoint here to keep figures visible in IDE!")
-    else:
+    elif not args.no_pause:
         input("Script paused to display figures, press any key to exit")
+    else:
+        print("Done!")
 
 
 # Run the script...

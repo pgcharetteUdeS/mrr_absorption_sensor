@@ -201,9 +201,9 @@ class Linear:
             bounds=((u_min, u_max),),
             args=(r,),
             method=self.models.parameters["optimization_method"],
-            options={"ftol": 1e-12},
+            tol=1e-9,
         )
-        u_max_s: float = optimization_result["x"][0]
+        u_max_s: float = optimization_result.x[0]
 
         # Update previous solution
         self.previous_solution = u_max_s

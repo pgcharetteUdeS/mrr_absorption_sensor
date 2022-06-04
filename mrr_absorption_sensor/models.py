@@ -150,7 +150,8 @@ class Models:
         self.r_min_for_u_search_lower_bound: float = 0
         self.r_max_for_u_search_lower_bound: float = 0
         self.u_lower_bound: interpolate.interp1d = interpolate.interp1d([0, 1], [0, 1])
-        self._set_u_search_lower_bound()
+        if not self.disable_u_search_lower_bound:
+            self._set_u_search_lower_bound()
 
     #
     # alpha_wg(u), gamma(u), u(gamma), and neffs(u) modeling
