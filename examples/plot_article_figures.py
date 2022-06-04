@@ -6,6 +6,7 @@ Data in files "*_MRR_2DMAPS_VS_GAMMA_and_R.xlsx" and "*_ALL_RESULTS.xlsx"
 
 """
 
+import io
 import sys
 import argparse
 from pathlib import Path
@@ -48,7 +49,7 @@ def figure_3(
     wb_2d_map: Workbook,
     wb_all_results: Workbook,
     gamma: float,
-    filename_path: Path,
+    out_filename_path: Path,
 ):
     """
 
@@ -56,7 +57,7 @@ def figure_3(
         wb_2d_map ():
         wb_all_results ():
         gamma ():
-        filename_path: Path,
+        out_filename_path: Path,
 
     Returns:
 
@@ -78,7 +79,7 @@ def figure_3(
 
     # Create the figure
     fig, ax = plt.subplots(constrained_layout=True)
-    fig.suptitle(f"Figure 3 ('{filename_path.stem}*')")
+    fig.suptitle(f"Figure 3 ('{out_filename_path.stem}*')")
 
     # PLot line profiles
     ax.semilogx(r, s, "b-", label=r"$S_{MRR}$")
@@ -111,7 +112,7 @@ def figure_3(
     ax.legend(ax_lines, ax_labels, loc="upper left")
 
     # Save figure to file
-    fig.savefig(filename_path.parent / f"{filename_path.stem}_FIG3.png")
+    fig.savefig(out_filename_path.parent / f"{out_filename_path.stem}_FIG3.png")
 
 
 def _figure_5_line_profile_plot(
@@ -172,7 +173,7 @@ def figure_5(
     line_profile_gammas: np.ndarray,
     y_max_s: float,
     y_max_αl: float,
-    filename_path: Path,
+    out_filename_path: Path,
 ):
     """
 
@@ -182,7 +183,7 @@ def figure_5(
         line_profile_gammas ():
         y_max_s ():
         y_max_αl ():
-        filename_path: Path,
+        out_filename_path: Path,
 
     Returns:
 
@@ -198,7 +199,7 @@ def figure_5(
     fig, axs = plt.subplots(
         nrows=len(line_profile_gammas), figsize=(9, 10), constrained_layout=True
     )
-    fig.suptitle(f"Figure 5 ('{filename_path.stem}*')")
+    fig.suptitle(f"Figure 5 ('{out_filename_path.stem}*')")
 
     # Loop to generate the subplots of the line profiles in "line_profile_gammas"
     for i, gamma in enumerate(line_profile_gammas):
@@ -215,7 +216,7 @@ def figure_5(
         )
 
     # Save figure to file
-    fig.savefig(filename_path.parent / f"{filename_path.stem}_FIG5.png")
+    fig.savefig(out_filename_path.parent / f"{out_filename_path.stem}_FIG5.png")
 
 
 def figure_6(
@@ -223,7 +224,7 @@ def figure_6(
     wb_all_results: Workbook,
     line_profile_gammas: np.ndarray,
     y_max_s: float,
-    filename_path: Path,
+    out_filename_path: Path,
 ):
     """
 
@@ -232,7 +233,7 @@ def figure_6(
         wb_all_results ():
         line_profile_gammas ():
         y_max_s ():
-        filename_path ():
+        out_filename_path ():
 
     Returns:
 
@@ -240,7 +241,7 @@ def figure_6(
 
     # Create the figure
     fig, axs = plt.subplots(4, figsize=(9, 12))
-    fig.suptitle(f"Figure 6 ('{filename_path.stem}*')")
+    fig.suptitle(f"Figure 6 ('{out_filename_path.stem}*')")
 
     #
     # 6a
@@ -340,7 +341,7 @@ def figure_6(
     axs[3].set_xlabel("Radius (μm)")
 
     # Save figure to file
-    fig.savefig(filename_path.parent / f"{filename_path.stem}_FIG6.png")
+    fig.savefig(out_filename_path.parent / f"{out_filename_path.stem}_FIG6.png")
 
 
 def _determine_y_plotting_extrema(
@@ -409,9 +410,14 @@ def main():
     )
     plt.ion()
 
-    # Load Excel workbooks
-    wb_all_results: Workbook = load_workbook(args.results_file, read_only=True)
-    wb_2d_map: Workbook = load_workbook(args.maps_file, read_only=True)
+    # Load Excel workbooks (into memory, to reduce risk of conflict)
+    with open(args.results_file, "rb") as f:
+        in_mem_results_file = io.BytesIO(f.read())
+    with open(args.maps_file, "rb") as f:
+        in_mem_maps_file = io.BytesIO(f.read())
+    wb_all_results: Workbook = load_workbook(in_mem_results_file, read_only=True)
+    wb_2d_map: Workbook = load_workbook(in_mem_maps_file, read_only=True)
+    out_filename_path: Path = Path(args.results_file)
 
     # User-defined discrete gamma value array for figure 5
     line_profile_gammas_fig_5: np.ndarray = np.asarray([20, 45, 65, 75])
@@ -431,7 +437,6 @@ def main():
         line_profile_gammas_fig_6 = np.append(line_profile_gammas_fig_6, int(gamma[0]))
 
     # Generate figures
-    filename_path: Path = Path(args.results_file)
     y_max_s, y_max_αl = _determine_y_plotting_extrema(
         wb_2d_map=wb_2d_map, wb_all_results=wb_all_results
     )
@@ -439,7 +444,7 @@ def main():
         wb_2d_map=wb_2d_map,
         wb_all_results=wb_all_results,
         gamma=30,
-        filename_path=filename_path,
+        out_filename_path=out_filename_path,
     )
     figure_5(
         wb_2d_map=wb_2d_map,
@@ -447,14 +452,14 @@ def main():
         line_profile_gammas=line_profile_gammas_fig_5,
         y_max_s=y_max_s,
         y_max_αl=y_max_αl,
-        filename_path=filename_path,
+        out_filename_path=out_filename_path,
     )
     figure_6(
         wb_2d_map=wb_2d_map,
         wb_all_results=wb_all_results,
         line_profile_gammas=line_profile_gammas_fig_6,
         y_max_s=y_max_s,
-        filename_path=filename_path,
+        out_filename_path=out_filename_path,
     )
     plt.show()
 
