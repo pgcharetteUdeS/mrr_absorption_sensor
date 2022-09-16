@@ -75,7 +75,10 @@ def figure_3(
     s_e = np.asarray([c.value for c in wb_2d_map["Se"][index]])
 
     # Get corresponding Re and Rw values from the all_results workbook
-    re, rw = _get_re_rw(wb_all_results=wb_all_results, gamma=gamma)
+    re, rw = _get_re_rw(
+        wb_all_results=wb_all_results,
+        gamma=gamma,
+    )
 
     # Create the figure
     fig, ax = plt.subplots(constrained_layout=True)
@@ -136,7 +139,10 @@ def _figure_5_line_profile_plot(
     s = np.asarray([c.value for c in wb_2d_map["S (RIU-1)"][index]])
 
     # Get corresponding Re and Rw values from the all_results workbook
-    re, rw = _get_re_rw(wb_all_results=wb_all_results, gamma=gamma)
+    re, rw = _get_re_rw(
+        wb_all_results=wb_all_results,
+        gamma=gamma,
+    )
 
     # Plot the line profile
     ax.semilogx(r, α_l, "k", label="αL")
@@ -222,6 +228,7 @@ def figure_5(
 def figure_6(
     wb_2d_map: Workbook,
     wb_all_results: Workbook,
+    results_file_MRR_sheet_col_names: dict,
     line_profile_gammas: np.ndarray,
     y_max_s: float,
     out_filename_path: Path,
@@ -231,6 +238,7 @@ def figure_6(
     Args:
         wb_2d_map ():
         wb_all_results ():
+        results_file_MRR_sheet_col_names ():
         line_profile_gammas ():
         y_max_s ():
         out_filename_path ():
@@ -269,28 +277,63 @@ def figure_6(
     # 6b & 6c
     #
     r = np.asarray(
-        [val[0].value for val in wb_all_results["MRR"].iter_rows(min_row=2, max_col=1)]
+        [
+            val[0].value
+            for val in wb_all_results["MRR"].iter_rows(
+                min_row=2, max_col=results_file_MRR_sheet_col_names["R_um"]
+            )
+        ]
     )
     s_max = np.asarray(
         [
             val[0].value
-            for val in wb_all_results["MRR"].iter_rows(min_row=2, min_col=3, max_col=3)
-        ]
-    )
-    α_bend, α_wg = np.asarray(
-        [
-            (val[0].value, val[1].value)
-            for val in wb_all_results["MRR"].iter_rows(min_row=2, min_col=6, max_col=7)
-        ]
-    ).T
-    h, gamma = np.asarray(
-        [
-            (val[0].value, val[1].value)
             for val in wb_all_results["MRR"].iter_rows(
-                min_row=2, min_col=14, max_col=15
+                min_row=2,
+                min_col=results_file_MRR_sheet_col_names["maxS_RIU_inv"],
+                max_col=results_file_MRR_sheet_col_names["maxS_RIU_inv"],
             )
         ]
-    ).T
+    )
+    α_bend = np.asarray(
+        [
+            val[0].value
+            for val in wb_all_results["MRR"].iter_rows(
+                min_row=2,
+                min_col=results_file_MRR_sheet_col_names["alpha_bend_dB_per_cm"],
+                max_col=results_file_MRR_sheet_col_names["alpha_bend_dB_per_cm"],
+            )
+        ]
+    )
+    α_wg = np.asarray(
+        [
+            val[0].value
+            for val in wb_all_results["MRR"].iter_rows(
+                min_row=2,
+                min_col=results_file_MRR_sheet_col_names["alpha_wg_dB_per_cm"],
+                max_col=results_file_MRR_sheet_col_names["alpha_wg_dB_per_cm"],
+            )
+        ]
+    )
+    h = np.asarray(
+        [
+            val[0].value
+            for val in wb_all_results["MRR"].iter_rows(
+                min_row=2,
+                min_col=results_file_MRR_sheet_col_names["h_um"],
+                max_col=results_file_MRR_sheet_col_names["h_um"],
+            )
+        ]
+    )
+    gamma = np.asarray(
+        [
+            val[0].value
+            for val in wb_all_results["MRR"].iter_rows(
+                min_row=2,
+                min_col=results_file_MRR_sheet_col_names["gamma_percent"],
+                max_col=results_file_MRR_sheet_col_names["gamma_percent"],
+            )
+        ]
+    )
     max_s_max_r: float = r[int(np.argmax(s_max))]
 
     # Add max(max(Smax)) vertical line to 6a
@@ -345,13 +388,16 @@ def figure_6(
 
 
 def _determine_y_plotting_extrema(
-    wb_2d_map: Workbook, wb_all_results: Workbook
+    wb_2d_map: Workbook,
+    wb_all_results: Workbook,
+    results_file_MRR_sheet_col_names: dict,
 ) -> tuple[float, float]:
     """
 
     Args:
         wb_2d_map ():
         wb_all_results ():
+        results_file_MRR_sheet_col_names ():
 
     Returns:
         y_max_s
@@ -372,7 +418,9 @@ def _determine_y_plotting_extrema(
             [
                 val[0].value
                 for val in wb_all_results["MRR"].iter_rows(
-                    min_row=2, min_col=3, max_col=3
+                    min_row=2,
+                    min_col=results_file_MRR_sheet_col_names["maxS_RIU_inv"],
+                    max_col=results_file_MRR_sheet_col_names["maxS_RIU_inv"],
                 )
             ]
         )
@@ -387,19 +435,12 @@ def _determine_y_plotting_extrema(
     return y_max_s, y_max_αl
 
 
-def main():
+def plot_article_figures(results_file_name: str, maps_file_name: str):
     """
 
     Returns:
 
     """
-
-    # Parser for command line parameter input (ex: running from .bat file)
-    parser = argparse.ArgumentParser(description="Plot article figures")
-    parser.add_argument("--results_file", type=str)
-    parser.add_argument("--maps_file", type=str)
-    parser.add_argument("--no_pause", action="store_true")
-    args = parser.parse_args()
 
     # matplotlib initializations
     plt.rcParams.update(
@@ -411,13 +452,18 @@ def main():
     plt.ion()
 
     # Load Excel workbooks (into memory, to reduce risk of conflict)
-    with open(args.results_file, "rb") as f:
+    with open(results_file_name, "rb") as f:
         in_mem_results_file = io.BytesIO(f.read())
-    with open(args.maps_file, "rb") as f:
+    with open(maps_file_name, "rb") as f:
         in_mem_maps_file = io.BytesIO(f.read())
     wb_all_results: Workbook = load_workbook(in_mem_results_file, read_only=True)
     wb_2d_map: Workbook = load_workbook(in_mem_maps_file, read_only=True)
-    out_filename_path: Path = Path(args.results_file)
+    out_filename_path: Path = Path(results_file_name)
+
+    # Create dictionary of column names for the MRR worksheet in the Excel results file
+    results_file_MRR_sheet_col_names: dict = {
+        col.value: index for index, col in enumerate(wb_all_results["MRR"][1], start=1)
+    }
 
     # User-defined discrete gamma value array for figure 5
     line_profile_gammas_fig_5: np.ndarray = np.asarray([20, 45, 65, 75])
@@ -438,7 +484,9 @@ def main():
 
     # Generate figures
     y_max_s, y_max_αl = _determine_y_plotting_extrema(
-        wb_2d_map=wb_2d_map, wb_all_results=wb_all_results
+        wb_2d_map=wb_2d_map,
+        wb_all_results=wb_all_results,
+        results_file_MRR_sheet_col_names=results_file_MRR_sheet_col_names,
     )
     figure_3(
         wb_2d_map=wb_2d_map,
@@ -457,11 +505,28 @@ def main():
     figure_6(
         wb_2d_map=wb_2d_map,
         wb_all_results=wb_all_results,
+        results_file_MRR_sheet_col_names=results_file_MRR_sheet_col_names,
         line_profile_gammas=line_profile_gammas_fig_6,
         y_max_s=y_max_s,
         out_filename_path=out_filename_path,
     )
     plt.show()
+
+
+def plot_article_figures_wrapper():
+    """ """
+
+    # Parser for command line parameter input (ex: running from .bat file)
+    parser = argparse.ArgumentParser(description="Plot article figures")
+    parser.add_argument("--results_file", type=str)
+    parser.add_argument("--maps_file", type=str)
+    parser.add_argument("--no_pause", action="store_true")
+    args = parser.parse_args()
+
+    # Plot article figures
+    plot_article_figures(
+        results_file_name=args.results_file, maps_file_name=args.maps_file
+    )
 
     # If running from the command line, either pause for user input to keep figures
     # visible. If running in PyCharm debugger, set breakpoint here.
@@ -474,4 +539,5 @@ def main():
 
 
 # Run the script...
-main()
+if __name__ == "__main__":
+    plot_article_figures_wrapper()

@@ -54,6 +54,9 @@ class Mrr:
         self.α_bend_b: np.ndarray = np.ndarray([])
         self.α_bend: np.ndarray = np.ndarray([])
         self.α_wg: np.ndarray = np.ndarray([])
+        self.α_prop: np.ndarray = np.ndarray([])
+        self.α: np.ndarray = np.ndarray([])
+        self.αl: np.ndarray = np.ndarray([])
         self.wg_a2: np.ndarray = np.ndarray([])
         self.er: np.ndarray = np.ndarray([])
         self.contrast: np.ndarray = np.ndarray([])
@@ -333,6 +336,7 @@ class Mrr:
             linestyle="-.",
             label=r"Rw$(\Gamma_{fluid})$",
         )
+        """
         for line in self.models.parameters["map_line_profiles"] or []:
             ax.plot(
                 [
@@ -343,6 +347,7 @@ class Mrr:
                 color=self.models.parameters["map2D_overlay_color_light"],
                 linestyle=LINE_STYLES["loosely dotted"],
             )
+        """
         ax.set_xlim(
             left=np.log10(self.models.plotting_extrema["r_plot_min"]),
             right=np.log10(self.models.plotting_extrema["r_plot_max"]),
@@ -583,6 +588,7 @@ class Mrr:
             linestyle="-.",
             label=r"Rw$(\Gamma_{fluid})$",
         )
+        """
         for line in self.models.parameters["map_line_profiles"] or []:
             ax.plot(
                 [
@@ -593,6 +599,7 @@ class Mrr:
                 color=self.models.parameters["map2D_overlay_color_dark"],
                 linestyle=LINE_STYLES["loosely dotted"],
             )
+        """
         ax.set_title(
             r"MRR $\alpha L$ as a function of $\Gamma_{fluid}$ and $R$"
             + f"\n{self.models.pol}"
@@ -964,9 +971,7 @@ class Mrr:
         if self.models.parameters["write_2D_maps"]:
             self._plot_mrr_result_2d_maps()
 
-    def plot_combined_linear_mrr_spiral_optimization_results(
-        self, linear: Linear, spiral: Spiral
-    ):
+    def plot_combined_sensor_optimization_results(self, linear: Linear, spiral: Spiral):
         """
 
         Args:
@@ -1240,6 +1245,9 @@ class Mrr:
         float,
         float,
         float,
+        float,
+        float,
+        float,
     ]:
         """
         Calculate maximum sensitivity at radius "r" over all u
@@ -1300,6 +1308,9 @@ class Mrr:
         s_e: float = self._calc_s_e(r=r, u=u_max_s)
         α_bend: float = self.models.α_bend(r=r, u=u_max_s)
         α_wg: float = self.models.α_wg_of_u(u=u_max_s)
+        α_prop: float = self._α_prop(u=u_max_s)
+        α: float = α_prop + α_bend
+        αl: float = self._calc_α_l(r=r, u=u_max_s)
 
         # Return results to calling program
         return (
@@ -1310,6 +1321,9 @@ class Mrr:
             s_e,
             α_bend,
             α_wg,
+            α_prop,
+            α,
+            αl,
             wg_a2,
             tau,
             t_max,
@@ -1342,6 +1356,9 @@ class Mrr:
             self.s_e,
             self.α_bend,
             self.α_wg,
+            self.α_prop,
+            self.α,
+            self.αl,
             self.wg_a2,
             self.tau,
             self.t_max,

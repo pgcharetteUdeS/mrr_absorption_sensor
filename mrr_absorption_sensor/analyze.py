@@ -124,7 +124,7 @@ def analyze(
     linear.plot_optimization_results()
     if not parameters["no_spiral"]:
         spiral.plot_optimization_results()
-    mrr.plot_combined_linear_mrr_spiral_optimization_results(
+    mrr.plot_combined_sensor_optimization_results(
         linear=linear, spiral=spiral
     )
 
@@ -140,6 +140,6 @@ def analyze(
             logger=logger,
         ),
 
-    # SHow plots, return instantiated models class
+    # Show plots, return instantiated classes
     plt.show(block=block)
     return models, mrr, linear, spiral

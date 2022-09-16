@@ -300,7 +300,7 @@ def write_excel_results_file(
 
     Args:
         excel_output_fname (str):
-        models (MOdels):
+        models (Models):
         mrr (Mrr):
         linear (Linear):
         spiral (Spiral):
@@ -322,6 +322,9 @@ def write_excel_results_file(
         "Snr_RIU_inv": mrr.s_nr,
         "alpha_bend_dB_per_cm": mrr.α_bend * constants.PER_UM_TO_DB_PER_CM,
         "alpha_wg_dB_per_cm": mrr.α_wg * constants.PER_UM_TO_DB_PER_CM,
+        "alpha_prop_dB_per_cm": mrr.α_prop * constants.PER_UM_TO_DB_PER_CM,
+        "alpha_dB_per_cm": mrr.α * constants.PER_UM_TO_DB_PER_CM,
+        "alphaL": mrr.αl,
         "a2": mrr.wg_a2,
         "tau": mrr.tau,
         "T_max": mrr.t_max,
