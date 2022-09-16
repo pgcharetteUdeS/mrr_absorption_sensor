@@ -116,6 +116,7 @@ def figure_3(
 
     # Save figure to file
     fig.savefig(out_filename_path.parent / f"{out_filename_path.stem}_FIG3.png")
+    print(f"Wrote '{str(out_filename_path.parent)}/{out_filename_path.stem}_FIG3.png'.")
 
 
 def _figure_5_line_profile_plot(
@@ -223,6 +224,7 @@ def figure_5(
 
     # Save figure to file
     fig.savefig(out_filename_path.parent / f"{out_filename_path.stem}_FIG5.png")
+    print(f"Wrote '{str(out_filename_path.parent)}/{out_filename_path.stem}_FIG5.png'.")
 
 
 def figure_6(
@@ -385,6 +387,7 @@ def figure_6(
 
     # Save figure to file
     fig.savefig(out_filename_path.parent / f"{out_filename_path.stem}_FIG6.png")
+    print(f"Wrote '{str(out_filename_path.parent)}/{out_filename_path.stem}_FIG6.png'.")
 
 
 def _determine_y_plotting_extrema(
