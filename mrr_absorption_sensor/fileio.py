@@ -167,8 +167,7 @@ def load_toml_file(
 
     # Check if .toml file contains unsupported keys, if so exit
     valid_keys: list = list(parameters.keys()) + ["h", "w"]
-    invalid_keys: list = [key for key in toml_data.keys() if key not in valid_keys]
-    if invalid_keys:
+    if invalid_keys := [key for key in toml_data.keys() if key not in valid_keys]:
         valid_keys.sort(key=lambda x: x.lower())
         raise ValueError(
             f"{Fore.YELLOW}File '{filename}' contains unsupported keys: "

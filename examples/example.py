@@ -9,10 +9,11 @@ To run:
 """
 
 import matplotlib.pyplot as plt
-
-# from mrr_absorption_sensor.mrr_absorption_sensor import analyze
-from mrr_absorption_sensor import analyze
 from plot_article_figures import plot_article_figures
+
+# If running from .bat file, use FIRST import statement, else SECOND statement (in IDE)
+from mrr_absorption_sensor.mrr_absorption_sensor import analyze
+#from mrr_absorption_sensor import analyze
 
 plt.rcParams.update(
     {
@@ -22,7 +23,7 @@ plt.rcParams.update(
         "axes.linewidth": 0.5,
     },
 )
-# analyze("example.toml")
+analyze("example.toml")
 # analyze("Tableau_TE_h03.toml")
 plot_article_figures(
     results_file_name="data\\example_ALL_RESULTS.xlsx",
