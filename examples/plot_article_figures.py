@@ -16,6 +16,54 @@ import numpy as np
 from openpyxl import load_workbook, Workbook
 
 
+def _determine_y_plotting_extrema(
+    wb_2d_map: Workbook,
+    wb_all_results: Workbook,
+    results_file_mrr_sheet_col_names: dict,
+) -> tuple[float, float]:
+    """
+
+    Args:
+        wb_2d_map ():
+        wb_all_results ():
+        results_file_mrr_sheet_col_names ():
+
+    Returns:
+        y_max_s
+        y_max_αl
+
+    """
+
+    # Calculate y axis limit for αl plots
+    αl_max = max(
+        max(cell.value for cell in row)
+        for row in wb_2d_map["alpha x L (dB)"].iter_rows(min_row=2)
+    )
+    y_max_αl = np.ceil(αl_max / 50) * 50
+
+    # Calculate y axis limit for sensitivity plots
+    max_s_max = max(
+        np.asarray(
+            [
+                val[0].value
+                for val in wb_all_results["MRR"].iter_rows(
+                    min_row=2,
+                    min_col=results_file_mrr_sheet_col_names["maxS_RIU_inv"],
+                    max_col=results_file_mrr_sheet_col_names["maxS_RIU_inv"],
+                )
+            ]
+        )
+    )
+    y_max_s: float = (
+        np.ceil(max_s_max / 50000) * 50000
+        if max_s_max < 100000
+        else np.ceil(max_s_max / 500000) * 500000
+    )
+
+    # Return y extrema
+    return y_max_s, y_max_αl
+
+
 def _get_re_rw(wb_all_results: Workbook, gamma: float) -> tuple[float, float]:
     """
 
@@ -230,7 +278,7 @@ def figure_5(
 def figure_6(
     wb_2d_map: Workbook,
     wb_all_results: Workbook,
-    results_file_MRR_sheet_col_names: dict,
+    results_file_mrr_sheet_col_names: dict,
     line_profile_gammas: np.ndarray,
     y_max_s: float,
     out_filename_path: Path,
@@ -240,7 +288,7 @@ def figure_6(
     Args:
         wb_2d_map ():
         wb_all_results ():
-        results_file_MRR_sheet_col_names ():
+        results_file_mrr_sheet_col_names ():
         line_profile_gammas ():
         y_max_s ():
         out_filename_path ():
@@ -282,7 +330,7 @@ def figure_6(
         [
             val[0].value
             for val in wb_all_results["MRR"].iter_rows(
-                min_row=2, max_col=results_file_MRR_sheet_col_names["R_um"]
+                min_row=2, max_col=results_file_mrr_sheet_col_names["R_um"]
             )
         ]
     )
@@ -291,8 +339,8 @@ def figure_6(
             val[0].value
             for val in wb_all_results["MRR"].iter_rows(
                 min_row=2,
-                min_col=results_file_MRR_sheet_col_names["maxS_RIU_inv"],
-                max_col=results_file_MRR_sheet_col_names["maxS_RIU_inv"],
+                min_col=results_file_mrr_sheet_col_names["maxS_RIU_inv"],
+                max_col=results_file_mrr_sheet_col_names["maxS_RIU_inv"],
             )
         ]
     )
@@ -301,8 +349,8 @@ def figure_6(
             val[0].value
             for val in wb_all_results["MRR"].iter_rows(
                 min_row=2,
-                min_col=results_file_MRR_sheet_col_names["alpha_bend_dB_per_cm"],
-                max_col=results_file_MRR_sheet_col_names["alpha_bend_dB_per_cm"],
+                min_col=results_file_mrr_sheet_col_names["alpha_bend_dB_per_cm"],
+                max_col=results_file_mrr_sheet_col_names["alpha_bend_dB_per_cm"],
             )
         ]
     )
@@ -311,8 +359,8 @@ def figure_6(
             val[0].value
             for val in wb_all_results["MRR"].iter_rows(
                 min_row=2,
-                min_col=results_file_MRR_sheet_col_names["alpha_wg_dB_per_cm"],
-                max_col=results_file_MRR_sheet_col_names["alpha_wg_dB_per_cm"],
+                min_col=results_file_mrr_sheet_col_names["alpha_wg_dB_per_cm"],
+                max_col=results_file_mrr_sheet_col_names["alpha_wg_dB_per_cm"],
             )
         ]
     )
@@ -321,8 +369,8 @@ def figure_6(
             val[0].value
             for val in wb_all_results["MRR"].iter_rows(
                 min_row=2,
-                min_col=results_file_MRR_sheet_col_names["h_um"],
-                max_col=results_file_MRR_sheet_col_names["h_um"],
+                min_col=results_file_mrr_sheet_col_names["h_um"],
+                max_col=results_file_mrr_sheet_col_names["h_um"],
             )
         ]
     )
@@ -331,8 +379,8 @@ def figure_6(
             val[0].value
             for val in wb_all_results["MRR"].iter_rows(
                 min_row=2,
-                min_col=results_file_MRR_sheet_col_names["gamma_percent"],
-                max_col=results_file_MRR_sheet_col_names["gamma_percent"],
+                min_col=results_file_mrr_sheet_col_names["gamma_percent"],
+                max_col=results_file_mrr_sheet_col_names["gamma_percent"],
             )
         ]
     )
@@ -390,52 +438,182 @@ def figure_6(
     print(f"Wrote '{str(out_filename_path.parent)}/{out_filename_path.stem}_FIG6.png'.")
 
 
-def _determine_y_plotting_extrema(
-    wb_2d_map: Workbook,
+def figure_x(
     wb_all_results: Workbook,
-    results_file_MRR_sheet_col_names: dict,
-) -> tuple[float, float]:
+    results_file_mrr_sheet_col_names: dict,
+    out_filename_path: Path,
+):
     """
 
     Args:
-        wb_2d_map ():
         wb_all_results ():
-        results_file_MRR_sheet_col_names ():
+        results_file_mrr_sheet_col_names ():
+        out_filename_path ():
 
     Returns:
-        y_max_s
-        y_max_αl
 
     """
-
-    # Calculate y axis limit for αl plots
-    αl_max = max(
-        max(cell.value for cell in row)
-        for row in wb_2d_map["alpha x L (dB)"].iter_rows(min_row=2)
+    # fetch radius data
+    r_linear = np.asarray(
+        [
+            val[0].value
+            for val in wb_all_results["MRR"].iter_rows(
+                min_row=2,
+                min_col=results_file_mrr_sheet_col_names["R_um"],
+                max_col=results_file_mrr_sheet_col_names["R_um"],
+            )
+        ]
     )
-    y_max_αl = np.ceil(αl_max / 50) * 50
 
-    # Calculate y axis limit for sensitivity plots
-    max_s_max = max(
-        np.asarray(
-            [
-                val[0].value
-                for val in wb_all_results["MRR"].iter_rows(
-                    min_row=2,
-                    min_col=results_file_MRR_sheet_col_names["maxS_RIU_inv"],
-                    max_col=results_file_MRR_sheet_col_names["maxS_RIU_inv"],
-                )
-            ]
+    # Generate log-sampled array of indices for r values
+    r_samples_per_decade: float = 1
+    r_sampled: np.ndarray = 10 ** (
+        np.arange(
+            np.log10(r_linear[0]),
+            np.log10(r_linear[-1]) + 1 / r_samples_per_decade,
+            1 / r_samples_per_decade,
         )
     )
-    y_max_s: float = (
-        np.ceil(max_s_max / 50000) * 50000
-        if max_s_max < 100000
-        else np.ceil(max_s_max / 500000) * 500000
-    )
+    r_sampled_indices: list = [np.where(r_linear >= r)[0][0] for r in r_sampled]
+    r_sampled_min: float = r_linear[r_sampled_indices[0]]
 
-    # Return y extrema
-    return y_max_s, y_max_αl
+    # fetch SMRR data
+    s_max: np.ndarray = np.asarray(
+        [
+            val[0].value
+            for val in wb_all_results["MRR"].iter_rows(
+                min_row=2,
+                min_col=results_file_mrr_sheet_col_names["maxS_RIU_inv"],
+                max_col=results_file_mrr_sheet_col_names["maxS_RIU_inv"],
+            )
+        ]
+    )
+    smax_sampled: np.ndarray = s_max[r_sampled_indices]
+
+    # Create the figure
+    fig, axs = plt.subplots(5, figsize=(9, 12))
+    fig.suptitle(f"Figure X ('{out_filename_path.stem}*')")
+
+    #
+    # Figure X0
+    #
+    α_bend: np.ndarray = np.asarray(
+        [
+            val[0].value
+            for val in wb_all_results["MRR"].iter_rows(
+                min_row=2,
+                min_col=results_file_mrr_sheet_col_names["alpha_dB_per_cm"],
+                max_col=results_file_mrr_sheet_col_names["alpha_dB_per_cm"],
+            )
+        ]
+    )
+    axs[0].plot(s_max, α_bend)
+    axs[0].plot(smax_sampled, α_bend[r_sampled_indices], "o", label="R (powers of 10)")
+    axs[0].plot(
+        smax_sampled[0],
+        α_bend[r_sampled_indices[0]],
+        color="green",
+        marker="o",
+        label=f"Rmin = {r_sampled_min:.1f} um",
+    )
+    axs[0].set_ylabel(r"${\alpha}$(R)")
+    axs[0].axes.xaxis.set_ticklabels([])
+    axs[0].set_ylim(bottom=0)
+    axs[0].legend()
+
+    #
+    # Figure X1
+    #
+    axs[1].plot(s_max, 1 / α_bend)
+    axs[1].plot(
+        smax_sampled, 1 / α_bend[r_sampled_indices], "o", label="R (powers of 10)"
+    )
+    axs[1].plot(
+        smax_sampled[0],
+        1 / α_bend[r_sampled_indices[0]],
+        color="green",
+        marker="o",
+        label=f"Rmin = {r_sampled_min:.1f} um",
+    )
+    axs[1].set_ylabel(r"1/${\alpha}$(R)")
+    axs[1].axes.xaxis.set_ticklabels([])
+    axs[1].set_ylim(bottom=0)
+    axs[1].legend()
+
+    #
+    # Figure X2
+    #
+    αl: np.ndarray = np.asarray(
+        [
+            val[0].value
+            for val in wb_all_results["MRR"].iter_rows(
+                min_row=2,
+                min_col=results_file_mrr_sheet_col_names["alphaL"],
+                max_col=results_file_mrr_sheet_col_names["alphaL"],
+            )
+        ]
+    )
+    axs[2].plot(s_max, αl)
+    axs[2].plot(smax_sampled, αl[r_sampled_indices], "o", label="R (powers of 10)")
+    axs[2].plot(
+        smax_sampled[0],
+        αl[r_sampled_indices[0]],
+        color="green",
+        marker="o",
+        label=f"Rmin = {r_sampled_min:.1f} um",
+    )
+    axs[2].set_ylabel(r"${\alpha}$L(R)")
+    axs[2].axes.xaxis.set_ticklabels([])
+    axs[2].set_ylim(bottom=0)
+    axs[2].legend()
+
+    #
+    # Figure X3
+    #
+    axs[3].plot(s_max, 1 / αl)
+    axs[3].plot(smax_sampled, 1 / αl[r_sampled_indices], "o", label="R (powers of 10)")
+    axs[3].plot(
+        smax_sampled[0],
+        1 / αl[r_sampled_indices[0]],
+        color="green",
+        marker="o",
+        label=f"Rmin = {r_sampled_min:.1f} um",
+    )
+    axs[3].set_ylabel(r"1/${\alpha}$L(R)")
+    axs[3].axes.xaxis.set_ticklabels([])
+    axs[3].set_ylim(bottom=0)
+    axs[3].legend()
+
+    #
+    # Figure X4
+    #
+    a2: np.ndarray = np.asarray(
+        [
+            val[0].value
+            for val in wb_all_results["MRR"].iter_rows(
+                min_row=2,
+                min_col=results_file_mrr_sheet_col_names["a2"],
+                max_col=results_file_mrr_sheet_col_names["a2"],
+            )
+        ]
+    )
+    axs[4].plot(s_max, a2)
+    axs[4].plot(smax_sampled, a2[r_sampled_indices], "o", label="R (powers of 10)")
+    axs[4].plot(
+        smax_sampled[0],
+        a2[r_sampled_indices[0]],
+        color="green",
+        marker="o",
+        label=f"Rmin = {r_sampled_min:.1f} um",
+    )
+    axs[4].set_xlabel(r"S$_{MRR}$(R)")
+    axs[4].set_ylabel(r"$a^2$")
+    axs[4].set_ylim(bottom=0)
+    axs[4].legend()
+
+    # Save figure to file
+    fig.savefig(out_filename_path.parent / f"{out_filename_path.stem}_FIGX.png")
+    print(f"Wrote '{str(out_filename_path.parent)}/{out_filename_path.stem}_FIGX.png'.")
 
 
 def plot_article_figures(results_file_name: str, maps_file_name: str):
@@ -464,7 +642,7 @@ def plot_article_figures(results_file_name: str, maps_file_name: str):
     out_filename_path: Path = Path(results_file_name)
 
     # Create dictionary of column names for the MRR worksheet in the Excel results file
-    results_file_MRR_sheet_col_names: dict = {
+    results_file_mrr_sheet_col_names: dict = {
         col.value: index for index, col in enumerate(wb_all_results["MRR"][1], start=1)
     }
 
@@ -489,7 +667,12 @@ def plot_article_figures(results_file_name: str, maps_file_name: str):
     y_max_s, y_max_αl = _determine_y_plotting_extrema(
         wb_2d_map=wb_2d_map,
         wb_all_results=wb_all_results,
-        results_file_MRR_sheet_col_names=results_file_MRR_sheet_col_names,
+        results_file_mrr_sheet_col_names=results_file_mrr_sheet_col_names,
+    )
+    figure_x(
+        wb_all_results=wb_all_results,
+        results_file_mrr_sheet_col_names=results_file_mrr_sheet_col_names,
+        out_filename_path=out_filename_path,
     )
     figure_3(
         wb_2d_map=wb_2d_map,
@@ -508,7 +691,7 @@ def plot_article_figures(results_file_name: str, maps_file_name: str):
     figure_6(
         wb_2d_map=wb_2d_map,
         wb_all_results=wb_all_results,
-        results_file_MRR_sheet_col_names=results_file_MRR_sheet_col_names,
+        results_file_mrr_sheet_col_names=results_file_mrr_sheet_col_names,
         line_profile_gammas=line_profile_gammas_fig_6,
         y_max_s=y_max_s,
         out_filename_path=out_filename_path,
@@ -517,7 +700,12 @@ def plot_article_figures(results_file_name: str, maps_file_name: str):
 
 
 def plot_article_figures_wrapper():
-    """ """
+    """
+    Wrapper function for calling plot_article_figures() with command line arguments
+
+    Returns: N/A
+
+    """
 
     # Parser for command line parameter input (ex: running from .bat file)
     parser = argparse.ArgumentParser(description="Plot article figures")

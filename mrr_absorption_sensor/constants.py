@@ -7,7 +7,7 @@ constants.PY
 from collections import namedtuple
 
 # Package version
-__version__: str = "V20220916_13H00"
+__version__: str = "V20220917_19H00"
 
 # Global constants in a namedTuple class
 Constants = namedtuple("Constants", ["PER_UM_TO_DB_PER_CM"])
