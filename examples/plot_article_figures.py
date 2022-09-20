@@ -495,7 +495,7 @@ def figure_x(
     fig.suptitle(f"Figure X ('{out_filename_path.stem}*')")
 
     #
-    # Figure X0
+    # Figure α_bend
     #
     α_bend: np.ndarray = np.asarray(
         [
@@ -508,40 +508,45 @@ def figure_x(
         ]
     )
     axs[0].plot(s_max, α_bend)
-    axs[0].plot(smax_sampled, α_bend[r_sampled_indices], "o", label="R (powers of 10)")
+    axs[0].plot(
+        smax_sampled, α_bend[r_sampled_indices], "o", label=r"R ($\mu$m, powers of 10)"
+    )
     axs[0].plot(
         smax_sampled[0],
         α_bend[r_sampled_indices[0]],
         color="green",
         marker="o",
-        label=f"Rmin = {r_sampled_min:.1f} um",
+        label=f"Rmin = {r_sampled_min:.1f} " + r"$\mu$m",
     )
-    axs[0].set_ylabel(r"${\alpha}$(R)")
+    axs[0].set_ylabel(r"${\alpha}$ (R)")
     axs[0].axes.xaxis.set_ticklabels([])
     axs[0].set_ylim(bottom=0)
     axs[0].legend()
 
     #
-    # Figure X1
+    # Figure 1/α_bend
     #
     axs[1].plot(s_max, 1 / α_bend)
     axs[1].plot(
-        smax_sampled, 1 / α_bend[r_sampled_indices], "o", label="R (powers of 10)"
+        smax_sampled,
+        1 / α_bend[r_sampled_indices],
+        "o",
+        label=r"R ($\mu$m, powers of 10)",
     )
     axs[1].plot(
         smax_sampled[0],
         1 / α_bend[r_sampled_indices[0]],
         color="green",
         marker="o",
-        label=f"Rmin = {r_sampled_min:.1f} um",
+        label=f"Rmin = {r_sampled_min:.1f} " + r"$\mu$m",
     )
-    axs[1].set_ylabel(r"1/${\alpha}$(R)")
+    axs[1].set_ylabel(r"1/${\alpha}$ (R)")
     axs[1].axes.xaxis.set_ticklabels([])
     axs[1].set_ylim(bottom=0)
     axs[1].legend()
 
     #
-    # Figure X2
+    # Figure αl (dB)
     #
     αl: np.ndarray = np.asarray(
         [
@@ -552,40 +557,44 @@ def figure_x(
                 max_col=results_file_mrr_sheet_col_names["alphaL"],
             )
         ]
-    )
+    ) * (10 * np.log10(np.e))
     axs[2].plot(s_max, αl)
-    axs[2].plot(smax_sampled, αl[r_sampled_indices], "o", label="R (powers of 10)")
+    axs[2].plot(
+        smax_sampled, αl[r_sampled_indices], "o", label=r"R ($\mu$m, powers of 10)"
+    )
     axs[2].plot(
         smax_sampled[0],
         αl[r_sampled_indices[0]],
         color="green",
         marker="o",
-        label=f"Rmin = {r_sampled_min:.1f} um",
+        label=f"Rmin = {r_sampled_min:.1f} " + r"$\mu$m",
     )
-    axs[2].set_ylabel(r"${\alpha}$L(R)")
+    axs[2].set_ylabel(r"${\alpha}$L (R) (dB)")
     axs[2].axes.xaxis.set_ticklabels([])
     axs[2].set_ylim(bottom=0)
     axs[2].legend()
 
     #
-    # Figure X3
+    # Figure 1/αl
     #
     axs[3].plot(s_max, 1 / αl)
-    axs[3].plot(smax_sampled, 1 / αl[r_sampled_indices], "o", label="R (powers of 10)")
+    axs[3].plot(
+        smax_sampled, 1 / αl[r_sampled_indices], "o", label=r"R ($\mu$m, powers of 10)"
+    )
     axs[3].plot(
         smax_sampled[0],
         1 / αl[r_sampled_indices[0]],
         color="green",
         marker="o",
-        label=f"Rmin = {r_sampled_min:.1f} um",
+        label=f"Rmin = {r_sampled_min:.1f} " + r"$\mu$m",
     )
-    axs[3].set_ylabel(r"1/${\alpha}$L(R)")
+    axs[3].set_ylabel(r"1/${\alpha}$L (R)")
     axs[3].axes.xaxis.set_ticklabels([])
     axs[3].set_ylim(bottom=0)
     axs[3].legend()
 
     #
-    # Figure X4
+    # Figure a2
     #
     a2: np.ndarray = np.asarray(
         [
@@ -598,16 +607,18 @@ def figure_x(
         ]
     )
     axs[4].plot(s_max, a2)
-    axs[4].plot(smax_sampled, a2[r_sampled_indices], "o", label="R (powers of 10)")
+    axs[4].plot(
+        smax_sampled, a2[r_sampled_indices], "o", label=r"R ($\mu$m, powers of 10)"
+    )
     axs[4].plot(
         smax_sampled[0],
         a2[r_sampled_indices[0]],
         color="green",
         marker="o",
-        label=f"Rmin = {r_sampled_min:.1f} um",
+        label=f"Rmin = {r_sampled_min:.1f} " + r"$\mu$m",
     )
     axs[4].set_xlabel(r"S$_{MRR}$(R)")
-    axs[4].set_ylabel(r"$a^2$")
+    axs[4].set_ylabel(r"$a^2$ (R)")
     axs[4].set_ylim(bottom=0)
     axs[4].legend()
 
