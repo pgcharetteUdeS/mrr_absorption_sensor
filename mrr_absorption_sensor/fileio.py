@@ -56,13 +56,12 @@ def _check_mode_solver_data(modes_data: dict, bending_loss_data: dict, filename:
             + f"decreasing order!{Style.RESET_ALL}"
         )
 
-    # Check radii and alpha_bend arrays are ordered, positive, and without duplicates
+    # Check that radius is ordered, positive, and without duplicates
     for u, value in bending_loss_data.items():
         r_array: np.ndarray = np.asarray(value["R"])
-        α_band_array: np.ndarray = np.asarray(value["alpha_bend"])
-        if len(r_array) != len(α_band_array) or len(r_array) < 3:
+        if len(r_array) < 3:
             raise ValueError(
-                f"{Fore.YELLOW}Invalid R/alpha_bend arrays for u = {u:.3f} in "
+                f"{Fore.YELLOW}Invalid R array for u = {u:.3f} in "
                 + f"'{filename}'!{Style.RESET_ALL}"
             )
         if (
@@ -73,15 +72,6 @@ def _check_mode_solver_data(modes_data: dict, bending_loss_data: dict, filename:
             raise ValueError(
                 f"{Fore.YELLOW}Invalid R array for u {u:.3f} in "
                 + f"'{filename}'!!{Style.RESET_ALL}"
-            )
-        if (
-            len(np.unique(α_band_array)) != len(α_band_array)
-            or not np.all(α_band_array[:-1] > α_band_array[1:])
-            or α_band_array[-1] <= 0
-        ):
-            raise ValueError(
-                f"{Fore.YELLOW}Invalid alpha_bend array for u = {u:.3f} in "
-                + f"'{filename}'!{Style.RESET_ALL}"
             )
 
     # Check that neff and gamma values are reasonable
@@ -116,6 +106,11 @@ def load_toml_file(
         # Waveguide physical parameters
         "core_height": toml_data.get("core_height"),
         "core_width": toml_data.get("core_width"),
+        "n_clad": toml_data.get("n_clad"),
+        "n_core": toml_data.get("n_core"),
+        "n_sub": toml_data.get("n_sub"),
+        "roughness_lc": toml_data.get("roughness_lc", 50e-9),
+        "roughness_sigma": toml_data.get("roughness_sigma", 10e-9),
         "lambda_res": toml_data.get("lambda_res", 0.633),
         "ni_op": toml_data.get("ni_op", 1.0e-6),
         "pol": toml_data.get("pol", "TE"),
@@ -180,7 +175,7 @@ def load_toml_file(
         and toml_data.get("core_height") is not None
     ) or (toml_data.get("core_width") is None and toml_data.get("core_height") is None):
         raise ValueError(
-            f"{Fore.YELLOW}EITHER 'core_width' or 'core_height' fields "
+            f"{Fore.YELLOW}EITHER 'core_width' OR 'core_height' fields "
             + f"nust be specified!{Style.RESET_ALL}"
         )
     if toml_data.get("core_width") is not None:
@@ -198,7 +193,18 @@ def load_toml_file(
         if toml_data.get("w") is None:
             raise ValueError(f"{Fore.YELLOW}No 'w' fields specified!{Style.RESET_ALL}")
 
-    # Check selected keys for valid content
+    # Check selected parameters for presence and/or valid content
+    required_parameters: list = [
+        "n_clad",
+        "n_core",
+        "n_sub",
+    ]
+    for key in required_parameters:
+        if key not in parameters:
+            raise ValueError(
+                f"{Fore.YELLOW}Missing '{key}' parameter"
+                + f" in '{filename}'!{Style.RESET_ALL}"
+            )
     if parameters["pol"] not in ["TE", "TM"]:
         raise ValueError(
             f"{Fore.YELLOW}Invalid 'pol' field value '{parameters['pol']}'"
@@ -215,7 +221,6 @@ def load_toml_file(
             "u": u_key_um,
             "neff": value["neff"],
             "gamma": value["gamma"],
-            "alpha_wg": value["alpha_wg"],
         }
         bending_loss_data[u_key_um] = {
             "R": value["R"],
@@ -243,6 +248,7 @@ def load_toml_file(
         toml.dump(parameters, f)
     logger(f"Wrote input parameters to '{filename_txt}'.")
 
+    # Return dictionaries of loaded values
     return (
         parameters,
         modes_data,
@@ -343,6 +349,27 @@ def write_excel_results_file(
     mrr_sheet.append(list(mrr_data_dict.keys()))
     for row in mrr_data:
         mrr_sheet.append(row.tolist())
+
+    # Save the calculated and interpolated alpha_wg(u) values to a sheet
+    alpha_wg_sheet = wb.create_sheet("alpha_wg")
+    alpha_wg_interp_sheet = wb.create_sheet("alpha_wg_interp")
+    if models.core_v_name == "w":
+        alpha_wg_sheet.append(["height_um", "alpha_wg_dB_per_cm"])
+    else:
+        alpha_wg_sheet.append(["width_um", "alpha_wg_dB_per_cm"])
+    if models.core_v_name == "w":
+        alpha_wg_interp_sheet.append(["height_ump", "alpha_wg_dB_per_cm"])
+    else:
+        alpha_wg_interp_sheet.append(["width_um", "alpha_wg_dB_per_cm"])
+    for value in models.modes_data.values():
+        alpha_wg_sheet.append([value["u"], value["alpha_wg"]])
+    u_data = np.asarray([value.get("u") for value in models.modes_data.values()])
+    u_interp: np.ndarray = np.linspace(u_data[0], u_data[-1], 100)
+    alpha_wg_modeled = np.asarray([models.α_wg_of_u(u) for u in u_interp]) * (
+        constants.PER_UM_TO_DB_PER_CM
+    )
+    for u, alpha_wg in zip(u_interp, alpha_wg_modeled):
+        alpha_wg_interp_sheet.append([u, alpha_wg])
 
     # Save the Re(gamma) & Rw(gamma) arrays to a sheet
     re_rw_sheet = wb.create_sheet("Re and Rw")

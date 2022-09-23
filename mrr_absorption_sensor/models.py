@@ -30,7 +30,7 @@ from matplotlib import colors
 from matplotlib.collections import PolyCollection
 from matplotlib.widgets import Button, CheckButtons
 from numpy.polynomial import Polynomial
-from scipy import interpolate
+from scipy import interpolate, optimize
 from scipy.linalg import lstsq
 from sympy import functions, lambdify, symbols
 
@@ -66,6 +66,9 @@ class Models:
         self.lambda_res: float = parameters["lambda_res"]
         self.logger: Callable = logger
         self.modes_data: dict = modes_data
+        self.n_clad: float = parameters["n_clad"]
+        self.n_core: float = parameters["n_core"]
+        self.n_sub: float = parameters["n_sub"]
         self.n_eff_order = parameters["neff_order"]
         self.ni_op: float = parameters["ni_op"]
         self.parameters: dict = parameters
@@ -73,6 +76,8 @@ class Models:
         self.r_min: float = parameters["Rmin"]
         self.r_max: float = parameters["Rmax"]
         self.r_samples_per_decade: int = parameters["R_samples_per_decade"]
+        self.roughness_lc: float = parameters["roughness_lc"]
+        self.roughness_sigma: float = parameters["roughness_sigma"]
 
         # Initialize other class parameters
         self.plotting_extrema: dict = {}
@@ -107,6 +112,20 @@ class Models:
         )
         self.α_bend_data_min: float = 0
         self._parse_bending_loss_mode_solver_data()
+
+        # Calculate alpha_wg(u) values and load into modes_data dictionary
+        if self.core_v_name == "w":
+            for h, value in modes_data.items():
+                alpha_wg = self._calc_alpha_db_per_cm(
+                    n_eff=value["neff"], height=h, width=self.core_v_value
+                )
+                modes_data[h]["alpha_wg"] = alpha_wg
+        else:
+            for w, value in modes_data.items():
+                alpha_wg = self._calc_alpha_db_per_cm(
+                    n_eff=value["neff"], height=self.core_v_value, width=w
+                )
+                modes_data[w]["alpha_wg"] = alpha_wg
 
         # Fit gamma(h), h(gamma), and neff(h) 1D poly models to the mode solver data
         self.α_wg_model: dict = {}
@@ -156,6 +175,130 @@ class Models:
     #
     # alpha_wg(u), gamma(u), u(gamma), and neffs(u) modeling
     #
+
+    # Payne and Lacey model for propagataion losses from vertical sidewall roughness
+    def _calc_k_parallel_projections(
+        self, theta: float, n_clad: float, n_core: float, n_sub: float
+    ) -> tuple[float, float, float]:
+
+        # Calculate wave-numbers
+        k0: float = (2 * np.pi) / (self.lambda_res * 1e-6)
+        k_clad: float = k0 * n_clad
+        k_core: float = k0 * n_core
+        k_sub: float = k0 * n_sub
+        beta: float = k_core * np.sin(theta)
+
+        # Kludge because of bug in scipy_optimize
+        gamma_clad: float = np.sqrt(beta**2 - k_clad**2) if beta > k_clad else 0
+        kx_core: float = np.sqrt(k_core**2 - beta**2) if k_core > beta else 0
+        gamma_sub: float = np.sqrt(beta**2 - k_sub**2) if beta > k_sub else 0
+
+        # Return results!
+        return gamma_clad, kx_core, gamma_sub
+
+    def _calculate_mode_parameters_obj_fun(
+        self,
+        theta: float,
+        h: float,
+        n_clad: float,
+        n_core: float,
+        n_sub: float,
+        pol: str,
+    ) -> float:
+
+        # Calculate squared residual
+        a: float = h / 2
+        [gamma_clad, kx_core, gamma_sub] = self._calc_k_parallel_projections(
+            theta=theta, n_clad=n_clad, n_core=n_core, n_sub=n_sub
+        )
+        if pol == "TE":
+            e = (
+                2 * a * kx_core
+                - np.arctan2(gamma_sub, kx_core)
+                - np.arctan2(gamma_clad, kx_core)
+            )
+        else:
+            e = (
+                2 * a * kx_core
+                - np.arctan2(n_core**2 * gamma_sub, n_sub**2 * kx_core)
+                - np.arctan2(n_core**2 * gamma_clad, n_clad**2 * kx_core)
+            )
+        return e**2
+
+    def _calc_mode_effective_index(
+        self,
+        h: float,
+        n_clad: float,
+        n_core: float,
+        n_sub: float,
+        pol: str,
+    ) -> tuple[float, float]:
+
+        theta_max: float = np.pi / 2
+        theta_min = (
+            np.arcsin(n_sub / n_core) if n_sub > n_clad else np.arcsin(n_clad / n_core)
+        )
+        optimization_result = optimize.minimize(
+            fun=self._calculate_mode_parameters_obj_fun,
+            x0=np.asarray([(theta_max + theta_min) / 2]),
+            bounds=((theta_min, theta_max),),
+            method="Powell",
+            args=(h, n_clad, n_core, n_sub, pol),
+        )
+        theta: float = optimization_result.x[0]
+        residual = optimization_result.fun
+        n_eff: float = n_core * np.sin(theta)
+
+        # Return results
+        return n_eff, residual
+
+    def _calc_alpha_db_per_cm(self, n_eff: float, height: float, width: float) -> float:
+
+        # Physical variables and mode parameters
+        k0: float = 2 * np.pi / (self.lambda_res * 1e-6)
+        d: float = width * 1e-6 / 2
+
+        # Calculate effective index for mode in 1d vertical stack
+        n_eff_1d, residual_1d = self._calc_mode_effective_index(
+            h=height * 1e-6,
+            n_clad=self.n_clad,
+            n_core=self.n_core,
+            n_sub=self.n_sub,
+            pol=self.pol,
+        )
+
+        """
+        # Calculate effective index for mode in 1d vertical stack (DEBUG)
+        n_eff_2d, residual_2d = self._calc_mode_effective_index(
+            h=width * 1e-6,
+            n_clad=self.n_clad,
+            n_core=n_eff_1d,
+            n_sub=self.n_clad,
+            pol="TM" if self.pol == "TE" else "TE",
+        )
+        n_eff = n_eff_2d
+        """
+
+        # Payne and Lacey model
+        u: float = k0 * d * np.sqrt(n_eff_1d**2 - n_eff**2)
+        v: float = k0 * d * np.sqrt(n_eff_1d**2 - self.n_clad**2)
+        w: float = k0 * d * np.sqrt(n_eff**2 - self.n_clad**2)
+        g: float = (u * v) ** 2 / (1 + w)
+        x: float = w * self.roughness_lc / d
+        delta: float = (n_eff_1d**2 - self.n_clad**2) / (2 * n_eff_1d**2)
+        γ: float = (self.n_clad * v) / (n_eff_1d * w * np.sqrt(delta))
+        big_term: float = np.sqrt((1 + x**2) ** 2 + 2 * x**2 * γ**2)
+        f: float = x * np.sqrt(1 - x**2 + big_term) / big_term
+        alpha_db_per_m: float = (
+            4.34
+            * self.roughness_sigma**2
+            / (np.sqrt(2) * k0 * d**4 * n_eff_1d)
+            * g
+            * f
+        )
+
+        # Return alpha_wg in dB/cm
+        return alpha_db_per_m / 100
 
     # alpha_wg(u) model function
     def α_wg_of_u(self, u: float = None) -> float:

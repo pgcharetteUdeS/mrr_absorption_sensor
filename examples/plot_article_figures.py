@@ -627,6 +627,48 @@ def figure_x(
     print(f"Wrote '{str(out_filename_path.parent)}/{out_filename_path.stem}_FIGX.png'.")
 
 
+def figure_3b_alpha_wg_versus_height(
+    wb_all_results: Workbook,
+    out_filename_path: Path,
+):
+    """
+
+    Args:
+        wb_all_results ():
+        out_filename_path ():
+
+    Returns:
+
+    """
+
+    # fetch u and alpha_wg(u) data
+    u, alpha_wg = np.asarray(
+        [
+            (val[0].value, val[1].value)
+            for val in wb_all_results["alpha_wg_interp"].iter_rows(
+                min_row=2, min_col=1, max_col=2
+            )
+        ]
+    ).T
+
+    # Create the figure
+    fig, axs = plt.subplots()
+    fig.suptitle(f"Figure 3b ('{out_filename_path.stem}*')")
+    axs.plot(u, alpha_wg)
+    axs.set_ylim(bottom=0)
+    if wb_all_results["alpha_wg"]["A1"].value == "height_um":
+        axs.set_xlabel("Height (μm)")
+    else:
+        axs.set_xlabel("Width (μm)")
+    axs.set_ylabel(r"$\alpha_{wg}$ (dB/cm)")
+
+    # Save figure to file
+    fig.savefig(out_filename_path.parent / f"{out_filename_path.stem}_FIG3b.png")
+    print(
+        f"Wrote '{str(out_filename_path.parent)}/{out_filename_path.stem}_FIG3b.png'."
+    )
+
+
 def plot_article_figures(results_file_name: str, maps_file_name: str):
     """
 
@@ -679,6 +721,9 @@ def plot_article_figures(results_file_name: str, maps_file_name: str):
         wb_2d_map=wb_2d_map,
         wb_all_results=wb_all_results,
         results_file_mrr_sheet_col_names=results_file_mrr_sheet_col_names,
+    )
+    figure_3b_alpha_wg_versus_height(
+        wb_all_results=wb_all_results, out_filename_path=out_filename_path
     )
     figure_x(
         wb_all_results=wb_all_results,
