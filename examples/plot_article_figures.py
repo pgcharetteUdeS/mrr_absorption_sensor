@@ -1,6 +1,6 @@
 """
 
-Plot figures 3, 5, 6 in the article
+Plot figures in the article
 
 Data in files "*_MRR_2DMAPS_VS_GAMMA_and_R.xlsx" and "*_ALL_RESULTS.xlsx"
 
@@ -93,7 +93,49 @@ def _get_re_rw(wb_all_results: Workbook, gamma: float) -> tuple[float, float]:
     return re[index], rw[index]
 
 
-def figure_3(
+def figure_3b(
+    wb_all_results: Workbook,
+    out_filename_path: Path,
+):
+    """
+
+    Args:
+        wb_all_results ():
+        out_filename_path ():
+
+    Returns:
+
+    """
+
+    # fetch u and alpha_wg(u) data
+    u, alpha_wg = np.asarray(
+        [
+            (val[0].value, val[1].value)
+            for val in wb_all_results["alpha_wg_interp"].iter_rows(
+                min_row=2, min_col=1, max_col=2
+            )
+        ]
+    ).T
+
+    # Create the figure
+    fig, axs = plt.subplots()
+    fig.suptitle(f"Figure 3b ('{out_filename_path.stem}*')")
+    axs.plot(u, alpha_wg)
+    axs.set_ylim(bottom=0)
+    if wb_all_results["alpha_wg"]["A1"].value == "height_um":
+        axs.set_xlabel("Height (μm)")
+    else:
+        axs.set_xlabel("Width (μm)")
+    axs.set_ylabel(r"$\alpha_{wg}$ (dB/cm)")
+
+    # Save figure to file
+    fig.savefig(out_filename_path.parent / f"{out_filename_path.stem}_FIG3b.png")
+    print(
+        f"Wrote '{str(out_filename_path.parent)}/{out_filename_path.stem}_FIG3b.png'."
+    )
+
+
+def figure_4(
     wb_2d_map: Workbook,
     wb_all_results: Workbook,
     gamma: float,
@@ -130,7 +172,7 @@ def figure_3(
 
     # Create the figure
     fig, ax = plt.subplots(constrained_layout=True)
-    fig.suptitle(f"Figure 3 ('{out_filename_path.stem}*')")
+    fig.suptitle(f"Figure 4 ('{out_filename_path.stem}*')")
 
     # PLot line profiles
     ax.semilogx(r, s, "b-", label=r"$S_{MRR}$")
@@ -163,11 +205,11 @@ def figure_3(
     ax.legend(ax_lines, ax_labels, loc="upper left")
 
     # Save figure to file
-    fig.savefig(out_filename_path.parent / f"{out_filename_path.stem}_FIG3.png")
-    print(f"Wrote '{str(out_filename_path.parent)}/{out_filename_path.stem}_FIG3.png'.")
+    fig.savefig(out_filename_path.parent / f"{out_filename_path.stem}_FIG4.png")
+    print(f"Wrote '{str(out_filename_path.parent)}/{out_filename_path.stem}_FIG4.png'.")
 
 
-def _figure_5_line_profile_plot(
+def _figure_6_line_profile_plot(
     wb_2d_map: Workbook,
     wb_all_results: Workbook,
     gamma: float,
@@ -222,7 +264,7 @@ def _figure_5_line_profile_plot(
     ax.legend(ax_lines, ax_labels, loc="upper left")
 
 
-def figure_5(
+def figure_6(
     wb_2d_map: Workbook,
     wb_all_results: Workbook,
     line_profile_gammas: np.ndarray,
@@ -254,11 +296,11 @@ def figure_5(
     fig, axs = plt.subplots(
         nrows=len(line_profile_gammas), figsize=(9, 10), constrained_layout=True
     )
-    fig.suptitle(f"Figure 5 ('{out_filename_path.stem}*')")
+    fig.suptitle(f"Figure 6 ('{out_filename_path.stem}*')")
 
     # Loop to generate the subplots of the line profiles in "line_profile_gammas"
     for i, gamma in enumerate(line_profile_gammas):
-        _figure_5_line_profile_plot(
+        _figure_6_line_profile_plot(
             wb_2d_map=wb_2d_map,
             wb_all_results=wb_all_results,
             gamma=gamma,
@@ -271,11 +313,11 @@ def figure_5(
         )
 
     # Save figure to file
-    fig.savefig(out_filename_path.parent / f"{out_filename_path.stem}_FIG5.png")
-    print(f"Wrote '{str(out_filename_path.parent)}/{out_filename_path.stem}_FIG5.png'.")
+    fig.savefig(out_filename_path.parent / f"{out_filename_path.stem}_FIG6.png")
+    print(f"Wrote '{str(out_filename_path.parent)}/{out_filename_path.stem}_FIG6.png'.")
 
 
-def figure_6(
+def figure_7(
     wb_2d_map: Workbook,
     wb_all_results: Workbook,
     results_file_mrr_sheet_col_names: dict,
@@ -299,7 +341,7 @@ def figure_6(
 
     # Create the figure
     fig, axs = plt.subplots(4, figsize=(9, 12))
-    fig.suptitle(f"Figure 6 ('{out_filename_path.stem}*')")
+    fig.suptitle(f"Figure 7 ('{out_filename_path.stem}*')")
 
     #
     # 6a
@@ -434,8 +476,8 @@ def figure_6(
     axs[3].set_xlabel("Radius (μm)")
 
     # Save figure to file
-    fig.savefig(out_filename_path.parent / f"{out_filename_path.stem}_FIG6.png")
-    print(f"Wrote '{str(out_filename_path.parent)}/{out_filename_path.stem}_FIG6.png'.")
+    fig.savefig(out_filename_path.parent / f"{out_filename_path.stem}_FIG7.png")
+    print(f"Wrote '{str(out_filename_path.parent)}/{out_filename_path.stem}_FIG7.png'.")
 
 
 def figure_x(
@@ -627,48 +669,6 @@ def figure_x(
     print(f"Wrote '{str(out_filename_path.parent)}/{out_filename_path.stem}_FIGX.png'.")
 
 
-def figure_3b_alpha_wg_versus_height(
-    wb_all_results: Workbook,
-    out_filename_path: Path,
-):
-    """
-
-    Args:
-        wb_all_results ():
-        out_filename_path ():
-
-    Returns:
-
-    """
-
-    # fetch u and alpha_wg(u) data
-    u, alpha_wg = np.asarray(
-        [
-            (val[0].value, val[1].value)
-            for val in wb_all_results["alpha_wg_interp"].iter_rows(
-                min_row=2, min_col=1, max_col=2
-            )
-        ]
-    ).T
-
-    # Create the figure
-    fig, axs = plt.subplots()
-    fig.suptitle(f"Figure 3b ('{out_filename_path.stem}*')")
-    axs.plot(u, alpha_wg)
-    axs.set_ylim(bottom=0)
-    if wb_all_results["alpha_wg"]["A1"].value == "height_um":
-        axs.set_xlabel("Height (μm)")
-    else:
-        axs.set_xlabel("Width (μm)")
-    axs.set_ylabel(r"$\alpha_{wg}$ (dB/cm)")
-
-    # Save figure to file
-    fig.savefig(out_filename_path.parent / f"{out_filename_path.stem}_FIG3b.png")
-    print(
-        f"Wrote '{str(out_filename_path.parent)}/{out_filename_path.stem}_FIG3b.png'."
-    )
-
-
 def plot_article_figures(results_file_name: str, maps_file_name: str):
     """
 
@@ -722,21 +722,16 @@ def plot_article_figures(results_file_name: str, maps_file_name: str):
         wb_all_results=wb_all_results,
         results_file_mrr_sheet_col_names=results_file_mrr_sheet_col_names,
     )
-    figure_3b_alpha_wg_versus_height(
+    figure_3b(
         wb_all_results=wb_all_results, out_filename_path=out_filename_path
     )
-    figure_x(
-        wb_all_results=wb_all_results,
-        results_file_mrr_sheet_col_names=results_file_mrr_sheet_col_names,
-        out_filename_path=out_filename_path,
-    )
-    figure_3(
+    figure_4(
         wb_2d_map=wb_2d_map,
         wb_all_results=wb_all_results,
         gamma=30,
         out_filename_path=out_filename_path,
     )
-    figure_5(
+    figure_6(
         wb_2d_map=wb_2d_map,
         wb_all_results=wb_all_results,
         line_profile_gammas=line_profile_gammas_fig_5,
@@ -744,12 +739,17 @@ def plot_article_figures(results_file_name: str, maps_file_name: str):
         y_max_αl=y_max_αl,
         out_filename_path=out_filename_path,
     )
-    figure_6(
+    figure_7(
         wb_2d_map=wb_2d_map,
         wb_all_results=wb_all_results,
         results_file_mrr_sheet_col_names=results_file_mrr_sheet_col_names,
         line_profile_gammas=line_profile_gammas_fig_6,
         y_max_s=y_max_s,
+        out_filename_path=out_filename_path,
+    )
+    figure_x(
+        wb_all_results=wb_all_results,
+        results_file_mrr_sheet_col_names=results_file_mrr_sheet_col_names,
         out_filename_path=out_filename_path,
     )
     plt.show()
