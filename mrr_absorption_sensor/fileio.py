@@ -98,6 +98,9 @@ def load_toml_file(
              bending_loss_data (dict): R(u) and alpha_bend(u) mode solver data
 
     """
+    # Console message
+    logger(f"Loading information from '{filename}'...")
+
     # Load dictionary from the .toml file
     toml_data = toml.load(str(filename))
 
