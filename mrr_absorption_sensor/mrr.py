@@ -622,6 +622,80 @@ class Mrr:
         fig.savefig(filename)
         self.logger(f"Wrote '{filename}'.")
 
+        # 2D map of 1/alpha(gamma, R)
+        db_per_cm_to_per_cm: float = 1.0 / 4.34
+        α_inv_2d_map = (
+            np.asarray(
+                [
+                    [
+                        self._α_prop(u=u) + self.models.α_bend(r=10**log10_R, u=u)
+                        for log10_R in r_2d_map_indices
+                    ]
+                    for u in u_2d_map_indices
+                ]
+            )
+        )
+        fig, ax = plt.subplots()
+        cm = ax.pcolormesh(
+            r_2d_map_indices,
+            gamma_2d_map,
+            α_inv_2d_map,
+            cmap=self.models.parameters["map2D_colormap"],
+        )
+        ax.plot(
+            np.log10(self.models.r),
+            self.gamma,
+            color=self.models.parameters["map2D_overlay_color_dark"],
+            label=r"max$\{S_{MRR}\}$",
+        )
+        ax.plot(
+            np.log10(self.r_e),
+            self.gamma_resampled * 100,
+            color=self.models.parameters["map2D_overlay_color_dark"],
+            linestyle="--",
+            label=r"Re$(\Gamma_{fluid})$",
+        )
+        ax.plot(
+            np.log10(self.r_w),
+            self.gamma_resampled * 100,
+            color=self.models.parameters["map2D_overlay_color_dark"],
+            linestyle="-.",
+            label=r"Rw$(\Gamma_{fluid})$",
+        )
+        """
+        for line in self.models.parameters["map_line_profiles"] or []:
+            ax.plot(
+                [
+                    np.log10(self.models.plotting_extrema["r_plot_min"]),
+                    np.log10(self.models.plotting_extrema["r_plot_max"]),
+                ],
+                [line, line],
+                color=self.models.parameters["map2D_overlay_color_dark"],
+                linestyle=LINE_STYLES["loosely dotted"],
+            )
+        """
+        ax.set_title(
+            r"MRR 1/$\alpha$ as a function of $\Gamma_{fluid}$ and $R$"
+            + f"\n{self.models.pol}"
+            + f", λ = {self.models.lambda_res:.3f} μm"
+            + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
+        )
+        ax.set_xlabel("log(R) (μm)")
+        ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
+        fig.colorbar(cm, label=r"1/$\alpha$ ($\mu$m)")
+        ax.set_xlim(
+            left=np.log10(self.models.plotting_extrema["r_plot_min"]),
+            right=np.log10(self.models.plotting_extrema["r_plot_max"]),
+        )
+        ax.set_ylim(bottom=gamma_2d_map[-1], top=gamma_2d_map[0])
+        ax.legend(loc="lower right")
+        filename = (
+            self.models.filename_path.parent
+            / f"{self.models.filename_path.stem}_MRR_2DMAP_alpha_inv_VS_GAMMA_and_R.png"
+        )
+        fig.savefig(filename)
+        self.logger(f"Wrote '{filename}'.")
+
         # Save 2D map data as a function of gamma and R to output Excel file
         if self.models.parameters["write_excel_files"]:
             # In addition to alpha*L, calculate 2D maps of alpha_prop*L and alpha_bend*L
@@ -665,6 +739,7 @@ class Mrr:
                     s_nr_2d_map,
                     s_e_2d_map,
                     αl_2d_map,
+                    α_inv_2d_map,
                     α_bend_l_2d_map,
                     α_prop_l_2d_map,
                 ],
@@ -673,6 +748,7 @@ class Mrr:
                     "Snr (RIU-1)",
                     "Se",
                     "alpha x L (dB)",
+                    r"alpha-1 (um)",
                     "alpha_bend x L (dB)",
                     "alpha_prop x L (dB)",
                 ],
