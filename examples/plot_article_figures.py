@@ -17,16 +17,16 @@ from openpyxl import load_workbook, Workbook
 
 
 def _determine_y_plotting_extrema(
-    wb_2d_map: Workbook,
-    wb_all_results: Workbook,
-    results_file_mrr_sheet_col_names: dict,
+    maps_wb: Workbook,
+    results_wb: Workbook,
+    results_wb_mrr_sheet_col_names: dict,
 ) -> tuple[float, float]:
     """
 
     Args:
-        wb_2d_map ():
-        wb_all_results ():
-        results_file_mrr_sheet_col_names ():
+        maps_wb ():
+        results_wb ():
+        results_wb_mrr_sheet_col_names ():
 
     Returns:
         y_max_s
@@ -37,7 +37,7 @@ def _determine_y_plotting_extrema(
     # Calculate y axis limit for αl plots
     αl_max = max(
         max(cell.value for cell in row)
-        for row in wb_2d_map["alpha x L (dB)"].iter_rows(min_row=2)
+        for row in maps_wb["alpha x L (dB)"].iter_rows(min_row=2)
     )
     y_max_αl = np.ceil(αl_max / 50) * 50
 
@@ -46,10 +46,10 @@ def _determine_y_plotting_extrema(
         np.asarray(
             [
                 val[0].value
-                for val in wb_all_results["MRR"].iter_rows(
+                for val in results_wb["MRR"].iter_rows(
                     min_row=2,
-                    min_col=results_file_mrr_sheet_col_names["maxS_RIU_inv"],
-                    max_col=results_file_mrr_sheet_col_names["maxS_RIU_inv"],
+                    min_col=results_wb_mrr_sheet_col_names["maxS_RIU_inv"],
+                    max_col=results_wb_mrr_sheet_col_names["maxS_RIU_inv"],
                 )
             ]
         )
@@ -64,11 +64,11 @@ def _determine_y_plotting_extrema(
     return y_max_s, y_max_αl
 
 
-def _get_re_rw(wb_all_results: Workbook, gamma: float) -> tuple[float, float]:
+def _get_re_rw(results_wb: Workbook, gamma: float) -> tuple[float, float]:
     """
 
     Args:
-        wb_all_results ():
+        results_wb ():
         gamma ():
 
     Returns:
@@ -77,14 +77,14 @@ def _get_re_rw(wb_all_results: Workbook, gamma: float) -> tuple[float, float]:
     gammas = np.asarray(
         [
             val[0].value
-            for val in wb_all_results["Re and Rw"].iter_rows(min_row=2, max_col=1)
+            for val in results_wb["Re and Rw"].iter_rows(min_row=2, max_col=1)
         ]
     )
     index = int(np.argmin(np.abs(gammas - gamma)))
     re, rw = np.asarray(
         [
             (val[0].value, val[1].value)
-            for val in wb_all_results["Re and Rw"].iter_rows(
+            for val in results_wb["Re and Rw"].iter_rows(
                 min_row=2, min_col=3, max_col=4
             )
         ]
@@ -94,13 +94,13 @@ def _get_re_rw(wb_all_results: Workbook, gamma: float) -> tuple[float, float]:
 
 
 def figure_3b(
-    wb_all_results: Workbook,
+    results_wb: Workbook,
     out_filename_path: Path,
 ):
     """
 
     Args:
-        wb_all_results ():
+        results_wb ():
         out_filename_path ():
 
     Returns:
@@ -111,7 +111,7 @@ def figure_3b(
     u, alpha_wg = np.asarray(
         [
             (val[0].value, val[1].value)
-            for val in wb_all_results["alpha_wg_interp"].iter_rows(
+            for val in results_wb["alpha_wg_interp"].iter_rows(
                 min_row=2, min_col=1, max_col=2
             )
         ]
@@ -122,7 +122,7 @@ def figure_3b(
     fig.suptitle(f"Figure 3b ('{out_filename_path.stem}*')")
     axs.plot(u, alpha_wg)
     axs.set_ylim(bottom=0)
-    if wb_all_results["alpha_wg"]["A1"].value == "height_um":
+    if results_wb["alpha_wg"]["A1"].value == "height_um":
         axs.set_xlabel("Height (μm)")
     else:
         axs.set_xlabel("Width (μm)")
@@ -136,16 +136,16 @@ def figure_3b(
 
 
 def figure_4(
-    wb_2d_map: Workbook,
-    wb_all_results: Workbook,
+    maps_wb: Workbook,
+    results_wb: Workbook,
     gamma: float,
     out_filename_path: Path,
 ):
     """
 
     Args:
-        wb_2d_map ():
-        wb_all_results ():
+        maps_wb ():
+        results_wb ():
         gamma ():
         out_filename_path: Path,
 
@@ -153,20 +153,20 @@ def figure_4(
 
     """
     # Fetch R and gamma arrays from their respective sheets in the 2D map workbook
-    r = np.asarray([c.value for c in wb_2d_map["R (um)"][1]])
+    r = np.asarray([c.value for c in maps_wb["R (um)"][1]])
     gammas = np.asarray(
-        [val[0].value for val in wb_2d_map["gamma (%)"].iter_rows(max_col=1)]
+        [val[0].value for val in maps_wb["gamma (%)"].iter_rows(max_col=1)]
     )
 
     # Fetch line profiles for S, Snr, and Se at gamma from the the 2D map workbook
     index = int(np.argmin(np.abs(gammas - gamma)) + 1)
-    s = np.asarray([c.value for c in wb_2d_map["S (RIU-1)"][index]])
-    s_nr = np.asarray([c.value for c in wb_2d_map["Snr (RIU-1)"][index]])
-    s_e = np.asarray([c.value for c in wb_2d_map["Se"][index]])
+    s = np.asarray([c.value for c in maps_wb["S (RIU-1)"][index]])
+    s_nr = np.asarray([c.value for c in maps_wb["Snr (RIU-1)"][index]])
+    s_e = np.asarray([c.value for c in maps_wb["Se"][index]])
 
     # Get corresponding Re and Rw values from the all_results workbook
     re, rw = _get_re_rw(
-        wb_all_results=wb_all_results,
+        results_wb=results_wb,
         gamma=gamma,
     )
 
@@ -210,8 +210,8 @@ def figure_4(
 
 
 def _figure_6_line_profile_plot(
-    wb_2d_map: Workbook,
-    wb_all_results: Workbook,
+    maps_wb: Workbook,
+    results_wb: Workbook,
     gamma: float,
     r: np.ndarray,
     gammas: np.ndarray,
@@ -224,14 +224,14 @@ def _figure_6_line_profile_plot(
     index = int(np.argmin(np.abs(gammas - gamma)) + 1)
 
     # Fetch line profiles data from the worksheets
-    α_l = np.asarray([c.value for c in wb_2d_map["alpha x L (dB)"][index]])
-    α_bend_l = np.asarray([c.value for c in wb_2d_map["alpha_bend x L (dB)"][index]])
-    α_prop_l = np.asarray([c.value for c in wb_2d_map["alpha_prop x L (dB)"][index]])
-    s = np.asarray([c.value for c in wb_2d_map["S (RIU-1)"][index]])
+    α_l = np.asarray([c.value for c in maps_wb["alpha x L (dB)"][index]])
+    α_bend_l = np.asarray([c.value for c in maps_wb["alpha_bend x L (dB)"][index]])
+    α_prop_l = np.asarray([c.value for c in maps_wb["alpha_prop x L (dB)"][index]])
+    s = np.asarray([c.value for c in maps_wb["S (RIU-1)"][index]])
 
     # Get corresponding Re and Rw values from the all_results workbook
     re, rw = _get_re_rw(
-        wb_all_results=wb_all_results,
+        results_wb=results_wb,
         gamma=gamma,
     )
 
@@ -265,8 +265,8 @@ def _figure_6_line_profile_plot(
 
 
 def figure_6(
-    wb_2d_map: Workbook,
-    wb_all_results: Workbook,
+    maps_wb: Workbook,
+    results_wb: Workbook,
     line_profile_gammas: np.ndarray,
     y_max_s: float,
     y_max_αl: float,
@@ -275,8 +275,8 @@ def figure_6(
     """
 
     Args:
-        wb_2d_map ():
-        wb_all_results ():
+        maps_wb ():
+        results_wb ():
         line_profile_gammas ():
         y_max_s ():
         y_max_αl ():
@@ -287,9 +287,9 @@ def figure_6(
     """
 
     # Fetch R and gamma arrays from their respective sheets in the workbook
-    r = np.asarray([c.value for c in wb_2d_map["R (um)"][1]])
+    r = np.asarray([c.value for c in maps_wb["R (um)"][1]])
     gammas = np.asarray(
-        [val[0].value for val in wb_2d_map["gamma (%)"].iter_rows(max_col=1)]
+        [val[0].value for val in maps_wb["gamma (%)"].iter_rows(max_col=1)]
     )
 
     # Create figure with required number of subplots for the requested line profiles
@@ -301,8 +301,8 @@ def figure_6(
     # Loop to generate the subplots of the line profiles in "line_profile_gammas"
     for i, gamma in enumerate(line_profile_gammas):
         _figure_6_line_profile_plot(
-            wb_2d_map=wb_2d_map,
-            wb_all_results=wb_all_results,
+            maps_wb=maps_wb,
+            results_wb=results_wb,
             gamma=gamma,
             r=r,
             gammas=gammas,
@@ -318,20 +318,18 @@ def figure_6(
 
 
 def figure_7(
-    wb_2d_map: Workbook,
-    wb_all_results: Workbook,
-    results_file_mrr_sheet_col_names: dict,
-    line_profile_gammas: np.ndarray,
+    maps_wb: Workbook,
+    results_wb: Workbook,
+    results_wb_mrr_sheet_col_names: dict,
     y_max_s: float,
     out_filename_path: Path,
 ):
     """
 
     Args:
-        wb_2d_map ():
-        wb_all_results ():
-        results_file_mrr_sheet_col_names ():
-        line_profile_gammas ():
+        maps_wb ():
+        results_wb ():
+        results_wb_mrr_sheet_col_names ():
         y_max_s ():
         out_filename_path ():
 
@@ -339,121 +337,113 @@ def figure_7(
 
     """
 
+    # Create array if discrete gamma values
+    gammas = np.asarray(
+        [val[0].value for val in maps_wb["gamma (%)"].iter_rows(max_col=1)]
+    )
+    line_profile_gammas: np.ndarray = np.arange(
+        np.ceil(gammas[-1] / 10) * 10, np.floor(gammas[0] / 10) * 10 + 10, 10
+    )
+    if int(gammas[-1]) != line_profile_gammas[0]:
+        line_profile_gammas = np.insert(line_profile_gammas, 0, int(gammas[-1]))
+    if int(gammas[0]) != line_profile_gammas[-1]:
+        line_profile_gammas = np.append(line_profile_gammas, int(gammas[0]))
+
+    # Fetch required arrays from the maps workbook
+    maps_r = np.asarray([c.value for c in maps_wb["R (um)"][1]])
+
     # Create the figure
-    fig, axs = plt.subplots(4, figsize=(9, 12))
+    fig, axs = plt.subplots(3, figsize=(9, 12))
+    fig.tight_layout(pad=10, w_pad=10, h_pad=10)
     fig.suptitle(f"Figure 7 ('{out_filename_path.stem}*')")
 
     #
-    # 6a
+    # 7a
     #
 
-    # Fetch R and gamma arrays from their respective sheets in the workbook
-    r = np.asarray([c.value for c in wb_2d_map["R (um)"][1]])
-    gammas = np.asarray(
-        [val[0].value for val in wb_2d_map["gamma (%)"].iter_rows(max_col=1)]
-    )
-
-    # Loop to generate the subplots of the line profiles in "line_profile_gammas"
+    # Loop to plot Smrr(R) at discrete gammas
     for g in line_profile_gammas:
         index = int(np.argmin(np.abs(gammas - g)) + 1)
-        s = np.asarray([c.value for c in wb_2d_map["S (RIU-1)"][index]])
-        axs[0].semilogx(r, s, label=rf"$\Gamma$ = {g:.0f}%")
+        s = np.asarray([c.value for c in maps_wb["S (RIU-1)"][index]])
+        axs[0].loglog(maps_r, s, label=rf"$\Gamma$ = {g:.0f}%")
 
-    # PLot formatting, title, labels, etc.
-    axs[0].set_ylabel(r"S$_{MRR}$")
-    axs[0].set_xlim(r[0], r[-1])
-    axs[0].set_ylim(0, y_max_s)
-    axs[0].legend(loc="upper left")
-
-    #
-    # 6b & 6c
-    #
+    # Plot max{S(R)}
     r = np.asarray(
         [
             val[0].value
-            for val in wb_all_results["MRR"].iter_rows(
-                min_row=2, max_col=results_file_mrr_sheet_col_names["R_um"]
+            for val in results_wb["MRR"].iter_rows(
+                min_row=2, max_col=results_wb_mrr_sheet_col_names["R_um"]
             )
         ]
     )
     s_max = np.asarray(
         [
             val[0].value
-            for val in wb_all_results["MRR"].iter_rows(
+            for val in results_wb["MRR"].iter_rows(
                 min_row=2,
-                min_col=results_file_mrr_sheet_col_names["maxS_RIU_inv"],
-                max_col=results_file_mrr_sheet_col_names["maxS_RIU_inv"],
+                min_col=results_wb_mrr_sheet_col_names["maxS_RIU_inv"],
+                max_col=results_wb_mrr_sheet_col_names["maxS_RIU_inv"],
             )
         ]
     )
-    α_bend = np.asarray(
-        [
-            val[0].value
-            for val in wb_all_results["MRR"].iter_rows(
-                min_row=2,
-                min_col=results_file_mrr_sheet_col_names["alpha_bend_dB_per_cm"],
-                max_col=results_file_mrr_sheet_col_names["alpha_bend_dB_per_cm"],
-            )
-        ]
-    )
-    α_wg = np.asarray(
-        [
-            val[0].value
-            for val in wb_all_results["MRR"].iter_rows(
-                min_row=2,
-                min_col=results_file_mrr_sheet_col_names["alpha_wg_dB_per_cm"],
-                max_col=results_file_mrr_sheet_col_names["alpha_wg_dB_per_cm"],
-            )
-        ]
-    )
+    axs[0].loglog(r, s_max, "k--", label=r"max{$_{MRR}$}")
+
+    # PLot formatting, title, labels, etc.
+    axs[0].set_xlabel("Radius (μm)")
+    axs[0].set_ylabel(r"S$_{MRR}$")
+    axs[0].set_xlim(r[0], r[-1])
+    axs[0].set_ylim(10, y_max_s)
+    axs[0].legend(loc="lower right")
+
+    #
+    # 7b
+    #
+    for gamma in line_profile_gammas:
+        index = int(np.argmin(np.abs(gammas - gamma)) + 1)
+        α_inv = np.asarray([1 / c.value for c in maps_wb["alpha (um-1)"][index]])
+        s = np.asarray([c.value for c in maps_wb["S (RIU-1)"][index]])
+        axs[1].plot(
+            α_inv,
+            s,
+            label="".join(
+                [r"$\Gamma$ = ", f"{gamma:.0f}% ({maps_r[np.argmax(s)]:.0f} um)"]
+            ),
+        )
+    axs[1].set_xlabel(r"1/$\alpha$")
+    axs[1].set_ylabel(r"S$_{MRR}$")
+    axs[1].legend(loc="lower right")
+
+    #
+    # 7c
+    #
+
+    # Plot Smax(R)
+    axs[2].loglog(r, s_max, "k", label=r"max{$_{MRR}$}")
+    axs[2].set_ylabel("max(S$_{MRR}$)")
+    axs[2].set_xlabel("Radius (μm)")
+    axs[2].set_xlim(r[0], r[-1])
+    axs[2].set_ylim(10, y_max_s)
+
+    # h(R) @ Smax(R)
     h = np.asarray(
         [
             val[0].value
-            for val in wb_all_results["MRR"].iter_rows(
+            for val in results_wb["MRR"].iter_rows(
                 min_row=2,
-                min_col=results_file_mrr_sheet_col_names["h_um"],
-                max_col=results_file_mrr_sheet_col_names["h_um"],
+                min_col=results_wb_mrr_sheet_col_names["h_um"],
+                max_col=results_wb_mrr_sheet_col_names["h_um"],
             )
         ]
     )
-    gamma = np.asarray(
-        [
-            val[0].value
-            for val in wb_all_results["MRR"].iter_rows(
-                min_row=2,
-                min_col=results_file_mrr_sheet_col_names["gamma_percent"],
-                max_col=results_file_mrr_sheet_col_names["gamma_percent"],
-            )
-        ]
-    )
-    max_s_max_r: float = r[int(np.argmax(s_max))]
-
-    # Add max(max(Smax)) vertical line to 6a
-    axs[0].semilogx([max_s_max_r, max_s_max_r], [0, y_max_s], "r--")
-    axs[0].text(max_s_max_r * 1.05, y_max_s, r"max(max($S_{MRR}$))", color="red")
-    axs[0].axes.get_xaxis().set_ticklabels([])
-
-    # Smax(R)
-    axs[1].loglog(r, s_max, "k")
-    axs[1].set_ylabel("max(S$_{MRR}$)")
-    axs[1].set_xlim(r[0], r[-1])
-    axs[1].set_ylim(10, y_max_s)
-    axs[1].loglog([max_s_max_r, max_s_max_r], [10, y_max_s], "r--")
-    axs[1].text(max_s_max_r * 1.05, y_max_s, r"max(max($S_{MRR}$))", color="red")
-    axs[1].axes.get_xaxis().set_ticklabels([])
-
-    # h(R) and gamma(R) @ Smax
     y_min_h: float = 0.1
     y_max_h: float = 0.9
-    axs[2].semilogx(r, h, "b", label="h")
-    axs[2].set_ylabel(r"h (μm) @ max($S_{MRR}$)")
-    axs[2].set_xlim(r[0], r[-1])
-    axs[2].set_ylim(y_min_h, y_max_h)
-    axs[2].semilogx([max_s_max_r, max_s_max_r], [y_min_h, y_max_h], "r--")
     ax_r = axs[2].twinx()
-    ax_r.semilogx(r, gamma, "g--", label=r"$\Gamma_{fluid}$")
-    ax_r.set_ylabel(r"$\Gamma_{fluid}$ $(\%)$ @ max($S_{MRR}$)")
-    ax_r.set_ylim(0, 80)
+    ax_r.semilogx(r, h, "b", label="h")
+    ax_r.set_ylabel(r"h (μm) @ max($S_{MRR}$)")
+    ax_r.set_xlim(r[0], r[-1])
+    ax_r.set_ylim(y_min_h, y_max_h)
+
+    # Legend
     ax_lines = (
         axs[2].get_legend_handles_labels()[0] + ax_r.get_legend_handles_labels()[0]
     )
@@ -461,19 +451,6 @@ def figure_7(
         axs[2].get_legend_handles_labels()[1] + ax_r.get_legend_handles_labels()[1]
     )
     axs[2].legend(ax_lines, ax_labels, loc="upper left")
-    axs[2].text(max_s_max_r * 1.05, 0.45, r"max(max($S_{MRR}$))", color="red")
-    axs[2].axes.get_xaxis().set_ticklabels([])
-
-    # α_bend & α_wg
-    axs[3].semilogx(r, α_bend, label=r"α$_{bend}$")
-    axs[3].semilogx(r, α_wg, label=r"α$_{wg}$")
-    axs[3].set_ylabel(r"α$_{bend}$ and α$_{wg}$ (dB/cm)")
-    axs[3].set_xlim(r[0], r[-1])
-    axs[3].set_ylim(0, 5)
-    axs[3].legend(loc="upper right")
-
-    # Bottom horizontal axis labels
-    axs[3].set_xlabel("Radius (μm)")
 
     # Save figure to file
     fig.savefig(out_filename_path.parent / f"{out_filename_path.stem}_FIG7.png")
@@ -481,15 +458,15 @@ def figure_7(
 
 
 def figure_x(
-    wb_all_results: Workbook,
-    results_file_mrr_sheet_col_names: dict,
+    results_wb: Workbook,
+    results_wb_mrr_sheet_col_names: dict,
     out_filename_path: Path,
 ):
     """
 
     Args:
-        wb_all_results ():
-        results_file_mrr_sheet_col_names ():
+        results_wb ():
+        results_wb_mrr_sheet_col_names ():
         out_filename_path ():
 
     Returns:
@@ -499,10 +476,10 @@ def figure_x(
     r_linear = np.asarray(
         [
             val[0].value
-            for val in wb_all_results["MRR"].iter_rows(
+            for val in results_wb["MRR"].iter_rows(
                 min_row=2,
-                min_col=results_file_mrr_sheet_col_names["R_um"],
-                max_col=results_file_mrr_sheet_col_names["R_um"],
+                min_col=results_wb_mrr_sheet_col_names["R_um"],
+                max_col=results_wb_mrr_sheet_col_names["R_um"],
             )
         ]
     )
@@ -523,10 +500,10 @@ def figure_x(
     s_max: np.ndarray = np.asarray(
         [
             val[0].value
-            for val in wb_all_results["MRR"].iter_rows(
+            for val in results_wb["MRR"].iter_rows(
                 min_row=2,
-                min_col=results_file_mrr_sheet_col_names["maxS_RIU_inv"],
-                max_col=results_file_mrr_sheet_col_names["maxS_RIU_inv"],
+                min_col=results_wb_mrr_sheet_col_names["maxS_RIU_inv"],
+                max_col=results_wb_mrr_sheet_col_names["maxS_RIU_inv"],
             )
         ]
     )
@@ -542,10 +519,10 @@ def figure_x(
     α_bend: np.ndarray = np.asarray(
         [
             val[0].value
-            for val in wb_all_results["MRR"].iter_rows(
+            for val in results_wb["MRR"].iter_rows(
                 min_row=2,
-                min_col=results_file_mrr_sheet_col_names["alpha_dB_per_cm"],
-                max_col=results_file_mrr_sheet_col_names["alpha_dB_per_cm"],
+                min_col=results_wb_mrr_sheet_col_names["alpha_dB_per_cm"],
+                max_col=results_wb_mrr_sheet_col_names["alpha_dB_per_cm"],
             )
         ]
     )
@@ -593,10 +570,10 @@ def figure_x(
     αl: np.ndarray = np.asarray(
         [
             val[0].value
-            for val in wb_all_results["MRR"].iter_rows(
+            for val in results_wb["MRR"].iter_rows(
                 min_row=2,
-                min_col=results_file_mrr_sheet_col_names["alphaL"],
-                max_col=results_file_mrr_sheet_col_names["alphaL"],
+                min_col=results_wb_mrr_sheet_col_names["alphaL"],
+                max_col=results_wb_mrr_sheet_col_names["alphaL"],
             )
         ]
     ) * (10 * np.log10(np.e))
@@ -641,10 +618,10 @@ def figure_x(
     a2: np.ndarray = np.asarray(
         [
             val[0].value
-            for val in wb_all_results["MRR"].iter_rows(
+            for val in results_wb["MRR"].iter_rows(
                 min_row=2,
-                min_col=results_file_mrr_sheet_col_names["a2"],
-                max_col=results_file_mrr_sheet_col_names["a2"],
+                min_col=results_wb_mrr_sheet_col_names["a2"],
+                max_col=results_wb_mrr_sheet_col_names["a2"],
             )
         ]
     )
@@ -690,66 +667,51 @@ def plot_article_figures(results_file_name: str, maps_file_name: str):
         in_mem_results_file = io.BytesIO(f.read())
     with open(maps_file_name, "rb") as f:
         in_mem_maps_file = io.BytesIO(f.read())
-    wb_all_results: Workbook = load_workbook(in_mem_results_file, read_only=True)
-    wb_2d_map: Workbook = load_workbook(in_mem_maps_file, read_only=True)
+    results_wb: Workbook = load_workbook(in_mem_results_file, read_only=True)
+    maps_wb: Workbook = load_workbook(in_mem_maps_file, read_only=True)
     out_filename_path: Path = Path(results_file_name)
 
     # Create dictionary of column names for the MRR worksheet in the Excel results file
-    results_file_mrr_sheet_col_names: dict = {
-        col.value: index for index, col in enumerate(wb_all_results["MRR"][1], start=1)
+    results_wb_mrr_sheet_col_names: dict = {
+        col.value: index for index, col in enumerate(results_wb["MRR"][1], start=1)
     }
 
-    # User-defined discrete gamma value array for figure 5
-    line_profile_gammas_fig_5: np.ndarray = np.asarray([20, 45, 65, 75])
-
-    # Generate discrete gamma value array for figure 6
-    gamma = np.asarray(
-        [val[0].value for val in wb_2d_map["gamma (%)"].iter_rows(max_col=1)]
-    )
-    line_profile_gammas_fig_6: np.ndarray = np.arange(
-        np.ceil(gamma[-1] / 10) * 10, np.floor(gamma[0] / 10) * 10 + 10, 10
-    )
-    if int(gamma[-1]) != line_profile_gammas_fig_6[0]:
-        line_profile_gammas_fig_6 = np.insert(
-            line_profile_gammas_fig_6, 0, int(gamma[-1])
-        )
-    if int(gamma[0]) != line_profile_gammas_fig_6[-1]:
-        line_profile_gammas_fig_6 = np.append(line_profile_gammas_fig_6, int(gamma[0]))
+    # User-defined discrete gamma value array for figure 6
+    line_profile_gammas: np.ndarray = np.asarray([20, 45, 65, 75])
 
     # Generate figures
     y_max_s, y_max_αl = _determine_y_plotting_extrema(
-        wb_2d_map=wb_2d_map,
-        wb_all_results=wb_all_results,
-        results_file_mrr_sheet_col_names=results_file_mrr_sheet_col_names,
+        maps_wb=maps_wb,
+        results_wb=results_wb,
+        results_wb_mrr_sheet_col_names=results_wb_mrr_sheet_col_names,
     )
     figure_3b(
-        wb_all_results=wb_all_results, out_filename_path=out_filename_path
+        results_wb=results_wb, out_filename_path=out_filename_path
     )
     figure_4(
-        wb_2d_map=wb_2d_map,
-        wb_all_results=wb_all_results,
+        maps_wb=maps_wb,
+        results_wb=results_wb,
         gamma=30,
         out_filename_path=out_filename_path,
     )
     figure_6(
-        wb_2d_map=wb_2d_map,
-        wb_all_results=wb_all_results,
-        line_profile_gammas=line_profile_gammas_fig_5,
+        maps_wb=maps_wb,
+        results_wb=results_wb,
+        line_profile_gammas=line_profile_gammas,
         y_max_s=y_max_s,
         y_max_αl=y_max_αl,
         out_filename_path=out_filename_path,
     )
     figure_7(
-        wb_2d_map=wb_2d_map,
-        wb_all_results=wb_all_results,
-        results_file_mrr_sheet_col_names=results_file_mrr_sheet_col_names,
-        line_profile_gammas=line_profile_gammas_fig_6,
+        maps_wb=maps_wb,
+        results_wb=results_wb,
+        results_wb_mrr_sheet_col_names=results_wb_mrr_sheet_col_names,
         y_max_s=y_max_s,
         out_filename_path=out_filename_path,
     )
     figure_x(
-        wb_all_results=wb_all_results,
-        results_file_mrr_sheet_col_names=results_file_mrr_sheet_col_names,
+        results_wb=results_wb,
+        results_wb_mrr_sheet_col_names=results_wb_mrr_sheet_col_names,
         out_filename_path=out_filename_path,
     )
     plt.show()

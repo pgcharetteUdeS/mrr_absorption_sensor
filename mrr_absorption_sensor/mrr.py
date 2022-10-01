@@ -548,7 +548,7 @@ class Mrr:
         self.logger(f"Wrote '{filename}'.")
 
         # 2D map of alpha*L(gamma, R)
-        db_per_cm_to_per_cm: float = 1.0 / 4.34
+        scale_to_db: float = 10 * np.log10(np.e)
         αl_2d_map = (
             np.asarray(
                 [
@@ -559,7 +559,7 @@ class Mrr:
                     for u in u_2d_map_indices
                 ]
             )
-            / db_per_cm_to_per_cm
+            * scale_to_db
         )
         fig, ax = plt.subplots()
         cm = ax.pcolormesh(
@@ -623,17 +623,14 @@ class Mrr:
         self.logger(f"Wrote '{filename}'.")
 
         # 2D map of 1/alpha(gamma, R)
-        db_per_cm_to_per_cm: float = 1.0 / 4.34
-        α_inv_2d_map = (
-            np.asarray(
+        α_inv_2d_map = np.asarray(
+            [
                 [
-                    [
-                        self._α_prop(u=u) + self.models.α_bend(r=10**log10_R, u=u)
-                        for log10_R in r_2d_map_indices
-                    ]
-                    for u in u_2d_map_indices
+                    1 / (self._α_prop(u=u) + self.models.α_bend(r=10**log10_R, u=u))
+                    for log10_R in r_2d_map_indices
                 ]
-            )
+                for u in u_2d_map_indices
+            ]
         )
         fig, ax = plt.subplots()
         cm = ax.pcolormesh(
@@ -698,7 +695,27 @@ class Mrr:
 
         # Save 2D map data as a function of gamma and R to output Excel file
         if self.models.parameters["write_excel_files"]:
-            # In addition to alpha*L, calculate 2D maps of alpha_prop*L and alpha_bend*L
+            # Add additional (non-plotted) 2d maps
+            α_2d_map = np.asarray(
+                [
+                    [
+                        self._α_prop(u=u) + self.models.α_bend(r=10 ** log10_R, u=u)
+                        for log10_R in r_2d_map_indices
+                    ]
+                    for u in u_2d_map_indices
+                ]
+            )
+            α_prop_2d_map = (
+                np.asarray(
+                    [
+                        [
+                            self._α_prop(u=u)
+                            for log10_R in r_2d_map_indices
+                        ]
+                        for u in u_2d_map_indices
+                    ]
+                )
+            )
             α_prop_l_2d_map = (
                 np.asarray(
                     [
@@ -709,7 +726,18 @@ class Mrr:
                         for u in u_2d_map_indices
                     ]
                 )
-                / db_per_cm_to_per_cm
+                * scale_to_db
+            )
+            α_bend_2d_map = (
+                np.asarray(
+                    [
+                        [
+                            self.models.α_bend(r=10**log10_R, u=u)
+                            for log10_R in r_2d_map_indices
+                        ]
+                        for u in u_2d_map_indices
+                    ]
+                )
             )
             α_bend_l_2d_map = (
                 np.asarray(
@@ -721,7 +749,7 @@ class Mrr:
                         for u in u_2d_map_indices
                     ]
                 )
-                / db_per_cm_to_per_cm
+                * scale_to_db
             )
 
             # Write all 2D maps to single Excel file
@@ -738,18 +766,22 @@ class Mrr:
                     s_2d_map,
                     s_nr_2d_map,
                     s_e_2d_map,
+                    α_2d_map,
                     αl_2d_map,
-                    α_inv_2d_map,
+                    α_bend_2d_map,
                     α_bend_l_2d_map,
+                    α_prop_2d_map,
                     α_prop_l_2d_map,
                 ],
                 z_labels=[
                     "S (RIU-1)",
                     "Snr (RIU-1)",
                     "Se",
+                    "alpha (um-1)",
                     "alpha x L (dB)",
-                    r"alpha-1 (um)",
+                    "alpha_bend (um-1)",
                     "alpha_bend x L (dB)",
+                    "alpha_prop (um-1)",
                     "alpha_prop x L (dB)",
                 ],
             )
