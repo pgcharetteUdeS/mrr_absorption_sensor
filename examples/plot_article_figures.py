@@ -384,7 +384,7 @@ def figure_7(
         r,
         s_max,
         color="blue",
-        linewidth=3,
+        linewidth=5,
         alpha=0.25,
         label=r"max{S$_{MRR}$}",
     )
@@ -400,7 +400,7 @@ def figure_7(
     axs[0].set_ylabel(r"S$_{MRR}$")
     axs[0].set_xlim(r[0], r[-1])
     axs[0].set_ylim(10, y_max_s)
-    axs[0].legend(loc="lower right")
+    axs[0].legend(loc="lower right", fontsize=6, ncol=2)
 
     #
     # 7b
@@ -423,7 +423,7 @@ def figure_7(
         )
     axs[1].set_xlabel(r"1/$\alpha$ ($\mu$m)")
     axs[1].set_ylabel(r"S$_{MRR}$")
-    axs[1].legend(loc="upper left", ncol=2)
+    axs[1].legend(loc="upper left", fontsize=6, ncol=2)
 
     #
     # 7c
