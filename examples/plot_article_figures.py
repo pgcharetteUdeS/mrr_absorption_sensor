@@ -361,12 +361,6 @@ def figure_7(
     # 7a
     #
 
-    # Loop to plot Smrr(R) at discrete gammas
-    for g in line_profile_gammas:
-        index = int(np.argmin(np.abs(gammas - g)) + 1)
-        s = np.asarray([c.value for c in maps_wb["S (RIU-1)"][index]])
-        axs[0].loglog(maps_r, s, label=rf"$\Gamma$ = {g:.0f}%")
-
     # Plot max{S(R)}
     r = np.asarray(
         [
@@ -386,7 +380,20 @@ def figure_7(
             )
         ]
     )
-    axs[0].loglog(r, s_max, "k--", label=r"max{$_{MRR}$}")
+    axs[0].loglog(
+        r,
+        s_max,
+        color="blue",
+        linewidth=3,
+        alpha=0.25,
+        label=r"max{S$_{MRR}$}",
+    )
+
+    # Loop to plot Smrr(R) at discrete gammas
+    for g in line_profile_gammas:
+        index = int(np.argmin(np.abs(gammas - g)) + 1)
+        s = np.asarray([c.value for c in maps_wb["S (RIU-1)"][index]])
+        axs[0].loglog(maps_r, s, label=rf"$\Gamma$ = {g:.0f}%")
 
     # PLot formatting, title, labels, etc.
     axs[0].set_xlabel("Radius (μm)")
@@ -406,19 +413,24 @@ def figure_7(
             α_inv,
             s,
             label="".join(
-                [r"$\Gamma$ = ", f"{gamma:.0f}% ({maps_r[np.argmax(s)]:.0f} um)"]
+                [
+                    r"$\Gamma$ = ",
+                    f"{gamma:.0f}%",
+                    f", R = {maps_r[np.where(s > np.max(s)*0.995)][0]:.0f} μm ",
+                    "@ max(Smrr)",
+                ]
             ),
         )
-    axs[1].set_xlabel(r"1/$\alpha$")
+    axs[1].set_xlabel(r"1/$\alpha$ ($\mu$m)")
     axs[1].set_ylabel(r"S$_{MRR}$")
-    axs[1].legend(loc="lower right")
+    axs[1].legend(loc="upper left", ncol=2)
 
     #
     # 7c
     #
 
     # Plot Smax(R)
-    axs[2].loglog(r, s_max, "k", label=r"max{$_{MRR}$}")
+    axs[2].loglog(r, s_max, color="blue", label=r"max{S$_{MRR}$}")
     axs[2].set_ylabel("max(S$_{MRR}$)")
     axs[2].set_xlabel("Radius (μm)")
     axs[2].set_xlim(r[0], r[-1])
@@ -438,7 +450,7 @@ def figure_7(
     y_min_h: float = 0.1
     y_max_h: float = 0.9
     ax_r = axs[2].twinx()
-    ax_r.semilogx(r, h, "b", label="h")
+    ax_r.semilogx(r, h, "black", label="h")
     ax_r.set_ylabel(r"h (μm) @ max($S_{MRR}$)")
     ax_r.set_xlim(r[0], r[-1])
     ax_r.set_ylim(y_min_h, y_max_h)
@@ -685,9 +697,7 @@ def plot_article_figures(results_file_name: str, maps_file_name: str):
         results_wb=results_wb,
         results_wb_mrr_sheet_col_names=results_wb_mrr_sheet_col_names,
     )
-    figure_3b(
-        results_wb=results_wb, out_filename_path=out_filename_path
-    )
+    figure_3b(results_wb=results_wb, out_filename_path=out_filename_path)
     figure_4(
         maps_wb=maps_wb,
         results_wb=results_wb,
