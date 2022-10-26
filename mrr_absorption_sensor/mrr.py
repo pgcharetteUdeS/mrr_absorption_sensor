@@ -34,8 +34,9 @@ class Mrr:
     All lengths are in units of um
 
     See "Silicon micro-ring resonators" [Bogaerts, 2012] for formulas for Q (20)
-    and finesse (21), with Q = (neff * L / lambda) * F. Q is also the total number
-    of field oscillations in the ring, over the number of cycles around the ring (F).
+    and finesse (21), with Q = (2π * neff * L / lambda) * (F/2π). Q is also the total
+    number of field oscillations in the ring x 2π, over the number of cycles
+    around the ring (F/2π).
 
     """
 
