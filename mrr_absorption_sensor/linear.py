@@ -10,7 +10,7 @@ Exposed methods:
 
 
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -180,7 +180,7 @@ class Linear:
         s: float = self._calc_sensitivity(r=r, u=u)
         return -s / 1000
 
-    def _find_max_sensitivity(self, r: float) -> tuple[float, float, float, float]:
+    def _find_max_sensitivity(self, r: float) -> Tuple[float, float, float, float]:
         """
         Calculate maximum sensitivity at r over all u
         """

@@ -12,7 +12,7 @@ Exposed methods:
 
 from math import e
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -700,22 +700,15 @@ class Mrr:
             α_2d_map = np.asarray(
                 [
                     [
-                        self._α_prop(u=u) + self.models.α_bend(r=10 ** log10_R, u=u)
+                        self._α_prop(u=u) + self.models.α_bend(r=10**log10_R, u=u)
                         for log10_R in r_2d_map_indices
                     ]
                     for u in u_2d_map_indices
                 ]
             )
-            α_prop_2d_map = (
-                np.asarray(
-                    [
-                        [
-                            self._α_prop(u=u)
-                            for log10_R in r_2d_map_indices
-                        ]
-                        for u in u_2d_map_indices
-                    ]
-                )
+            α_prop_2d_map = np.tile(
+                [self._α_prop(u=u) for u in u_2d_map_indices],
+                (1, r_2d_map_indices.size),
             )
             α_prop_l_2d_map = (
                 np.asarray(
@@ -729,16 +722,14 @@ class Mrr:
                 )
                 * scale_to_db
             )
-            α_bend_2d_map = (
-                np.asarray(
+            α_bend_2d_map = np.asarray(
+                [
                     [
-                        [
-                            self.models.α_bend(r=10**log10_R, u=u)
-                            for log10_R in r_2d_map_indices
-                        ]
-                        for u in u_2d_map_indices
+                        self.models.α_bend(r=10**log10_R, u=u)
+                        for log10_R in r_2d_map_indices
                     ]
-                )
+                    for u in u_2d_map_indices
+                ]
             )
             α_bend_l_2d_map = (
                 np.asarray(
@@ -1184,7 +1175,7 @@ class Mrr:
         fig.savefig(filename)
         self.logger(f"Wrote '{filename}'.")
 
-    def _calc_α_bend_a_and_b(self, gamma: float) -> tuple[float, float]:
+    def _calc_α_bend_a_and_b(self, gamma: float) -> Tuple[float, float]:
         """
         Fit A & B model parameters to alpha_bend(R) = A*exp(-B*R) @ gamma
         """
@@ -1218,7 +1209,7 @@ class Mrr:
 
         return residual**2
 
-    def _calc_r_e_and_r_w(self, gamma: float) -> tuple[float, float, float, float]:
+    def _calc_r_e_and_r_w(self, gamma: float) -> Tuple[float, float, float, float]:
         """
         Calculate Re(gamma) and Rw(gamma)
         """
@@ -1335,7 +1326,7 @@ class Mrr:
 
     def _find_max_sensitivity(
         self, r: float
-    ) -> tuple[
+    ) -> Tuple[
         float,
         float,
         float,

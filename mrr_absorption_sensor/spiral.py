@@ -10,7 +10,7 @@ Exposed methods:
 
 
 import io
-from typing import Callable
+from typing import Callable, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -93,7 +93,7 @@ class Spiral:
     # Plotting
     #
 
-    def _calc_spiral_parameters(self, w: float) -> tuple[float, float, float]:
+    def _calc_spiral_parameters(self, w: float) -> Tuple[float, float, float]:
         """
         Calculate spiral parameters @ r, w, and n_turns
         """
@@ -113,7 +113,7 @@ class Spiral:
         theta0: float = 0,
         spiral_x: np.ndarray = np.asarray([]),
         spiral_y: np.ndarray = np.asarray([]),
-    ) -> tuple[np.ndarray, np.ndarray]:
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Calculate parametric arc theta(n) & r(n) centered at [x0,y0] and rotated by
         theta0, append arc x[n]/y[n] arc sample coordinates to x/y spiral arrays
@@ -458,7 +458,7 @@ class Spiral:
         n_turns: float,
         r_window: float,
         figure: plt.Figure = None,
-    ) -> tuple[plt.Figure, dict,]:
+    ) -> Tuple[plt.Figure, dict,]:
         """
         This function actually draws a spiral!
         """
@@ -676,7 +676,7 @@ class Spiral:
 
     def _calc_sensitivity(
         self, r: float, u: float, n_turns: float
-    ) -> tuple[float, float, float, float]:
+    ) -> Tuple[float, float, float, float]:
         """
         Calculate sensitivity at radius r for a given core height & height
         and number of turns
@@ -806,7 +806,7 @@ class Spiral:
 
     def _find_max_sensitivity(
         self, r: float
-    ) -> tuple[float, float, float, float, float, float, float]:
+    ) -> Tuple[float, float, float, float, float, float, float]:
         """
         Calculate maximum sensitivity at r over all h and n_turns
         """

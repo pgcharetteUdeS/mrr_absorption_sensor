@@ -21,7 +21,7 @@ Exposed methods:
 
 """
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -179,7 +179,7 @@ class Models:
     # Payne and Lacey model for propagataion losses from vertical sidewall roughness
     def _calc_k_parallel_projections(
         self, theta: float, n_clad: float, n_core: float, n_sub: float
-    ) -> tuple[float, float, float]:
+    ) -> Tuple[float, float, float]:
 
         # Calculate wave-numbers
         k0: float = (2 * np.pi) / (self.lambda_res * 1e-6)
@@ -232,7 +232,7 @@ class Models:
         n_core: float,
         n_sub: float,
         pol: str,
-    ) -> tuple[float, float]:
+    ) -> Tuple[float, float]:
 
         theta_max: float = np.pi / 2
         theta_min = (
@@ -997,7 +997,7 @@ class Models:
                 + f"{Style.RESET_ALL}"
             )
 
-    def u_search_domain(self, r: float) -> tuple[float, float]:
+    def u_search_domain(self, r: float) -> Tuple[float, float]:
         """
         Determine u search domain extrema, see _set_u_search_lower_bound()
 

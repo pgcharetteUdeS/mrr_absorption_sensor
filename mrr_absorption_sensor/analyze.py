@@ -9,7 +9,7 @@ Exposed methods:
 
 
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Tuple
 
 import colorama as colorama
 import matplotlib.pyplot as plt
@@ -32,7 +32,7 @@ def analyze(
     toml_input_file: str,
     block: bool = False,
     logger: Callable = print,
-) -> tuple[Models, Mrr | None, Linear | None, Spiral | None]:
+) -> Tuple[Models, Mrr | None, Linear | None, Spiral | None]:
     """
     Calculate the maximum achievable sensitivities over a range of radii for micro-ring
     resonator, spiral, and linear waveguide absorption sensors.
@@ -124,9 +124,7 @@ def analyze(
     linear.plot_optimization_results()
     if not parameters["no_spiral"]:
         spiral.plot_optimization_results()
-    mrr.plot_combined_sensor_optimization_results(
-        linear=linear, spiral=spiral
-    )
+    mrr.plot_combined_sensor_optimization_results(linear=linear, spiral=spiral)
 
     # Write the analysis results to the output Excel file
     if parameters["write_excel_files"]:

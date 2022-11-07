@@ -14,7 +14,7 @@ All lengths are in units of um
 
 from openpyxl.workbook import Workbook
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Tuple
 
 import numpy as np
 import toml
@@ -85,7 +85,7 @@ def _check_mode_solver_data(modes_data: dict, bending_loss_data: dict, filename:
 
 def load_toml_file(
     filename: Path, logger: Callable = print
-) -> tuple[dict, dict, dict,]:
+) -> Tuple[dict, dict, dict,]:
     """
 
     Load problem data from .toml file and parse it into internal dictionaries.
