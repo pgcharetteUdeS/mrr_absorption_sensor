@@ -28,9 +28,10 @@ plt.rcParams.update(
     },
 )
 analyze("example.toml")
+"""
 plot_article_figures(
     results_file_name="data\\example_ALL_RESULTS.xlsx",
     maps_file_name="data\\example_MRR_2DMAPS_VS_GAMMA_and_R.xlsx",
 )
-
+"""
 print("Done example.py!")
