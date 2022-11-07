@@ -708,8 +708,8 @@ class Mrr:
             )
             α_prop_2d_map = np.tile(
                 [self._α_prop(u=u) for u in u_2d_map_indices],
-                (1, r_2d_map_indices.size),
-            )
+                (r_2d_map_indices.size, 1),
+            ).T
             α_prop_l_2d_map = (
                 np.asarray(
                     [
