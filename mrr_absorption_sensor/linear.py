@@ -1,13 +1,9 @@
-"""
+"""linear.py
 
 Linear waveguide sensor class
 
-Exposed methods:
-    - analyze()
-    - plot_optimization_results()
-
 """
-
+__all__ = ["Linear"]
 
 from pathlib import Path
 from typing import Callable, Tuple
@@ -25,6 +21,11 @@ class Linear:
     Linear waveguide class (straight waveguide of length equal to the ring diameter, 2r)
 
     All lengths are in units of um
+
+    Exposed methods:
+        - analyze()
+        - plot_optimization_results()
+
     """
 
     def __init__(self, models: Models, logger: Callable = print):

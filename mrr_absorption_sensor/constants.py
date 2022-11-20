@@ -1,18 +1,25 @@
+"""constants.PY
+
+Global constants
+
 """
+__all__ = ["constants", "LINE_STYLES"]
 
-constants.PY
-
-"""
-
-from collections import namedtuple
+from typing import NamedTuple
 import numpy as np
 
-# Package version
-__version__: str = "1.0"
 
-# Global constants in a namedTuple class
-Constants = namedtuple("Constants", ["PER_UM_TO_DB_PER_CM"])
-constants = Constants(np.log10(np.e) * 10 * 10000)
+class Constants(NamedTuple):
+    """Global constants
+    - PER_UM_TO_DB_PER_CM: covert losses from um-1 in exponent form to
+                           dB/cm in DB form.
+    """
+
+    PER_UM_TO_DB_PER_CM: float
+
+
+constants: Constants = Constants(np.log10(np.e) * 10 * 10000)
+
 
 # Define extra line styles, see:
 # "https://matplotlib.org/3.5.1/gallery/lines_bars_and_markers/linestyles.html"

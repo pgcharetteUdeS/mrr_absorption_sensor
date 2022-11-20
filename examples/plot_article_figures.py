@@ -1,10 +1,19 @@
-"""
+"""plot_article_figures.py
 
 Plot figures in the article
 
-Data in files "*_MRR_2DMAPS_VS_GAMMA_and_R.xlsx" and "*_ALL_RESULTS.xlsx"
+Data read from files "*_MRR_2DMAPS_VS_GAMMA_and_R.xlsx" and "*_ALL_RESULTS.xlsx"
 
 """
+__all__ = [
+    "plot_article_figures",
+    "plot_article_figures_wrapper",
+    "figure_3b",
+    "figure_4",
+    "figure_6",
+    "figure_7",
+    "figure_x",
+]
 
 import io
 import sys
@@ -193,7 +202,7 @@ def figure_4(
         + rf" at $\Gamma_{{fluid}}$ = {gamma:.0f}$\%$"
     )
     ax.set_xlabel("Radius (μm)")
-    ax.set_ylabel(r"$S_{MRR}$ and $S_{NR}$ (RIU$_{-1}$)")
+    ax.set_ylabel(r"$S_{MRR}$ and $S_{NR}$ (RIU$^{-1}$)")
     ax_r.set_ylabel(r"$S_e$")
     ax.set_ylim(0, y_max)
     ax_r.set_ylim(0, y_max / 1000)

@@ -1,16 +1,11 @@
-"""
+"""fileio.py
 
 File I/O utilities
-
-Exposed methods:
-   - load_toml_file()
-   - validate_excel_results_file()
-   - write_excel_results_file()
 
 All lengths are in units of um
 
 """
-
+__all__ = ["load_toml_file", "validate_excel_results_file", "write_excel_results_file"]
 
 from openpyxl.workbook import Workbook
 from pathlib import Path
@@ -21,11 +16,12 @@ import toml
 import sys
 from colorama import Fore, Style
 
-from .constants import constants, __version__
+from .constants import constants
 from .linear import Linear
 from .models import Models
 from .mrr import Mrr
 from .spiral import Spiral
+from .version import __version__
 
 
 def _check_mode_solver_data(modes_data: dict, bending_loss_data: dict, filename: Path):

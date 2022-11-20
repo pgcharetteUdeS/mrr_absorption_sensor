@@ -1,11 +1,9 @@
-"""
+"""analyse.py
 
-Analyze the 3 sensor types
-
-Exposed methods:
-   - analyze()
+Main package interface to analyze the 3 sensor types
 
 """
+__all__ = ["analyze"]
 
 
 from pathlib import Path
@@ -16,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from colorama import Fore, Style
 
-from .constants import __version__
+from .version import __version__
 from .fileio import (
     load_toml_file,
     validate_excel_results_file,

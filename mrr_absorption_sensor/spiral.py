@@ -1,12 +1,9 @@
-"""
+"""spiral.py
 
 Spiral sensor class
 
-Exposed methods:
-    - analyze()
-    - plot_optimization_results()
-
 """
+__all__ = ["Spiral"]
 
 
 import io
@@ -45,6 +42,11 @@ class Spiral:
                but this parameter us user-selectable in the .toml file.
 
     All lengths are in units of um
+
+    Exposed methods:
+        - analyze()
+        - plot_optimization_results()
+
     """
 
     def __init__(
@@ -478,10 +480,11 @@ class Spiral:
         theta_max: float = (r_outer - (a_spiral + self.spacing + w)) / b_spiral
         theta_min: float = max(theta_max - (n_turns * 2 * np.pi), 0)
         thetas_spiral: np.ndarray = np.linspace(theta_max, theta_min, 1000)
+        theta0: float = -theta_max + np.pi / 2
         r_outer_spiral_inner: np.ndarray = (a_spiral + self.spacing) + (
             b_spiral * thetas_spiral
         )
-        theta0: float = -theta_max + np.pi / 2
+
         outer_spiral_x_in, outer_spiral_y_in = self._plot_arc(
             thetas=thetas_spiral,
             r=r_outer_spiral_inner,
@@ -620,17 +623,17 @@ class Spiral:
         ax.set_xlim(-r_window, r_window)
         ax.set_ylim(-r_window, r_window)
         ax.set_title(
-            "Archimedes spiral : "
-            + f"{n_turns: .2f} turns, "
+            f"Archimedes spiral : {n_turns: .2f} turns, "
             + f"w = {self.models.core_v_value:.3f} μm, "
             + f"spacing = {self.spacing:.1f} μm, "
             + f"h = {h:.3f} μm, "
-            + rf"S = {s:.0f} RIU$^{{-1}}$"
+            + f"S = {s:.0f} RIU$^{{-1}}$"
             + f"\nR = {r_outer:.1f} μm, "
-            + rf"R$_{{min}}$ = {r_joint_inner[-1]:.1f} μm, "
+            + f"R$_{{min}}$ = {r_joint_inner[-1]:.1f} μm, "
             + f"S-bend radius = {(r_joint_inner[-1] - w / 2) / 2:.1f} μm, "
             + f"L = {length:.1f} ({spiral_length:.2f} by finite diffs) μm"
         )
+
         ax.plot(outer_spiral_x_in, outer_spiral_y_in, color="red")
         ax.plot(outer_spiral_x_out, outer_spiral_y_out, color="red")
         ax.plot(inner_spiral_x_in, inner_spiral_y_in, color="blue")

@@ -1,25 +1,13 @@
-"""
+"""models.py
 
-Models class
+Models class containing data and methods for interpolation/calculation of the
+problem parameters (waveguide propagation and bending losses, mode effective index
+and gamma, etc.).
 
-Exposed methods:
-    - α_bend(r, u)
-    - α_wg_of_u(u)
-    - calculate_plotting_extrema()
-    - gamma_of_u(u)
-    - n_eff_of_u(u)
-    - u_of_gamma(gamma)
-    - u_search_domain(r)
-
-    NB:
-    1) To accommodate either fixed core width or fixed core height optimization
-       problems, the waveguide core geometry dimensions are labeled "u" and "v",
-       with "u" being the variable components and "v" the fixed component.
-    2) The model for alpha_bend(r, u) is hardcoded in fit_alpha_bend_model()
-       but the code is structured in such a way that it is relatively easy to change,
-       see the "USER-DEFINABLE MODEL-SPECIFIC SECTION" code section.
 
 """
+__all__ = ["Models"]
+
 from pathlib import Path
 from typing import Callable, Tuple
 
@@ -42,6 +30,24 @@ class Models:
     Models class for polynomial interpolation: gamma(u), neffs(u), α_wg(u), α_bend(r, u)
 
     All lengths are in units of um
+
+    Exposed methods:
+        - α_bend(r)
+        - α_wg_of_u()
+        - calculate_plotting_extrema()
+        - gamma_of_u()
+        - n_eff_of_u()
+        - u_of_gamma()
+        - u_search_domain()
+
+    Note:
+    1) To accommodate either fixed core width or fixed core height optimization
+       problems, the waveguide core geometry dimensions are labeled "u" and "v",
+       with "u" being the variable components and "v" the fixed component.
+    2) The model for alpha_bend(r, u) is hardcoded in fit_alpha_bend_model()
+       but the code is structured in such a way that it is relatively easy to change,
+       see the "USER-DEFINABLE MODEL-SPECIFIC SECTION" code section.
+
     """
 
     def __init__(
@@ -301,7 +307,7 @@ class Models:
         return alpha_db_per_m / 100
 
     # alpha_wg(u) model function
-    def α_wg_of_u(self, u: float = None) -> float:
+    def α_wg_of_u(self, u: float | None = None) -> float:
         """
 
         Args:
@@ -365,9 +371,7 @@ class Models:
 
         value: float = model["model"](x)
         value = max(model["min"], value)
-        value = min(model["max"], value)
-
-        return value
+        return min(model["max"], value)
 
     # FIt alpha_wg(u), gamma(u), u(gamma), neff(u) 1D models to the mode solver data
     def _fit_1d_models(self):
@@ -549,8 +553,8 @@ class Models:
             )
 
         # Determine dynamic range extrema of the bending loss data
-        self.u_domain_min: float = float(list(self.bending_loss_data.keys())[0])
-        self.u_domain_max: float = float(list(self.bending_loss_data.keys())[-1])
+        self.u_domain_min = float(list(self.bending_loss_data.keys())[0])
+        self.u_domain_max = float(list(self.bending_loss_data.keys())[-1])
         self.α_bend_data_min = np.exp(min(self.ln_alpha_bend_data))
         self.r_α_bend_data_min = min(self.r_alpha_bend_data)
         self.r_α_bend_data_max = max(self.r_alpha_bend_data)
@@ -716,7 +720,9 @@ class Models:
         alpha_prop: np.ndarray = self.alpha_wg_of_u() + (gamma * self.alpha_fluid)
         """
         α_prop: np.ndarray = np.ones_like(u_domain)
-        for αp, u in np.nditer([α_prop, u_domain], op_flags=["readwrite"]):
+        for αp, u in np.nditer(
+            [α_prop, u_domain], op_flags=[["readwrite"], ["readonly"]]
+        ):
             αp[...] = self.α_wg_of_u(u[...]) + (self.gamma_of_u(u[...]) * self.α_fluid)
         face_colors: np.ndarray = np.copy(
             np.broadcast_to(colors.to_rgba(c="red", alpha=0.8), u_domain.shape + (4,))
@@ -921,8 +927,8 @@ class Models:
                 + f"{Style.RESET_ALL}"
             )
         u_α_bend_threshold: np.ndarray = np.asarray(u[max_indx:])
-        self.r_min_for_u_search_lower_bound = r_α_bend_threshold[-1]
         self.r_max_for_u_search_lower_bound = r_α_bend_threshold[0]
+        self.r_min_for_u_search_lower_bound = r_α_bend_threshold[-1]
         self.u_lower_bound = interpolate.interp1d(
             x=r_α_bend_threshold, y=u_α_bend_threshold
         )
@@ -990,9 +996,8 @@ class Models:
         # in monotonically increasing oder, exit with an error.
         if np.any(np.diff(r_α_bend_threshold) > 0):
             raise ValueError(
-                f"{Fore.YELLOW}ERROR! Search domain lower bound fit:"
-                + "R values are not monotonically decreasing "
-                + f"(see {out_filename})! "
+                f"{Fore.YELLOW}ERROR! Search domain lower bound fit:R "
+                + f"values are not monotonically decreasing (see {out_filename})! "
                 + "Decrease value of 'alpha_bend_threshold' in .toml file."
                 + f"{Style.RESET_ALL}"
             )

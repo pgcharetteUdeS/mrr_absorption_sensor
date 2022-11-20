@@ -1,14 +1,9 @@
-"""
+"""mrr.py
 
 Micro-ring resonator sensor class
 
-Exposed methods:
-    - analyze()
-    - plot_optimization_results()
-    - plot_combined_linear_mrr_spiral_optimization_results()
-
 """
-
+__all__ = ["Mrr"]
 
 from math import e
 from pathlib import Path
@@ -37,6 +32,11 @@ class Mrr:
     and finesse (21), with Q = (2π * neff * L / lambda) * (F/2π). Q is also the total
     number of field oscillations in the ring x 2π, over the number of cycles
     around the ring (F/2π).
+
+    Exposed methods:
+        - analyze()
+        - plot_optimization_results()
+        - plot_combined_linear_mrr_spiral_optimization_results()
 
     """
 
@@ -1480,9 +1480,18 @@ class Mrr:
         gamma_min: float = list(self.models.modes_data.values())[-1]["gamma"]
         gamma_max: float = list(self.models.modes_data.values())[0]["gamma"]
         self.gamma_resampled = np.linspace(gamma_min, gamma_max, 500)
-        self.u_resampled = [self.models.u_of_gamma(g) for g in self.gamma_resampled]
-        self.r_e, self.r_w, self.α_bend_a, self.α_bend_b = zip(
-            *[self._calc_r_e_and_r_w(gamma=gamma) for gamma in self.gamma_resampled]
+        self.u_resampled = np.asarray(
+            [self.models.u_of_gamma(g) for g in self.gamma_resampled]
+        )
+        self.r_e, self.r_w, self.α_bend_a, self.α_bend_b = np.asarray(
+            list(
+                zip(
+                    *[
+                        self._calc_r_e_and_r_w(gamma=gamma)
+                        for gamma in self.gamma_resampled
+                    ]
+                )
+            )
         )
 
         # Calculate extrema for plotting of results
