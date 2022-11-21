@@ -12,8 +12,8 @@ from typing import Callable, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image, TiffImagePlugin
-from colorama import Fore, Style
 from openpyxl.workbook import Workbook
+from rich import print
 from scipy import optimize, integrate
 
 from .constants import constants
@@ -187,10 +187,10 @@ class Spiral:
         # Check for adequate range of spirals in sequence, else exit with warning
         if len(indices) <= 2:
             self.logger(
-                f"{Fore.YELLOW}WARNING! Insufficient range in number of spiral turns "
+                "WARNING! Insufficient range in number of spiral turns "
                 + f"(array indices: [{indices[0]}, {indices[-1]}]), max number "
                 + f"of turns = {self.n_turns[biggest_spiral_index]:.1f}, "
-                + f"no sequence written!{Style.RESET_ALL}"
+                + "no sequence written!"
             )
             return
 
@@ -913,9 +913,9 @@ class Spiral:
         )
         if inner_spiral_r_min < self.models.r_α_bend_data_min:
             self.logger(
-                f"{Fore.YELLOW}WARNING: Minimum spiral bend radius "
+                "WARNING: Minimum spiral bend radius "
                 + f"({inner_spiral_r_min:.2f} um) below minimum value in mode solver "
-                + f"data ({self.models.r_α_bend_data_min:.2f} um)!{Style.RESET_ALL}"
+                + f"data ({self.models.r_α_bend_data_min:.2f} um)!"
             )
 
         # Console message

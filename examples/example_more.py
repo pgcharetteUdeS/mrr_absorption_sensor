@@ -50,13 +50,13 @@ IDEs issues/notes:
 # Standard library packages
 import argparse
 import logging
+from rich import print
 import sys
 import time
 from pathlib import Path
 
-import colorama as colorama
 import matplotlib.pyplot as plt
-from colorama import Fore, Style
+
 # mrr_absorption_sensor package
 from mrr_absorption_sensor.mrr_absorption_sensor import analyze
 
@@ -82,10 +82,6 @@ def mrr_absorption_sensor_vs_spiral(toml_input_filename: str):
     )
     # plt.ion()
 
-    # Required on Windows: initialize the colorama package to print colored text to the
-    # console, else the logger will not print pretty color text.
-    colorama.init()
-
     # Define the logger for console information messages
     logger: logging.Logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
@@ -105,10 +101,7 @@ def mrr_absorption_sensor_vs_spiral(toml_input_filename: str):
         toml_input_filename if args.in_data_file is None else args.in_data_file
     )
     if not Path(toml_input_file).is_file():
-        print(
-            f"{Fore.YELLOW}File '{toml_input_file}' "
-            + f"does not exist!{Style.RESET_ALL}"
-        )
+        print(f"File '{toml_input_file}' does not exist!")
         sys.exit()
 
     # Run the sensor analysis
@@ -118,11 +111,7 @@ def mrr_absorption_sensor_vs_spiral(toml_input_filename: str):
 
     # Show execution time
     elapsed_time: float = time.perf_counter() - global_start_time
-    print(
-        f"{Fore.BLUE}Execution time: "
-        + f"{time.strftime('%M:%S', time.gmtime(elapsed_time))} (MM:SS)"
-        + f"{Style.RESET_ALL}"
-    )
+    print(f"[blue]Time: {time.strftime('%M:%S', time.gmtime(elapsed_time))} (MM:SS)")
 
     # Console message
     print(f"Analyzes sensors for data read from file '{models.filename_path.name}'")
@@ -135,7 +124,7 @@ def mrr_absorption_sensor_vs_spiral(toml_input_filename: str):
     elif not args.no_pause:
         input("Script paused to display figures, press any key to exit")
     else:
-        print(f"{Fore.BLUE}Done!{Style.RESET_ALL}")
+        print("[blue]Done!")
 
 
 if __name__ == "__main__":

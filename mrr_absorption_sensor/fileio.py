@@ -13,8 +13,8 @@ from typing import Callable, Tuple
 
 import numpy as np
 import toml
+from rich import print
 import sys
-from colorama import Fore, Style
 
 from .constants import constants
 from .linear import Linear
@@ -32,51 +32,35 @@ def _check_mode_solver_data(modes_data: dict, bending_loss_data: dict, filename:
 
     # Check that the mode solver data dictionary is not empty
     if not bending_loss_data:
-        raise ValueError(
-            f"{Fore.YELLOW}No bending loss data loaded from "
-            + f"'{filename}'!{Style.RESET_ALL}"
-        )
+        raise ValueError(f"No bending loss data loaded from '{filename}'!")
 
     # Check that u values are in ascending order and positive
     u_bending_loss: np.ndarray = np.asarray(list(bending_loss_data.keys()))
     if not np.all(u_bending_loss[:-1] < u_bending_loss[1:]) or u_bending_loss[0] <= 0:
         raise ValueError(
-            f"{Fore.YELLOW}Bending loss data in '{filename}' are not "
-            + f"in ascending h order!{Style.RESET_ALL}"
+            f"Bending loss data in '{filename}' are not in ascending h order!"
         )
 
     # Check that gamma values are in monotonically descending order
     if np.any(np.diff(np.asarray([v.get("gamma") for v in modes_data.values()])) > 0):
-        raise ValueError(
-            f"{Fore.YELLOW}Gamma values are not in monotonically "
-            + f"decreasing order!{Style.RESET_ALL}"
-        )
+        raise ValueError("Gamma values not in monotonically decreasing order!")
 
     # Check that radius is ordered, positive, and without duplicates
     for u, value in bending_loss_data.items():
         r_array: np.ndarray = np.asarray(value["R"])
         if len(r_array) < 3:
-            raise ValueError(
-                f"{Fore.YELLOW}Invalid R array for u = {u:.3f} in "
-                + f"'{filename}'!{Style.RESET_ALL}"
-            )
+            raise ValueError(f"Invalid R array for u = {u:.3f} in '{filename}'!")
         if (
             len(np.unique(r_array)) != len(r_array)
             or not np.all(r_array[:-1] < r_array[1:])
             or r_array[0] <= 0
         ):
-            raise ValueError(
-                f"{Fore.YELLOW}Invalid R array for u {u:.3f} in "
-                + f"'{filename}'!!{Style.RESET_ALL}"
-            )
+            raise ValueError(f"Invalid R array for u {u:.3f} in '{filename}'!")
 
     # Check that neff and gamma values are reasonable
     for mode in modes_data.values():
         if mode["neff"] < 1 or mode["gamma"] > 1:
-            raise ValueError(
-                f"{Fore.YELLOW}Invalid 'modes' data in '{filename}'!"
-                + f"{Style.RESET_ALL}"
-            )
+            raise ValueError(f"Invalid 'modes' data in '{filename}'!")
 
 
 def load_toml_file(
@@ -156,7 +140,7 @@ def load_toml_file(
         ),
         "disable_R_domain_check": toml_data.get("disable_R_domain_check", False),
         "models_only": toml_data.get("models_only", False),
-        "no_spiral": toml_data.get("no_spiral", False),
+        "analyze_spiral": toml_data.get("analyze_spiral", True),
     }
 
     # Check if .toml file contains unsupported keys, if so exit
@@ -164,8 +148,8 @@ def load_toml_file(
     if invalid_keys := [key for key in toml_data.keys() if key not in valid_keys]:
         valid_keys.sort(key=lambda x: x.lower())
         raise ValueError(
-            f"{Fore.YELLOW}File '{filename}' contains unsupported keys: "
-            + f"{invalid_keys} - Valid keys are : {valid_keys}{Style.RESET_ALL}"
+            f"File '{filename}' contains unsupported keys: "
+            + f"{invalid_keys} - Valid keys are : {valid_keys}"
         )
 
     # Determine if this is a "fixed core height" or "fixed core width" analysis
@@ -174,8 +158,7 @@ def load_toml_file(
         and toml_data.get("core_height") is not None
     ) or (toml_data.get("core_width") is None and toml_data.get("core_height") is None):
         raise ValueError(
-            f"{Fore.YELLOW}EITHER 'core_width' OR 'core_height' fields "
-            + f"nust be specified!{Style.RESET_ALL}"
+            "EITHER 'core_width' OR 'core_height' fields nust be specified!"
         )
     if toml_data.get("core_width") is not None:
         logger("Fixed waveguide core width analysis.")
@@ -183,14 +166,14 @@ def load_toml_file(
         parameters["core_v_name"] = "w"
         parameters["core_v_value"] = toml_data.get("core_width")
         if toml_data.get("h") is None:
-            raise ValueError(f"{Fore.YELLOW}No 'h' fields specified!{Style.RESET_ALL}")
+            raise ValueError("No 'h' fields specified!")
     else:
         logger("Fixed waveguide core height analysis.")
         parameters["core_u_name"] = "w"
         parameters["core_v_name"] = "h"
         parameters["core_v_value"] = toml_data.get("core_height")
         if toml_data.get("w") is None:
-            raise ValueError(f"{Fore.YELLOW}No 'w' fields specified!{Style.RESET_ALL}")
+            raise ValueError("No 'w' fields specified!")
 
     # Check selected parameters for presence and/or valid content
     required_parameters: list = [
@@ -200,14 +183,10 @@ def load_toml_file(
     ]
     for key in required_parameters:
         if key not in parameters:
-            raise ValueError(
-                f"{Fore.YELLOW}Missing '{key}' parameter"
-                + f" in '{filename}'!{Style.RESET_ALL}"
-            )
+            raise ValueError(f"Missing '{key}' parameter in '{filename}'!")
     if parameters["pol"] not in ["TE", "TM"]:
         raise ValueError(
-            f"{Fore.YELLOW}Invalid 'pol' field value '{parameters['pol']}'"
-            + f" in '{filename}'!{Style.RESET_ALL}"
+            f"Invalid 'pol' field value '{parameters['pol']}' in '{filename}'!"
         )
 
     # Copy the neff(u) and gamma(u) mode solver data to the "modes_data{}" dictionary,
@@ -255,7 +234,7 @@ def load_toml_file(
     )
 
 
-def validate_excel_results_file(filename_path: Path) -> str:
+def validate_excel_results_file(filename_path: Path) -> Path:
     """
     Define output Excel filename string from a Path object. Test to see if the file is
     already open, if so return an exception.
@@ -268,20 +247,21 @@ def validate_excel_results_file(filename_path: Path) -> str:
         filename_path (Path): filename path object to test for openness, conversion
 
     Returns:
-        str: filename path string
+        Path: filename path
 
     """
-    excel_output_filename: str = str(
+
+    excel_output_filename: Path = Path(
         filename_path.parent / f"{filename_path.stem}_ALL_RESULTS.xlsx"
     )
 
     try:
-        with open(excel_output_filename, "w"):
+        with open(str(excel_output_filename), "w"):
             pass
     except IOError:
         print(
-            f"{Fore.YELLOW}Could not open '{excel_output_filename}', close it "
-            + f"if it's already open!{Style.RESET_ALL}"
+            f"Could not open '{excel_output_filename}', close it "
+            + "if it's already open!"
         )
         sys.exit()
 
@@ -289,7 +269,7 @@ def validate_excel_results_file(filename_path: Path) -> str:
 
 
 def write_excel_results_file(
-    excel_output_fname: str,
+    excel_output_path: Path,
     models: Models,
     mrr: Mrr,
     linear: Linear,
@@ -303,7 +283,7 @@ def write_excel_results_file(
     and the values are the corresponding column data arrays
 
     Args:
-        excel_output_fname (str):
+        excel_output_path (Path):
         models (Models):
         mrr (Mrr):
         linear (Linear):
@@ -408,7 +388,7 @@ def write_excel_results_file(
         linear_sheet.append(row.tolist())
 
     # If required, save the spiral data to a sheet
-    if not parameters["no_spiral"]:
+    if parameters["analyze_spiral"]:
         spiral_data_dict = {
             "R_um": models.r,
             "maxS_RIU_inv": spiral.s,
@@ -426,5 +406,5 @@ def write_excel_results_file(
             spiral_sheet.append(row.tolist())
 
     # Save the Excel file to disk
-    wb.save(filename=excel_output_fname)
-    logger(f"Wrote '{excel_output_fname}'.")
+    wb.save(filename=str(excel_output_path))
+    logger(f"Wrote '{excel_output_path}'.")

@@ -13,11 +13,11 @@ from typing import Callable, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-from colorama import Fore, Style
 from matplotlib import colors
 from matplotlib.collections import PolyCollection
 from matplotlib.widgets import Button, CheckButtons
 from numpy.polynomial import Polynomial
+from rich import print
 from scipy import interpolate, optimize
 from scipy.linalg import lstsq
 from sympy import functions, lambdify, symbols
@@ -147,17 +147,13 @@ class Models:
         )
         if self.α_bend_data_min > α_prop_min / 100:
             self.logger(
-                f"{Fore.YELLOW}WARNING! Mode solver arrays must contain alpha_bend data"
+                "WARNING! Mode solver arrays must contain alpha_bend data"
                 + f" down to min(alpha_prop)/100 ({α_prop_min/100:.2e} um-1)!"
-                + f"{Style.RESET_ALL}"
             )
             if not parameters["disable_R_domain_check"]:
                 raise ValueError
         if self.r_α_bend_data_min > self.r_min:
-            self.logger(
-                f"{Fore.YELLOW}WARNING! Mode solver arrays must contain data"
-                + f" at radii < Rmin!{Style.RESET_ALL}"
-            )
+            self.logger(f"WARNING! Mode solver arrays must contain data at R < Rmin!")
             if not parameters["disable_R_domain_check"]:
                 raise ValueError
 
@@ -922,10 +918,7 @@ class Models:
         max_indx: int = int(np.argmax(r_α_bend_threshold))
         r_α_bend_threshold: np.ndarray = r_α_bend_threshold[max_indx:]
         if len(r_α_bend_threshold) <= 1:
-            raise ValueError(
-                f"{Fore.YELLOW}'ERROR: alpha_bend_threshold' value us too high!"
-                + f"{Style.RESET_ALL}"
-            )
+            raise ValueError("'ERROR: alpha_bend_threshold' value us too high!")
         u_α_bend_threshold: np.ndarray = np.asarray(u[max_indx:])
         self.r_max_for_u_search_lower_bound = r_α_bend_threshold[0]
         self.r_min_for_u_search_lower_bound = r_α_bend_threshold[-1]
@@ -939,10 +932,9 @@ class Models:
             )
         else:
             self.logger(
-                f"{Fore.YELLOW}WARNING!: {self.core_u_name} search domain lower"
+                f"WARNING!: {self.core_u_name} search domain lower"
                 + f"bound ({self.r_max_for_u_search_lower_bound:.1f} um) is unusually "
                 + "high, raise value of 'alpha_bend_threshold' in .toml file."
-                + f"{Style.RESET_ALL}"
             )
 
         # Plot u_lower_bound(r) data and spline interpolation
@@ -996,10 +988,9 @@ class Models:
         # in monotonically increasing oder, exit with an error.
         if np.any(np.diff(r_α_bend_threshold) > 0):
             raise ValueError(
-                f"{Fore.YELLOW}ERROR! Search domain lower bound fit:R "
+                "ERROR! Search domain lower bound fit:R "
                 + f"values are not monotonically decreasing (see {out_filename})! "
                 + "Decrease value of 'alpha_bend_threshold' in .toml file."
-                + f"{Style.RESET_ALL}"
             )
 
     def u_search_domain(self, r: float) -> Tuple[float, float]:

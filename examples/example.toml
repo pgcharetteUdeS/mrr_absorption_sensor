@@ -43,7 +43,7 @@ write_spiral_sequence_to_file = true	# Enable/disable writing of spiral sequence
 # Debugging flags						# NB: "true and "false" MUST be lower-case in .toml format
 disable_R_domain_check = true			# Show warning but don't exit if the mode solver data doesn't adequately cover analysis domain, see below (boolean, default = false)
 models_only = false						# Calculate and plot models only, without analysing the waveguides (boolean, default = false)
-no_spiral = false						# Analyse the MRR and linear waveguides only (boolean, default = false)
+analyze_spiral = true					# Analyse the MRR and linear waveguides only (boolean, default = True)
 
 # Mode solver data
 

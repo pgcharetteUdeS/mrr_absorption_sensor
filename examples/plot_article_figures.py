@@ -19,6 +19,7 @@ import io
 import sys
 import argparse
 from pathlib import Path
+from rich import print
 
 import matplotlib.pyplot as plt
 import numpy as np

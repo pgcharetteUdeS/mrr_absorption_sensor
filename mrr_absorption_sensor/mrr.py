@@ -11,8 +11,8 @@ from typing import Callable, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-from colorama import Fore, Style
 from openpyxl.workbook import Workbook
+from rich import print
 from scipy import optimize
 from scipy.special import lambertw
 
@@ -30,8 +30,7 @@ class Mrr:
 
     See "Silicon micro-ring resonators" [Bogaerts, 2012] for formulas for Q (20)
     and finesse (21), with Q = (2π * neff * L / lambda) * (F/2π). Q is also the total
-    number of field oscillations in the ring x 2π, over the number of cycles
-    around the ring (F/2π).
+    number of field oscillations in the ring x 2π.
 
     Exposed methods:
         - analyze()
@@ -276,9 +275,9 @@ class Mrr:
                 int(np.argmin(gamma_2d_map))
             ]
             self.logger(
-                f"{Fore.YELLOW}WARNING! Gamma({self.models.core_u_name}) is not "
+                f"[yellow]WARNING! Gamma({self.models.core_u_name}) is not "
                 + "monotonically decreasing, first/last values replaced"
-                + f" with gamma max/min!{Style.RESET_ALL}"
+                + " with gamma max/min!"
             )
 
         # Indices for dashed lines at radii for max(Smrr)
@@ -1092,11 +1091,10 @@ class Mrr:
         # Create plot figure
         fig, ax = plt.subplots()
         ax.set_title(
-            "Maximum sensitivity for MRR and linear sensors"
-            if self.models.parameters["no_spiral"]
-            else "Maximum sensitivity for MRR, linear, and spiral sensors"
-            + f"\n{self.models.pol}"
-            + f", λ = {self.models.lambda_res:.3f} μm"
+            "Maximum sensitivity for MRR, linear, and spiral sensors\n"
+            if self.models.parameters["analyze_spiral"]
+            else "Maximum sensitivity for MRR and linear sensors\n"
+            + f"{self.models.pol}, λ = {self.models.lambda_res:.3f} μm"
             + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
         )
 
@@ -1134,7 +1132,7 @@ class Mrr:
         ax.set_ylim(100, 1000000)
 
         # Spiral and MRR/spiral sensitivity ratio, if required
-        if not self.models.parameters["no_spiral"]:
+        if self.models.parameters["analyze_spiral"]:
             ax.loglog(
                 self.models.r[spiral.s > 1],
                 spiral.s[spiral.s > 1],
