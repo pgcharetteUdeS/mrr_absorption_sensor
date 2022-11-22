@@ -5,8 +5,16 @@ File I/O utilities
 All lengths are in units of um
 
 """
-__all__ = ["load_toml_file", "validate_excel_results_file", "write_excel_results_file"]
+__all__ = [
+    "InputParameters",
+    "load_toml_file",
+    "validate_excel_results_file",
+    "write_excel_results_file",
+]
 
+import dacite
+from dacite import from_dict
+from dataclasses import asdict, dataclass, field
 from openpyxl.workbook import Workbook
 from pathlib import Path
 from typing import Callable, Tuple
@@ -16,12 +24,213 @@ import toml
 from rich import print
 import sys
 
-from .constants import constants
+from .constants import constants, Missing, MISSING
 from .linear import Linear
 from .models import Models
 from .mrr import Mrr
 from .spiral import Spiral
 from .version import __version__
+
+
+@dataclass
+class Waveguide:
+    """
+    Waveguide parameters
+    """
+
+    n_clad: float
+    n_core: float
+    n_sub: float
+    core_height: float | Missing = MISSING
+    core_width: float | Missing = MISSING
+    u_coord_name: str = ""
+    v_coord_name: str = ""
+    v_coord_value: float | Missing = MISSING
+    roughness_lc: float = 50e-9
+    roughness_sigma: float = 10e-9
+    lambda_resonance: float = 0.633
+    ni_op_point: float = 1.0e-6
+    polarisation: str = "TE"
+
+
+@dataclass
+class SpiralParms:
+    """
+    Spiral parameters
+    """
+
+    spacing: float = 5.0
+    turns_min: float = 0.5
+    turns_max: float = 25.0
+
+
+@dataclass
+class Fitting:
+    """
+    Model fitting parameters
+    """
+
+    alpha_wg_order: int = 3
+    gamma_order: int = 4
+    neff_order: int = 3
+    optimization_local: bool = True
+    optimization_method: str = "Powell"
+
+
+@dataclass
+class Limits:
+    """
+    Analysis limit parameters
+    """
+
+    alpha_bend_threshold: float = 0.01
+    min_delta_ni: float = 1.0e-6
+    r_min: float = 25.0
+    r_max: float = 10000.0
+    r_samples_per_decade: int = 100
+    T_SNR: float = 20.0
+
+
+@dataclass
+class IO:
+    """
+    Graphing and file I/O and parameters
+    """
+
+    map_line_profiles: list
+    draw_largest_spiral: bool = True
+    map2D_colormap: str = "viridis"
+    map2D_n_grid_points: int = 500
+    map2D_overlay_color_dark: str = "white"
+    map2D_overlay_color_light: str = "black"
+    output_sub_dir: str = ""
+    write_2D_maps: bool = True
+    write_excel_files: bool = True
+    write_spiral_sequence_to_file: bool = True
+
+
+@dataclass
+class Debug:
+    """
+    Debugging and other flags
+    """
+
+    alpha_wg_exponential_model: bool = False
+    disable_u_search_lower_bound: bool = False
+    disable_R_domain_check: bool = False
+    models_only: bool = False
+    analyze_spiral: bool = True
+
+
+@dataclass
+class Geom:
+    """
+    Mode solver data class
+    """
+
+    u: float
+    gamma: float
+    neff: float
+    R: list
+    alpha_bend: list
+
+
+@dataclass
+class InputParameters:
+    """
+    Problem data loaded from a .toml file dictionary
+    """
+
+    wg: Waveguide
+    spiral: SpiralParms
+    fit: Fitting
+    limits: Limits
+    debug: Debug
+    io: IO
+    geom: dict = field(default_factory=dict)
+    u_min: float = 0
+    u_max: float = 0
+    gamma_min: float = 0
+    gamma_max: float = 0
+    filename: Path = Path("")
+    logger: Callable = print
+
+    def __post_init__(self):
+        # Convert geom dictionary values from dict to dataclass objects
+        if len(self.geom) == 0:
+            raise KeyError(f"[yellow]{self.filename}: no 'geom' mode solver data!")
+        for key in self.geom:
+            self.geom[key] = from_dict(data_class=Geom, data=self.geom[key])
+
+        # Load the gamma and u extrema into the class variables
+        self.u_min = min(val.u for val in self.geom.values())
+        self.u_max = max(val.u for val in self.geom.values())
+        self.gamma_min = min(val.gamma for val in self.geom.values())
+        self.gamma_max = max(val.gamma for val in self.geom.values())
+
+        # Determine if this is a "fixed core height" or "fixed core width" analysis
+        if self.wg.core_width is not MISSING and self.wg.core_height is MISSING:
+            self.logger(f"{self.filename}: Fixed waveguide core width analysis.")
+            self.wg.u_coord_name = "h"
+            self.wg.v_coord_name = "w"
+            self.wg.v_coord_value = self.wg.core_width
+        elif self.wg.core_height is not MISSING and self.wg.core_width is MISSING:
+            self.logger(f"{self.filename}: Fixed waveguide core height analysis.")
+            self.wg.u_coord_name = "w"
+            self.wg.v_coord_name = "h"
+            self.wg.v_coord_value = self.wg.core_height
+        else:
+            raise KeyError(
+                f"{self.filename}: EITHER 'core_width' OR 'core_height' is required!"
+            )
+
+        # Check the input data
+        self.check_input_data()
+
+    def check_input_data(self):
+        """
+        Perform a number of consistency and value range check on the input data.
+        """
+
+        # Check selected parameters for valid content
+        if self.wg.polarisation not in ["TE", "TM"]:
+            raise KeyError(f"{self.filename}: Invalid 'pol' key value!")
+
+        # Check that u values are in ascending order and positive
+        u_bending_loss: np.ndarray = np.asarray([val.u for val in self.geom.values()])
+        if (
+            not np.all(u_bending_loss[:-1] < u_bending_loss[1:])
+            or u_bending_loss[0] <= 0
+        ):
+            raise KeyError(
+                f"{self.filename}: 'geom' keys are not in ascending order of 'u'!"
+            )
+
+        # Check that gamma values are in descending order and reasonably valued
+        if np.any(np.diff(np.asarray([val.gamma for val in self.geom.values()])) > 0):
+            raise KeyError(f"{self.filename}: 'gamma' values not in descending order!")
+        if max(val.gamma for val in self.geom.values()) > 1:
+            raise KeyError(f"{self.filename}: 'gamma' must be in [0..1] range!")
+
+        # Check that neff are reasonable
+        if min(val.neff for val in self.geom.values()) < 1:
+            raise KeyError(f"{self.filename}: neff values must be greater than 1!")
+
+        # Check bending loss data (R and alpha_bend arrays)
+        for val in self.geom.values():
+            r_array: np.ndarray = np.asarray(val.R)
+            alpha_bend_array: np.ndarray = np.asarray(val.alpha_bend)
+            if (
+                len(r_array) < 3
+                or len(r_array) != len(alpha_bend_array)
+                or len(np.unique(r_array)) != len(r_array)
+                or not np.all(r_array[:-1] < r_array[1:])
+                or r_array[0] <= 0
+            ):
+                raise KeyError(
+                    f"{self.filename}: Invalid bending loss data"
+                    f" at u = {val.u:.3f}!"
+                )
 
 
 def _check_mode_solver_data(modes_data: dict, bending_loss_data: dict, filename: Path):
@@ -32,52 +241,63 @@ def _check_mode_solver_data(modes_data: dict, bending_loss_data: dict, filename:
 
     # Check that the mode solver data dictionary is not empty
     if not bending_loss_data:
-        raise ValueError(f"No bending loss data loaded from '{filename}'!")
+        raise KeyError(f"No bending loss data loaded from '{filename}'!")
 
     # Check that u values are in ascending order and positive
     u_bending_loss: np.ndarray = np.asarray(list(bending_loss_data.keys()))
     if not np.all(u_bending_loss[:-1] < u_bending_loss[1:]) or u_bending_loss[0] <= 0:
-        raise ValueError(
+        raise KeyError(
             f"Bending loss data in '{filename}' are not in ascending h order!"
         )
 
     # Check that gamma values are in monotonically descending order
     if np.any(np.diff(np.asarray([v.get("gamma") for v in modes_data.values()])) > 0):
-        raise ValueError("Gamma values not in monotonically decreasing order!")
+        raise KeyError("Gamma values not in monotonically decreasing order!")
 
     # Check that radius is ordered, positive, and without duplicates
     for u, value in bending_loss_data.items():
         r_array: np.ndarray = np.asarray(value["R"])
         if len(r_array) < 3:
-            raise ValueError(f"Invalid R array for u = {u:.3f} in '{filename}'!")
+            raise KeyError(f"Invalid R array for u = {u:.3f} in '{filename}'!")
         if (
             len(np.unique(r_array)) != len(r_array)
             or not np.all(r_array[:-1] < r_array[1:])
             or r_array[0] <= 0
         ):
-            raise ValueError(f"Invalid R array for u {u:.3f} in '{filename}'!")
+            raise KeyError(f"Invalid R array for u {u:.3f} in '{filename}'!")
 
     # Check that neff and gamma values are reasonable
     for mode in modes_data.values():
         if mode["neff"] < 1 or mode["gamma"] > 1:
-            raise ValueError(f"Invalid 'modes' data in '{filename}'!")
+            raise KeyError(f"Invalid 'modes' data in '{filename}'!")
 
 
 def load_toml_file(
     filename: Path, logger: Callable = print
-) -> Tuple[dict, dict, dict,]:
+) -> Tuple[dict, InputParameters, dict, dict,]:
     """
-
     Load problem data from .toml file and parse it into internal dictionaries.
 
-    :param filename: .toml input file containing the problem data
-    :param logger: console logger (optional)
-    :return: parameters, modes_data, bending_loss_data
-             --
+    Args:
+        filename (Path): .toml input file containing the problem data
+        logger (Callable): console logger (optional)
+
+    Returns: parameters, input parameters, modes_data, bending_loss_data
              parameters (dict): problem parameters,
              bending_loss_data (dict): R(u) and alpha_bend(u) mode solver data
 
     """
+
+    toml_dict: dict = toml.load("example - Copy.toml")
+    toml_dict |= {"filename": filename, "logger": logger}
+    parms: InputParameters = from_dict(
+        data_class=InputParameters, data=toml_dict, config=dacite.Config(strict=True)
+    )
+
+    with open("example - Copy - Out.toml", "w") as f:
+        f.write(f"# mrr_absorption_sensor package {__version__}\n")
+        toml.dump(asdict(parms), f)
+
     # Console message
     logger(f"Loading information from '{filename}'...")
 
@@ -87,11 +307,11 @@ def load_toml_file(
     # Parse fields from .toml file into the parameters{} dictionary
     parameters: dict = {
         # Waveguide physical parameters
-        "core_height": toml_data.get("core_height"),
-        "core_width": toml_data.get("core_width"),
-        "n_clad": toml_data.get("n_clad"),
-        "n_core": toml_data.get("n_core"),
-        "n_sub": toml_data.get("n_sub"),
+        "core_height": toml_data.get("core_height", MISSING),
+        "core_width": toml_data.get("core_width", MISSING),
+        "n_clad": toml_data["n_clad"],
+        "n_core": toml_data["n_core"],
+        "n_sub": toml_data["n_sub"],
         "roughness_lc": toml_data.get("roughness_lc", 50e-9),
         "roughness_sigma": toml_data.get("roughness_sigma", 10e-9),
         "lambda_res": toml_data.get("lambda_res", 0.633),
@@ -147,45 +367,37 @@ def load_toml_file(
     valid_keys: list = list(parameters.keys()) + ["h", "w"]
     if invalid_keys := [key for key in toml_data.keys() if key not in valid_keys]:
         valid_keys.sort(key=lambda x: x.lower())
-        raise ValueError(
+        raise KeyError(
             f"File '{filename}' contains unsupported keys: "
-            + f"{invalid_keys} - Valid keys are : {valid_keys}"
+            f"{invalid_keys} - Valid keys are : {valid_keys}"
         )
 
     # Determine if this is a "fixed core height" or "fixed core width" analysis
     if (
-        toml_data.get("core_width") is not None
-        and toml_data.get("core_height") is not None
-    ) or (toml_data.get("core_width") is None and toml_data.get("core_height") is None):
-        raise ValueError(
-            "EITHER 'core_width' OR 'core_height' fields nust be specified!"
-        )
-    if toml_data.get("core_width") is not None:
+        parameters["core_width"] is not MISSING
+        and parameters["core_height"] is not MISSING
+    ):
+        raise KeyError("EITHER 'core_width' OR 'core_height' fields must be specified!")
+    elif parameters["core_width"] is MISSING and parameters["core_height"] is MISSING:
+        raise KeyError("EITHER 'core_width' OR 'core_height' fields must be specified!")
+    elif parameters["core_width"] is not MISSING:
         logger("Fixed waveguide core width analysis.")
         parameters["core_u_name"] = "h"
         parameters["core_v_name"] = "w"
-        parameters["core_v_value"] = toml_data.get("core_width")
+        parameters["core_v_value"] = parameters["core_width"]
         if toml_data.get("h") is None:
-            raise ValueError("No 'h' fields specified!")
+            raise KeyError("No 'h' fields specified!")
     else:
         logger("Fixed waveguide core height analysis.")
         parameters["core_u_name"] = "w"
         parameters["core_v_name"] = "h"
-        parameters["core_v_value"] = toml_data.get("core_height")
+        parameters["core_v_value"] = parameters["core_height"]
         if toml_data.get("w") is None:
-            raise ValueError("No 'w' fields specified!")
+            raise KeyError("No 'w' fields specified!")
 
-    # Check selected parameters for presence and/or valid content
-    required_parameters: list = [
-        "n_clad",
-        "n_core",
-        "n_sub",
-    ]
-    for key in required_parameters:
-        if key not in parameters:
-            raise ValueError(f"Missing '{key}' parameter in '{filename}'!")
+    # Check selected parameters for valid content
     if parameters["pol"] not in ["TE", "TM"]:
-        raise ValueError(
+        raise KeyError(
             f"Invalid 'pol' field value '{parameters['pol']}' in '{filename}'!"
         )
 
@@ -229,6 +441,7 @@ def load_toml_file(
     # Return dictionaries of loaded values
     return (
         parameters,
+        parms,
         modes_data,
         bending_loss_data,
     )
@@ -261,7 +474,7 @@ def validate_excel_results_file(filename_path: Path) -> Path:
     except IOError:
         print(
             f"Could not open '{excel_output_filename}', close it "
-            + "if it's already open!"
+            "if it's already open!"
         )
         sys.exit()
 

@@ -3,7 +3,7 @@
 Global constants
 
 """
-__all__ = ["constants", "LINE_STYLES"]
+__all__ = ["constants", "LINE_STYLES", "Missing", "MISSING"]
 
 from typing import NamedTuple
 import numpy as np
@@ -19,6 +19,16 @@ class Constants(NamedTuple):
 
 
 constants: Constants = Constants(np.log10(np.e) * 10 * 10000)
+
+
+class Missing:
+    """Missing sentinel value class"""
+
+    def __repr__(self):
+        return "MISSING"
+
+
+MISSING = Missing()
 
 
 # Define extra line styles, see:

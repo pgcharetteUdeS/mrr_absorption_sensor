@@ -51,6 +51,7 @@ IDEs issues/notes:
 import argparse
 import logging
 from rich import print
+from rich.logging import RichHandler
 import sys
 import time
 from pathlib import Path
@@ -58,7 +59,13 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 
 # mrr_absorption_sensor package
-from mrr_absorption_sensor.mrr_absorption_sensor import analyze
+# KLUDGE? Choose correct import statement depending on if running from .bat file
+# or from an IDE.
+if sys.gettrace() is not None:
+    from mrr_absorption_sensor import analyze
+else:
+    from mrr_absorption_sensor.mrr_absorption_sensor import analyze
+from plot_article_figures import plot_article_figures
 
 
 def mrr_absorption_sensor_vs_spiral(toml_input_filename: str):
@@ -83,11 +90,10 @@ def mrr_absorption_sensor_vs_spiral(toml_input_filename: str):
     # plt.ion()
 
     # Define the logger for console information messages
-    logger: logging.Logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-    stream_handler: logging.StreamHandler = logging.StreamHandler()
-    stream_handler.setFormatter(logging.Formatter("%(funcName)s():%(message)s"))
-    logger.addHandler(stream_handler)
+    logging.basicConfig(
+        level="INFO", format="%(funcName)s():%(message)s", handlers=[RichHandler()]
+    )
+    logger: logging.Logger = logging.getLogger("rich")
 
     # Parser for command line parameter input (ex: running from .bat file)
     parser = argparse.ArgumentParser(description="Analyse waveguide sensors")
@@ -109,12 +115,22 @@ def mrr_absorption_sensor_vs_spiral(toml_input_filename: str):
         toml_input_file=toml_input_file, logger=logger.info
     )
 
+    # Generate the article figures
+    print(f"Analyze sensors for data read from file '{models.filename_path.name}'")
+    datafile_mantissa: str = (
+        f"{models.parameters['output_sub_dir']}\\" f"{models.filename_path.stem}"
+    )
+    plot_article_figures(
+        results_file_name=f"{datafile_mantissa}_ALL_RESULTS.xlsx",
+        maps_file_name=f"{datafile_mantissa}_MRR_2DMAPS_VS_GAMMA_and_R.xlsx",
+    )
+
     # Show execution time
     elapsed_time: float = time.perf_counter() - global_start_time
-    print(f"[blue]Time: {time.strftime('%M:%S', time.gmtime(elapsed_time))} (MM:SS)")
-
-    # Console message
-    print(f"Analyzes sensors for data read from file '{models.filename_path.name}'")
+    print(
+        f"[magenta3]Time: {time.strftime('%M:%S', time.gmtime(elapsed_time))}"
+        " (MM:SS)"
+    )
 
     # If running from the command line, either pause for user input to keep figures
     # visible, or skip this section if "--no_pause" was specified on the command line.

@@ -33,7 +33,7 @@ plt.rcParams.update(
 )
 
 # rich package initializations
-traceback.install()
+traceback.install(show_locals=True)
 
 
 def analyze(
@@ -67,7 +67,7 @@ def analyze(
 
     # Load the problem parameters from the input .toml file
     toml_input_file_path: Path = Path(toml_input_file)
-    (parameters, modes_data, bending_loss_data,) = load_toml_file(
+    (parameters, parms, modes_data, bending_loss_data,) = load_toml_file(
         filename=toml_input_file_path,
         logger=logger,
     )
@@ -107,9 +107,9 @@ def analyze(
         )
 
     # Instantiate sensor classes
-    mrr = Mrr(models=models, logger=logger)
-    linear = Linear(models=models, logger=logger)
-    spiral = Spiral(models=models, logger=logger)
+    mrr: Mrr = Mrr(models=models, logger=logger)
+    linear: Linear = Linear(models=models, logger=logger)
+    spiral: Spiral = Spiral(models=models, logger=logger)
 
     # Analyze sensors
     mrr.analyze()

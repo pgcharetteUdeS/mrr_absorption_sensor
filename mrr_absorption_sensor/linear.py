@@ -55,9 +55,9 @@ class Linear:
         fig, axs = plt.subplots(5)
         fig.suptitle(
             "Linear waveguide sensor\n"
-            + f"{self.models.pol}"
-            + f", λ = {self.models.lambda_res:.3f} μm"
-            + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
+            f"{self.models.pol}"
+            f", λ = {self.models.lambda_res:.3f} μm"
+            f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
         )
 
         # max{S}

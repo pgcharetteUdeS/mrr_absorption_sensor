@@ -59,7 +59,7 @@ class Models:
         logger: Callable = print,
     ):
 
-        # Load class instance input parameters
+        # Load most frequently used input data into class variables
         self.α_bend_threshold: float = parameters["alpha_bend_threshold"]
         self.α_wg_order = parameters["alpha_wg_order"]
         self.bending_loss_data: dict = bending_loss_data
@@ -67,23 +67,27 @@ class Models:
         self.core_v_name: str = parameters["core_v_name"]
         self.core_v_value: float = parameters["core_v_value"]
         self.disable_u_search_lower_bound = parameters["disable_u_search_lower_bound"]
-        self.filename_path: Path = filename_path
         self.gamma_order = parameters["gamma_order"]
         self.lambda_res: float = parameters["lambda_res"]
-        self.logger: Callable = logger
-        self.modes_data: dict = modes_data
         self.n_clad: float = parameters["n_clad"]
         self.n_core: float = parameters["n_core"]
         self.n_sub: float = parameters["n_sub"]
         self.n_eff_order = parameters["neff_order"]
         self.ni_op: float = parameters["ni_op"]
-        self.parameters: dict = parameters
         self.pol: str = parameters["pol"]
         self.r_min: float = parameters["Rmin"]
         self.r_max: float = parameters["Rmax"]
         self.r_samples_per_decade: int = parameters["R_samples_per_decade"]
         self.roughness_lc: float = parameters["roughness_lc"]
         self.roughness_sigma: float = parameters["roughness_sigma"]
+
+        # Make other input data available through a local copy of the dataclass
+        self.parameters: dict = parameters
+
+        # Load remaining parameters into class variables
+        self.filename_path: Path = filename_path
+        self.logger: Callable = logger
+        self.modes_data: dict = modes_data
 
         # Initialize other class parameters
         self.plotting_extrema: dict = {}
@@ -148,12 +152,12 @@ class Models:
         if self.α_bend_data_min > α_prop_min / 100:
             self.logger(
                 "WARNING! Mode solver arrays must contain alpha_bend data"
-                + f" down to min(alpha_prop)/100 ({α_prop_min/100:.2e} um-1)!"
+                f" down to min(alpha_prop)/100 ({α_prop_min/100:.2e} um-1)!"
             )
             if not parameters["disable_R_domain_check"]:
                 raise ValueError
         if self.r_α_bend_data_min > self.r_min:
-            self.logger(f"WARNING! Mode solver arrays must contain data at R < Rmin!")
+            self.logger("WARNING! Mode solver arrays must contain data at R < Rmin!")
             if not parameters["disable_R_domain_check"]:
                 raise ValueError
 
@@ -989,8 +993,8 @@ class Models:
         if np.any(np.diff(r_α_bend_threshold) > 0):
             raise ValueError(
                 "ERROR! Search domain lower bound fit:R "
-                + f"values are not monotonically decreasing (see {out_filename})! "
-                + "Decrease value of 'alpha_bend_threshold' in .toml file."
+                f"values are not monotonically decreasing (see {out_filename})! "
+                "Decrease value of 'alpha_bend_threshold' in .toml file."
             )
 
     def u_search_domain(self, r: float) -> Tuple[float, float]:
