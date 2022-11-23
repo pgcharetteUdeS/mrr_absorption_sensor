@@ -1,4 +1,4 @@
 """version.py
 Package version
 """
-__version__: str = "1.02"
+__version__: str = "2.0"

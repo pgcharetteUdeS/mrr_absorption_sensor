@@ -85,8 +85,6 @@ class Models:
         self.u_data: np.ndarray = np.asarray([])
         self.r_alpha_bend_data: np.ndarray = np.asarray([])
         self.ln_alpha_bend_data: np.ndarray = np.asarray([])
-        self.u_domain_min: float = 0
-        self.u_domain_max: float = 0
         self.r_α_bend_data_min: float = 0
         self.r_α_bend_min_interp: interpolate.interp1d = interpolate.interp1d(
             [0, 1], [0, 1]
@@ -124,7 +122,7 @@ class Models:
 
         # Check that the bending loss mode solver data covers the required h & R ranges
         α_prop_min: float = self.α_wg_of_u() + (
-            self.gamma_of_u(self.u_domain_max) * self.α_fluid
+            self.gamma_of_u(self.parms.limits.u_max) * self.α_fluid
         )
         if self.α_bend_data_min > α_prop_min / 100:
             self.logger(
@@ -308,7 +306,9 @@ class Models:
             α_wg_min
             + (α_wg_max - α_wg_min)
             * np.exp(
-                -(u - self.u_domain_min) / (self.u_domain_max - self.u_domain_min) * 5
+                -(u - self.parms.limits.u_min)
+                / (self.parms.limits.u_max - self.parms.limits.u_min)
+                * 5
             )
         ) / constants.PER_UM_TO_DB_PER_CM
 

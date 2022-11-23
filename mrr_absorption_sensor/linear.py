@@ -175,8 +175,8 @@ class Linear:
         """
 
         # Minimizer sometimes tries values of the solution vector outside the bounds...
-        u = min(u, self.models.u_domain_max)
-        u = max(u, self.models.u_domain_min)
+        u = min(u, self.models.parms.limits.u_max)
+        u = max(u, self.models.parms.limits.u_min)
 
         # Calculate sensitivity at current solution vector S(r, h)
         s: float = self._calc_sensitivity(r=r, u=u)
@@ -187,20 +187,20 @@ class Linear:
         Calculate maximum sensitivity at r over all u
         """
 
-        # Fetch u domain extrema
-        u_min: float = self.models.u_domain_min
-        u_max: float = self.models.u_domain_max
-
         # If this is the first optimization, set the initial guess for u at the
         # maximum value in the domain (at small radii, bending losses are high,
         # the optimal solution will be at high u), else use previous solution.
-        u0 = u_max if self.previous_solution == -1 else self.previous_solution
+        u0 = (
+            self.models.parms.limits.u_max
+            if self.previous_solution == -1
+            else self.previous_solution
+        )
 
         # Find u that maximizes S at radius R
         optimization_result = optimize.minimize(
             fun=self._obj_fun,
             x0=np.asarray([u0]),
-            bounds=((u_min, u_max),),
+            bounds=((self.models.parms.limits.u_min, self.models.parms.limits.u_max),),
             args=(r,),
             method=self.models.parms.fit.optimization_method,
             tol=1e-9,

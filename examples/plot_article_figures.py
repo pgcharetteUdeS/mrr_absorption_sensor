@@ -729,11 +729,13 @@ def plot_article_figures(results_file_name: str, maps_file_name: str):
         y_max_s=y_max_s,
         out_filename_path=out_filename_path,
     )
+    """
     figure_x(
         results_wb=results_wb,
         results_wb_mrr_sheet_col_names=results_wb_mrr_sheet_col_names,
         out_filename_path=out_filename_path,
     )
+    """
     plt.show()
 
 

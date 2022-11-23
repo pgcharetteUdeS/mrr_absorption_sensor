@@ -1327,8 +1327,8 @@ class Mrr:
         r = args[0]
 
         # Minimizer sometimes tries values of the solution vector outside the bounds...
-        u = min(u, self.models.u_domain_max)
-        u = max(u, self.models.u_domain_min)
+        u = min(u, self.models.parms.limits.u_max)
+        u = max(u, self.models.parms.limits.u_min)
 
         # Calculate sensitivity at current solution vector S(r, h)
         s: float = self._calc_sensitivity(r=r, u=u)

@@ -65,7 +65,7 @@ analyze_spiral = true					# Analyse the MRR and linear waveguides only (boolean,
 # Mode solver solution data as a function of waveguide geometry free parameter (u):
 # - u: either the core height or width in um, depending on which of "core_width" OR "core_height" was specified in the "wg" section
 # - gamma: normalized proportion of mode power in the cladding
-# - R: list of readii at which the bending losses are specified
+# - r: list of readii at which the bending losses are specified
 # - alpha_bend: list of corresponding bending losses (dB/90o)
 
 [geom.1]

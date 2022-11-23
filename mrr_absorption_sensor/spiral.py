@@ -61,10 +61,10 @@ class Spiral:
 
         # Calculate spiral parameters
         self.line_width_min: float = 2 * (
-            float(
-                self.models.parms.wg.v_coord_value
+            (
+                float(self.models.parms.wg.v_coord_value)
                 if self.models.parms.wg.v_coord_name == "w"
-                else self.models.u_domain_min
+                else self.models.parms.limits.u_min
             )
             + self.models.parms.spiral.spacing
         )
@@ -688,8 +688,8 @@ class Spiral:
         """
 
         # Determine waveguide core width
-        w: float = float(
-            self.models.parms.wg.v_coord_value
+        w: float = (
+            float(self.models.parms.wg.v_coord_value)
             if self.models.parms.wg.v_coord_name == "w"
             else u
         )
@@ -803,8 +803,8 @@ class Spiral:
         n_turns: float = x[1]
 
         # Minimizer sometimes tries values of the solution vector outside the bounds...
-        u = min(u, self.models.u_domain_max)
-        u = max(u, self.models.u_domain_min)
+        u = min(u, self.models.parms.limits.u_max)
+        u = max(u, self.models.parms.limits.u_min)
         n_turns = max(n_turns, 0)
 
         # Calculate sensitivity at current solution vector S(r, u, n_turns)
@@ -824,8 +824,8 @@ class Spiral:
         u_min, u_max = self.models.u_search_domain(r)
 
         # Spiral properties at minimum core width
-        w_min: float = float(
-            self.models.parms.wg.v_coord_value
+        w_min: float = (
+            float(self.models.parms.wg.v_coord_value)
             if self.models.parms.wg.v_coord_name == "w"
             else u_min
         )
