@@ -62,7 +62,7 @@ class Spiral:
         # Calculate spiral parameters
         self.line_width_min: float = 2 * (
             (
-                float(self.models.parms.wg.v_coord_value)
+                self.models.parms.wg.v_coord_value
                 if self.models.parms.wg.v_coord_name == "w"
                 else self.models.parms.limits.u_min
             )
@@ -689,7 +689,7 @@ class Spiral:
 
         # Determine waveguide core width
         w: float = (
-            float(self.models.parms.wg.v_coord_value)
+            self.models.parms.wg.v_coord_value
             if self.models.parms.wg.v_coord_name == "w"
             else u
         )
@@ -825,7 +825,7 @@ class Spiral:
 
         # Spiral properties at minimum core width
         w_min: float = (
-            float(self.models.parms.wg.v_coord_value)
+            self.models.parms.wg.v_coord_value
             if self.models.parms.wg.v_coord_name == "w"
             else u_min
         )
