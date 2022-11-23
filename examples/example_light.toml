@@ -1,65 +1,31 @@
 # Waveguide physical parameters:
-# NB: EITHER a fixed core width OR core height is specified here
-#     while the other core dimension is the free parameter in the solution
-#	  (supplying both keys will generate an error).
-#     The mode solver data for the core dimension free parameter
-#     used for fitting are supplied in the "geom" keys below.
 [wg]
 core_width = 0.7						# Fixed waveguide core width (um)
-#core_height = 0.2						# Fixed waveguide core height (um)
 lambda_resonance = 0.532				# Ring resonance wavelength (um)
 n_clad = 1.33                           # Cladding refractive index
 n_core = 1.49                           # Core refractive index
 n_sub = 1.2                             # Substrate refractive index
-ni_op_point = 1.00e-6					# Fluid refractive index imaginary component operating point (RIU, defautl = 1e-6)
-roughness_lc = 50e-9                    # Vertical sidewall roughness auto-correlation length (nm, default = 50 nm)
-roughness_sigma = 6e-9                  # Vertical sidewall roughness standard deviation (nm, defautl = 6 nm)
-polarization = "TE"						# Mode polarization, for use in graph labeling ("TM" or "TE, default = "TE")
 
 # Ring parameters
 [ring]
-coupling_length = 0                     # Bus/ring coupling lenght in a racetrack (default = 0 for a circular ring)
 
 # Spiral physical parameters:
 [spiral]
-spacing = 5								# Spacing between the waveguides in the spiral (um, default = 5.0)
-turns_min = 0.5							# Minimum allowed turns in the spiral (default = 0.5)
-turns_max = 50							# Maximum number of allowed turns in the spiral in the optimization (default = 25)
 
 # Model fitting parameters:
 [fit]
-gamma_order = 4							# Polynomial model order for gamma(h) interpolation (default = 4)
-neff_order = 3							# Polynomial model order for neff(h) interpolation (default = 3)
-alpha_wg_order = 4						# Polynomial model order for alpha_wg(h) interpolation (default = 3)
-optimization_method = "SLSQP"			# scipy.optimize.minimize() "method" parameter used for S(u, r) minimization (default = "SLSQP")
 
 # Analysis limit parameters:
 [limits]
 r_min = 10								# Analysis domain minimum radius (um)
 r_max = 10000							# Analysis domain maximum radius (um)
-r_samples_per_decade = 50				# Analysis domain  logarithmic sampling rate (number of samples per decade, default = 50)
-alpha_bend_threshold = 0.01				# Maximum value of alpha_bend (db/cm) for h search domain lower bound in optimization (default = 0.01 dB)
-min_delta_ni = 1.0e-6					# Desired minimum resolvable change in ni (RIU, default = 1e-6)
-T_SNR = 20								# Transmission measurement SNR (dB, default = 20)
 
 # Graphing and file I/O and parameters:
 [io]
-draw_largest_spiral = true				# Enable/disable drawing of largest spiral (default = true)
-map2D_colormap = "plasma"				# matplotlib colormap for rendering 2D images (default = "viridis")
-map2D_n_grid_points = 500				# Number of samples along an axis in the 2D maps (default = 500)
-map2D_overlay_color_dark = "white"		# color for overlay plots on "mainly dark" 2D maps (default = "white")
-map2D_overlay_color_light = "white"		# color for overlay plots on "mainly light" 2D maps (default = "white")
-map_line_profiles = [20, 45, 65, 75]	# gamma values for line profiles in 2D maps (default = [])
-output_sub_dir = "data"					# Subdirectory in which to write files, relative (default = "", use "/" or "\\" for delimiters on Windows)
-write_2D_maps = true					# Enable/disable writing of MRR result 2D maps (default = true)
-write_excel_files = true				# Enable/disable writing of results to Excel files (default = true)
-write_spiral_sequence_to_file = true	# Enable/disable writing of spiral sequence to TIFF multi-image file (default = true)
+output_sub_dir = "data"					# Subdirectory in which to write files
 
 # Debugging flags:
 [debug]
-disable_R_domain_check = true			# Show warning if the mode solver data doesn't adequately cover analysis domain, see below (boolean, default = false)
-models_only = false						# Calculate and plot models only, without analysing the waveguides (boolean, default = false)
-analyze_spiral = true					# Analyse the MRR and linear waveguides only (boolean, default = True)
 
 #
 # Mode solver solution data as a function of waveguide geometry free parameter (u):

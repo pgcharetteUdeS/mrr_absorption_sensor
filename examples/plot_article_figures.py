@@ -410,7 +410,7 @@ def figure_7(
     axs[0].set_ylabel(r"S$_{MRR}$")
     axs[0].set_xlim(r[0], r[-1])
     axs[0].set_ylim(10, y_max_s)
-    axs[0].legend(loc="lower right", fontsize=6, ncol=2)
+    axs[0].legend(loc="lower right", ncol=2)
 
     #
     # 7b
@@ -433,7 +433,7 @@ def figure_7(
         )
     axs[1].set_xlabel(r"1/$\alpha$ ($\mu$m)")
     axs[1].set_ylabel(r"S$_{MRR}$")
-    axs[1].legend(loc="upper left", fontsize=6, ncol=2)
+    axs[1].legend(loc="upper left", ncol=2)
 
     #
     # 7c
@@ -668,7 +668,9 @@ def figure_x(
     print(f"Wrote '{str(out_filename_path.parent)}/{out_filename_path.stem}_FIGX.png'.")
 
 
-def plot_article_figures(results_file_name: str, maps_file_name: str):
+def plot_article_figures(
+    results_file_name: str, maps_file_name: str, block: bool = False
+):
     """
 
     Returns:
@@ -682,7 +684,6 @@ def plot_article_figures(results_file_name: str, maps_file_name: str):
             "axes.grid.which": "both",
         },
     )
-    plt.ion()
 
     # Load Excel workbooks (into memory, to reduce risk of conflict)
     with open(results_file_name, "rb") as f:
@@ -736,7 +737,7 @@ def plot_article_figures(results_file_name: str, maps_file_name: str):
         out_filename_path=out_filename_path,
     )
     """
-    plt.show()
+    plt.show(block=block)
 
 
 def plot_article_figures_wrapper():

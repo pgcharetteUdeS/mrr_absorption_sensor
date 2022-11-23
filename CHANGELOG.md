@@ -4,15 +4,16 @@
 
 ### Added
 
-* 
+* Nothin'...
 
 ### Changed
 
 * Changed from dict to dataclass for input parameter storage
+* Changed .toml input file format
 
 ### Removed
 
-* 
+* Nothin'...
 
 ## 1.01
 

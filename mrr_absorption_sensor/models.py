@@ -102,13 +102,13 @@ class Models:
                 self.parms.geom[key].alpha_wg = self._calc_alpha_db_per_cm(
                     n_eff=value.neff,
                     height=value.u,
-                    width=float(self.parms.wg.v_coord_value),
+                    width=self.parms.wg.v_coord_value,
                 )
         else:
             for key, value in self.parms.geom.items():
                 self.parms.geom[key].alpha_wg = self._calc_alpha_db_per_cm(
                     n_eff=value.neff,
-                    height=float(self.parms.wg.v_coord_value),
+                    height=self.parms.wg.v_coord_value,
                     width=value.u,
                 )
 

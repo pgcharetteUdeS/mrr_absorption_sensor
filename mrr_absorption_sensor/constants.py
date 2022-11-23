@@ -59,6 +59,7 @@ class Waveguide:
     Waveguide parameters
     """
 
+    lambda_resonance: float
     n_clad: float
     n_core: float
     n_sub: float
@@ -68,8 +69,7 @@ class Waveguide:
     v_coord_name: str = ""
     v_coord_value: float | Missing = MISSING
     roughness_lc: float = 50e-9
-    roughness_sigma: float = 10e-9
-    lambda_resonance: float = 0.633
+    roughness_sigma: float = 6e-9
     ni_op_point: float = 1.0e-6
     polarization: str = "TE"
 
@@ -105,7 +105,7 @@ class Fitting:
     gamma_order: int = 4
     neff_order: int = 3
     optimization_local: bool = True
-    optimization_method: str = "Powell"
+    optimization_method: str = "SLSQP"
 
 
 @dataclass
@@ -114,11 +114,11 @@ class Limits:
     Analysis limit parameters
     """
 
+    r_min: float
+    r_max: float
+    r_samples_per_decade: int = 50
     alpha_bend_threshold: float = 0.01
     min_delta_ni: float = 1.0e-6
-    r_min: float = 25.0
-    r_max: float = 10000.0
-    r_samples_per_decade: int = 100
     T_SNR: float = 20.0
     u_min: float = 0
     u_max: float = 0
@@ -132,12 +132,12 @@ class IO:
     Graphing and file I/O and parameters
     """
 
-    map_line_profiles: list
+    map_line_profiles: list = field(default_factory=lambda: [20, 45, 65, 75])
     draw_largest_spiral: bool = True
     map2D_colormap: str = "viridis"
     map2D_n_grid_points: int = 500
     map2D_overlay_color_dark: str = "white"
-    map2D_overlay_color_light: str = "black"
+    map2D_overlay_color_light: str = "white"
     output_sub_dir: str = ""
     write_2D_maps: bool = True
     write_excel_files: bool = True
