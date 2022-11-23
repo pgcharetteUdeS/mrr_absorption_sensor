@@ -47,7 +47,7 @@ def load_toml_file(filename: Path, logger: Callable = print) -> InputParameters:
 
     # Load problem parameters from a .toml file into an InputParameters dataclass
     toml_dict: dict = toml.load(filename)
-    toml_dict |= {"filename": filename, "logger": logger}
+    toml_dict |= {"filename": filename}
     parms: InputParameters = from_dict(
         data_class=InputParameters, data=toml_dict, config=dacite.Config(strict=True)
     )

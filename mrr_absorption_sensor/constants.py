@@ -3,14 +3,14 @@
 Global constants
 
 """
-__all__ = ["constants", "LINE_STYLES", "Missing", "MISSING", "InputParameters"]
+__all__ = ["constants", "LINE_STYLES", "InputParameters"]
 
 from dataclasses import dataclass, field
 from dacite import from_dict
 from typing import NamedTuple
 import numpy as np
 from pathlib import Path
-from typing import Callable
+from typing import cast
 
 
 class Constants(NamedTuple):
@@ -23,16 +23,6 @@ class Constants(NamedTuple):
 
 
 constants: Constants = Constants(np.log10(np.e) * 10 * 10000)
-
-
-class Missing:
-    """Missing sentinel value class"""
-
-    def __repr__(self):
-        return "MISSING"
-
-
-MISSING = Missing()
 
 
 # Define extra line styles, see:
@@ -53,6 +43,15 @@ LINE_STYLES: dict = {
 }
 
 
+class Missing:
+    """Sentinel"""
+
+    pass
+
+
+MISSING = Missing()
+
+
 @dataclass
 class Waveguide:
     """
@@ -65,13 +64,23 @@ class Waveguide:
     n_sub: float
     core_height: float | Missing = MISSING
     core_width: float | Missing = MISSING
-    u_coord_name: str = ""
-    v_coord_name: str = ""
-    v_coord_value: float | Missing = MISSING
     roughness_lc: float = 50e-9
     roughness_sigma: float = 6e-9
     ni_op_point: float = 1.0e-6
     polarization: str = "TE"
+
+    def __post_init__(self):
+        # Determine if this is a "fixed core height" or "fixed core width" analysis
+        if self.core_width is not MISSING and self.core_height is MISSING:
+            self.u_coord_name: str = "h"
+            self.v_coord_name: str = "w"
+            self.v_coord_value: float = cast(float, self.core_width)
+        elif self.core_height is not MISSING and self.core_width is MISSING:
+            self.u_coord_name = "w"
+            self.v_coord_name = "h"
+            self.v_coord_value = cast(float, self.core_height)
+        else:
+            raise KeyError("EITHER 'core_width' OR 'core_height' is required!")
 
 
 @dataclass
@@ -187,7 +196,6 @@ class InputParameters:
     io: IO
     geom: dict = field(default_factory=dict)
     filename: Path = Path("")
-    logger: Callable = print
 
     def __post_init__(self):
         # Convert geom dictionary values from dict to dataclass objects
@@ -201,22 +209,6 @@ class InputParameters:
         self.limits.u_max = max(val.u for val in self.geom.values())
         self.limits.gamma_min = min(val.gamma for val in self.geom.values())
         self.limits.gamma_max = max(val.gamma for val in self.geom.values())
-
-        # Determine if this is a "fixed core height" or "fixed core width" analysis
-        if self.wg.core_width is not MISSING and self.wg.core_height is MISSING:
-            self.logger(f"{self.filename}: Fixed waveguide core width analysis.")
-            self.wg.u_coord_name = "h"
-            self.wg.v_coord_name = "w"
-            self.wg.v_coord_value = self.wg.core_width
-        elif self.wg.core_height is not MISSING and self.wg.core_width is MISSING:
-            self.logger(f"{self.filename}: Fixed waveguide core height analysis.")
-            self.wg.u_coord_name = "w"
-            self.wg.v_coord_name = "h"
-            self.wg.v_coord_value = self.wg.core_height
-        else:
-            raise KeyError(
-                f"{self.filename}: EITHER 'core_width' OR 'core_height' is required!"
-            )
 
         # Check the input data
         self.check_input_data()
