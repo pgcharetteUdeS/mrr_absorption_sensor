@@ -1,5 +1,19 @@
 # Change Log
 
+## 2.1
+
+### Added
+
+* Nothin'...
+
+### Changed
+
+* Changed .toml input file format
+
+### Removed
+
+* Nothin'...
+
 ## 2.0
 
 ### Added
@@ -9,7 +23,6 @@
 ### Changed
 
 * Changed from dict to dataclass for input parameter storage
-* Changed .toml input file format
 
 ### Removed
 
