@@ -55,9 +55,10 @@ class Linear:
         fig, axs = plt.subplots(5)
         fig.suptitle(
             "Linear waveguide sensor\n"
-            f"{self.models.pol}"
-            f", λ = {self.models.lambda_res:.3f} μm"
-            f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
+            f"{self.models.parms.wg.polarization}"
+            f", λ = {self.models.parms.wg.lambda_resonance:.3f} μm"
+            f", {self.models.parms.wg.v_coord_name} = "
+            f"{self.models.parms.wg.v_coord_value:.3f} μm"
         )
 
         # max{S}
@@ -74,7 +75,7 @@ class Linear:
         # u (h or w) @ max{S}
         axs_index += 1
         axs[axs_index].semilogx(self.models.r, self.u)
-        axs[axs_index].set_ylabel(f"{self.models.core_u_name} (μm)")
+        axs[axs_index].set_ylabel(f"{self.models.parms.wg.u_coord_name} (μm)")
         axs[axs_index].set_xlim(
             self.models.plotting_extrema["r_plot_min"],
             self.models.plotting_extrema["r_plot_max"],
@@ -159,7 +160,7 @@ class Linear:
 
         # Calculate sensitivity
         s_nr: float = (
-            (4 * np.pi / self.models.lambda_res)
+            (4 * np.pi / self.models.parms.wg.lambda_resonance)
             * (2 * r)
             * self.models.gamma_of_u(u)
             * self._calc_wg_a2(r=r, u=u)
@@ -201,7 +202,7 @@ class Linear:
             x0=np.asarray([u0]),
             bounds=((u_min, u_max),),
             args=(r,),
-            method=self.models.parameters["optimization_method"],
+            method=self.models.parms.fit.optimization_method,
             tol=1e-9,
         )
         u_max_s: float = optimization_result.x[0]

@@ -22,7 +22,7 @@ from scipy import interpolate, optimize
 from scipy.linalg import lstsq
 from sympy import functions, lambdify, symbols
 
-from .constants import constants
+from .constants import constants, InputParameters
 
 
 class Models:
@@ -52,59 +52,34 @@ class Models:
 
     def __init__(
         self,
-        parameters: dict,
-        modes_data: dict,
-        bending_loss_data: dict,
+        parms: InputParameters,
         filename_path: Path,
         logger: Callable = print,
     ):
 
-        # Load most frequently used input data into class variables
-        self.α_bend_threshold: float = parameters["alpha_bend_threshold"]
-        self.α_wg_order = parameters["alpha_wg_order"]
-        self.bending_loss_data: dict = bending_loss_data
-        self.core_u_name: str = parameters["core_u_name"]
-        self.core_v_name: str = parameters["core_v_name"]
-        self.core_v_value: float = parameters["core_v_value"]
-        self.disable_u_search_lower_bound = parameters["disable_u_search_lower_bound"]
-        self.gamma_order = parameters["gamma_order"]
-        self.lambda_res: float = parameters["lambda_res"]
-        self.n_clad: float = parameters["n_clad"]
-        self.n_core: float = parameters["n_core"]
-        self.n_sub: float = parameters["n_sub"]
-        self.n_eff_order = parameters["neff_order"]
-        self.ni_op: float = parameters["ni_op"]
-        self.pol: str = parameters["pol"]
-        self.r_min: float = parameters["Rmin"]
-        self.r_max: float = parameters["Rmax"]
-        self.r_samples_per_decade: int = parameters["R_samples_per_decade"]
-        self.roughness_lc: float = parameters["roughness_lc"]
-        self.roughness_sigma: float = parameters["roughness_sigma"]
-
-        # Make other input data available through a local copy of the dataclass
-        self.parameters: dict = parameters
-
-        # Load remaining parameters into class variables
+        # Load class instance variables
+        self.parms: InputParameters = parms
         self.filename_path: Path = filename_path
         self.logger: Callable = logger
-        self.modes_data: dict = modes_data
 
         # Initialize other class parameters
         self.plotting_extrema: dict = {}
 
         # Define the array of radii to be analyzed (R domain)
         self.r: np.ndarray = np.logspace(
-            start=np.log10(self.r_min),
-            stop=np.log10(self.r_max),
+            start=np.log10(self.parms.limits.r_min),
+            stop=np.log10(self.parms.limits.r_max),
             num=int(
-                (np.log10(parameters["Rmax"]) - np.log10(parameters["Rmin"]))
-                * self.r_samples_per_decade
+                (np.log10(self.parms.limits.r_max) - np.log10(self.parms.limits.r_min))
+                * self.parms.limits.r_samples_per_decade
             ),
             base=10,
         )
 
         # Define propagation losses in the fluid medium (1/um)
-        self.α_fluid: float = (4 * np.pi / self.lambda_res) * self.ni_op
+        self.α_fluid: float = (
+            4 * np.pi / self.parms.wg.lambda_resonance
+        ) * self.parms.wg.ni_op_point
 
         # Parse and validate the mode solver data loaded from the .toml file
         self.u_data: np.ndarray = np.asarray([])
@@ -123,19 +98,21 @@ class Models:
         self.α_bend_data_min: float = 0
         self._parse_bending_loss_mode_solver_data()
 
-        # Calculate alpha_wg(u) values and load into modes_data dictionary
-        if self.core_v_name == "w":
-            for h, value in modes_data.items():
-                alpha_wg = self._calc_alpha_db_per_cm(
-                    n_eff=value["neff"], height=h, width=self.core_v_value
+        # Calculate alpha_wg(u) values and load them into the parms geom dict
+        if self.parms.wg.v_coord_name == "w":
+            for key, value in self.parms.geom.items():
+                self.parms.geom[key].alpha_wg = self._calc_alpha_db_per_cm(
+                    n_eff=value.neff,
+                    height=value.u,
+                    width=float(self.parms.wg.v_coord_value),
                 )
-                modes_data[h]["alpha_wg"] = alpha_wg
         else:
-            for w, value in modes_data.items():
-                alpha_wg = self._calc_alpha_db_per_cm(
-                    n_eff=value["neff"], height=self.core_v_value, width=w
+            for key, value in self.parms.geom.items():
+                self.parms.geom[key].alpha_wg = self._calc_alpha_db_per_cm(
+                    n_eff=value.neff,
+                    height=float(self.parms.wg.v_coord_value),
+                    width=value.u,
                 )
-                modes_data[w]["alpha_wg"] = alpha_wg
 
         # Fit gamma(h), h(gamma), and neff(h) 1D poly models to the mode solver data
         self.α_wg_model: dict = {}
@@ -154,11 +131,11 @@ class Models:
                 "WARNING! Mode solver arrays must contain alpha_bend data"
                 f" down to min(alpha_prop)/100 ({α_prop_min/100:.2e} um-1)!"
             )
-            if not parameters["disable_R_domain_check"]:
+            if not self.parms.debug.disable_R_domain_check:
                 raise ValueError
-        if self.r_α_bend_data_min > self.r_min:
+        if self.r_α_bend_data_min > self.parms.limits.r_min:
             self.logger("WARNING! Mode solver arrays must contain data at R < Rmin!")
-            if not parameters["disable_R_domain_check"]:
+            if not self.parms.debug.disable_R_domain_check:
                 raise ValueError
 
         # Fit alpha_bend(r, u) 2D polynomial model to the mode solver data
@@ -175,7 +152,7 @@ class Models:
         self.r_min_for_u_search_lower_bound: float = 0
         self.r_max_for_u_search_lower_bound: float = 0
         self.u_lower_bound: interpolate.interp1d = interpolate.interp1d([0, 1], [0, 1])
-        if not self.disable_u_search_lower_bound:
+        if not self.parms.debug.disable_u_search_lower_bound:
             self._set_u_search_lower_bound()
 
     #
@@ -188,7 +165,7 @@ class Models:
     ) -> Tuple[float, float, float]:
 
         # Calculate wave-numbers
-        k0: float = (2 * np.pi) / (self.lambda_res * 1e-6)
+        k0: float = (2 * np.pi) / (self.parms.wg.lambda_resonance * 1e-6)
         k_clad: float = k0 * n_clad
         k_core: float = k0 * n_core
         k_sub: float = k0 * n_sub
@@ -261,43 +238,43 @@ class Models:
     def _calc_alpha_db_per_cm(self, n_eff: float, height: float, width: float) -> float:
 
         # Physical variables and mode parameters
-        k0: float = 2 * np.pi / (self.lambda_res * 1e-6)
+        k0: float = 2 * np.pi / (self.parms.wg.lambda_resonance * 1e-6)
         d: float = width * 1e-6 / 2
 
         # Calculate effective index for mode in 1d vertical stack
         n_eff_1d, residual_1d = self._calc_mode_effective_index(
             h=height * 1e-6,
-            n_clad=self.n_clad,
-            n_core=self.n_core,
-            n_sub=self.n_sub,
-            pol=self.pol,
+            n_clad=self.parms.wg.n_clad,
+            n_core=self.parms.wg.n_core,
+            n_sub=self.parms.wg.n_sub,
+            pol=self.parms.wg.polarization,
         )
 
         """
         # Calculate effective index for mode in 1d vertical stack (DEBUG)
         n_eff_2d, residual_2d = self._calc_mode_effective_index(
             h=width * 1e-6,
-            n_clad=self.n_clad,
+            n_clad=self.parms.wg.n_clad,
             n_core=n_eff_1d,
-            n_sub=self.n_clad,
-            pol="TM" if self.pol == "TE" else "TE",
+            n_sub=self.parms.wg.n_clad,
+            pol="TM" if self.parms.wg.polarization == "TE" else "TE",
         )
         n_eff = n_eff_2d
         """
 
         # Payne and Lacey model
         u: float = k0 * d * np.sqrt(n_eff_1d**2 - n_eff**2)
-        v: float = k0 * d * np.sqrt(n_eff_1d**2 - self.n_clad**2)
-        w: float = k0 * d * np.sqrt(n_eff**2 - self.n_clad**2)
+        v: float = k0 * d * np.sqrt(n_eff_1d**2 - self.parms.wg.n_clad**2)
+        w: float = k0 * d * np.sqrt(n_eff**2 - self.parms.wg.n_clad**2)
         g: float = (u * v) ** 2 / (1 + w)
-        x: float = w * self.roughness_lc / d
-        delta: float = (n_eff_1d**2 - self.n_clad**2) / (2 * n_eff_1d**2)
-        γ: float = (self.n_clad * v) / (n_eff_1d * w * np.sqrt(delta))
+        x: float = w * self.parms.wg.roughness_lc / d
+        delta: float = (n_eff_1d**2 - self.parms.wg.n_clad**2) / (2 * n_eff_1d**2)
+        γ: float = (self.parms.wg.n_clad * v) / (n_eff_1d * w * np.sqrt(delta))
         big_term: float = np.sqrt((1 + x**2) ** 2 + 2 * x**2 * γ**2)
         f: float = x * np.sqrt(1 - x**2 + big_term) / big_term
         alpha_db_per_m: float = (
             4.34
-            * self.roughness_sigma**2
+            * self.parms.wg.roughness_sigma**2
             / (np.sqrt(2) * k0 * d**4 * n_eff_1d)
             * g
             * f
@@ -321,13 +298,11 @@ class Models:
             return self.α_wg_model["min"]
 
         # Normal function return: polynomial model for alpha_wg(u)
-        if not self.parameters["alpha_wg_exponential_model"]:
+        if not self.parms.fit.alpha_wg_exponential_model:
             return self.α_wg_model["model"](u)
 
         # Debugging: hard-coded exponential model for alpha_wg(u)
-        α_wg_min: float = [value.get("alpha_wg") for value in self.modes_data.values()][
-            -1
-        ]
+        α_wg_min: float = [value.alpha_wg for value in self.parms.geom.values()][-1]
         α_wg_max: float = α_wg_min * 2
         return (
             α_wg_min
@@ -379,59 +354,63 @@ class Models:
         1) Fit polynomial models to alpha_wg(u), gamma(u), u(gamma), and neffs(u),
            load the info (model parameters, bounds) into dictionaries for each.
 
-        2) Fit interpolation models for R(u) @ max(alpha_bend) and R(u)
+        2) Fit interpolation models for r(u) @ max(alpha_bend) and r(u)
            @ min(alpha_bend), i.e. to R[0](u) and R[-1](u).
         """
 
         # Polynomial model for alpha_wg(u) in the input mode solver data
-        u_data = np.asarray([value.get("u") for value in self.modes_data.values()])
+        u_data = np.asarray([value.u for value in self.parms.geom.values()])
         α_wg_data = (
-            np.asarray([value.get("alpha_wg") for value in self.modes_data.values()])
+            np.asarray([value.alpha_wg for value in self.parms.geom.values()])
             / constants.PER_UM_TO_DB_PER_CM
         )
         self.α_wg_model = {
             "name": "alpha_wg",
-            "model": Polynomial.fit(x=u_data, y=α_wg_data, deg=self.α_wg_order),
+            "model": Polynomial.fit(
+                x=u_data, y=α_wg_data, deg=self.parms.fit.alpha_wg_order
+            ),
             "min": min(α_wg_data),
             "max": max(α_wg_data),
         }
 
         # Polynomial models for gamma(u) and u(gamma) in the input mode solver data
-        gamma_data = np.asarray(
-            [value.get("gamma") for value in self.modes_data.values()]
-        )
+        gamma_data = np.asarray([value.gamma for value in self.parms.geom.values()])
         self.gamma_model = {
             "name": "gamma",
-            "model": Polynomial.fit(x=u_data, y=gamma_data, deg=self.gamma_order),
+            "model": Polynomial.fit(
+                x=u_data, y=gamma_data, deg=self.parms.fit.gamma_order
+            ),
             "min": 0,
             "max": 1,
         }
         self.u_model = {
             "name": "u",
-            "model": Polynomial.fit(x=gamma_data, y=u_data, deg=self.gamma_order),
+            "model": Polynomial.fit(
+                x=gamma_data, y=u_data, deg=self.parms.fit.gamma_order
+            ),
             "min": u_data[0],
             "max": u_data[-1],
         }
 
         # Polynomial model for neff(u) in the input mode solver data
-        n_eff_data = np.asarray(
-            [value.get("neff") for value in self.modes_data.values()]
-        )
+        n_eff_data = np.asarray([value.neff for value in self.parms.geom.values()])
         self.n_eff_model = {
             "name": "neff",
-            "model": Polynomial.fit(x=u_data, y=n_eff_data, deg=self.n_eff_order),
+            "model": Polynomial.fit(
+                x=u_data, y=n_eff_data, deg=self.parms.fit.neff_order
+            ),
             "min": min(n_eff_data),
             "max": max(n_eff_data),
         }
 
-        # Interpolation models for R(u) @ max(alpha_bend) and R(u) @ min(alpha_bend)
-        # in the input mode solver data, i.e. R[0](u) and R[-1](u).
+        # Interpolation models for r(u) @ max(alpha_bend) and r(u) @ min(alpha_bend)
+        # in the mode solver data, i.e. r(u)[0] and r(u)[-1].
         self.r_α_bend_max_interp = interpolate.interp1d(
-            x=u_data, y=[value.get("R")[0] for value in self.bending_loss_data.values()]
+            x=u_data, y=[value.r[0] for value in self.parms.geom.values()]
         )
         self.r_α_bend_min_interp = interpolate.interp1d(
             x=u_data,
-            y=[value.get("R")[-1] for value in self.bending_loss_data.values()],
+            y=[value.r[-1] for value in self.parms.geom.values()],
         )
 
         # Plot modeled and original mode solver data values
@@ -440,9 +419,8 @@ class Models:
         fig, axs = plt.subplots(4)
         fig.suptitle(
             "1D model fits\n"
-            + f"{self.pol}"
-            + f", λ = {self.lambda_res:.3f} μm"
-            + f", {self.core_v_name} = {self.core_v_value:.3f} μm"
+            f"{self.parms.wg.polarization}, λ = {self.parms.wg.lambda_resonance:.3f} μm"
+            f", {self.parms.wg.v_coord_name} = {self.parms.wg.v_coord_value:.3f} μm"
         )
         axs_index: int = 0
 
@@ -451,11 +429,10 @@ class Models:
         axs[axs_index].plot(u_data, gamma_data * 100, ".")
         axs[axs_index].plot(u_interp, gamma_modeled)
         axs[axs_index].set_title(
-            r"$\Gamma_{fluide}$"
-            + f"({self.core_u_name})"
-            + f", polynomial model order: {self.gamma_order}"
+            rf"$\Gamma_{{fluide}}$({self.parms.wg.u_coord_name})"
+            f", polynomial model order: {self.parms.fit.gamma_order}"
         )
-        axs[axs_index].set_xlabel("".join([f"{self.core_u_name}", "(μm)"]))
+        axs[axs_index].set_xlabel("".join([f"{self.parms.wg.u_coord_name}", "(μm)"]))
         axs[axs_index].set_ylabel(r"$\Gamma_{fluide}$ (%)")
         axs_index += 1
 
@@ -464,12 +441,11 @@ class Models:
         axs[axs_index].plot(gamma_data * 100, u_data, ".")
         axs[axs_index].plot(gamma_interp * 100, u_modeled)
         axs[axs_index].set_title(
-            f"{self.core_u_name}"
-            + r"$(\Gamma_{fluide}$)"
-            + f", polynomial model order: {self.gamma_order}"
+            rf"{self.parms.wg.u_coord_name}$(\Gamma_{{fluide}}$)"
+            f", polynomial model order: {self.parms.fit.gamma_order}"
         )
         axs[axs_index].set_xlabel(r"$\Gamma_{fluide}$")
-        axs[axs_index].set_ylabel("".join([f"{self.core_u_name}", "(μm)"]))
+        axs[axs_index].set_ylabel("".join([f"{self.parms.wg.u_coord_name}", "(μm)"]))
         axs_index += 1
 
         # plot of neff(u)
@@ -477,12 +453,11 @@ class Models:
         axs[axs_index].plot(u_data, n_eff_data, ".")
         axs[axs_index].plot(u_interp, neff_modeled)
         axs[axs_index].set_title(
-            r"n$_{eff}$"
-            + f"({self.core_u_name})"
-            + f", polynomial model order: {self.n_eff_order}"
+            rf"n$_{{eff}}$({self.parms.wg.u_coord_name})"
+            f", polynomial model order: {self.parms.fit.neff_order}"
         )
         axs[axs_index].set_ylabel(r"n$_{eff}$ (RIU)")
-        axs[axs_index].set_xlabel("".join([f"{self.core_u_name} (μm)"]))
+        axs[axs_index].set_xlabel("".join([f"{self.parms.wg.u_coord_name} (μm)"]))
         axs_index += 1
 
         # Plot of alpha_wg(u)
@@ -490,20 +465,19 @@ class Models:
             constants.PER_UM_TO_DB_PER_CM
         )
         axs[axs_index].plot(u_interp, alpha_wg_modeled)
-        if self.parameters["alpha_wg_exponential_model"]:
+        if self.parms.fit.alpha_wg_exponential_model:
             axs[axs_index].set_title(
-                rf"$\alpha_{{wg}}$ ({self.core_u_name}), exponential model"
+                rf"$\alpha_{{wg}}$ ({self.parms.wg.u_coord_name}), exponential model"
             )
         else:
             axs[axs_index].plot(u_data, α_wg_data * constants.PER_UM_TO_DB_PER_CM, ".")
             axs[axs_index].set_title(
-                r"$\alpha_{wg}$"
-                + f"({self.core_u_name})"
-                + f", polynomial model order: {self.α_wg_order}"
+                rf"$\alpha_{{wg}}$({self.parms.wg.u_coord_name})"
+                f", polynomial model order: {self.parms.fit.alpha_wg_order}"
             )
         axs[axs_index].set_ylabel(r"$\alpha_{wg}$ (dB/cm)")
         axs[axs_index].set_ylim(bottom=0)
-        axs[axs_index].set_xlabel("".join([f"{self.core_u_name} (μm)"]))
+        axs[axs_index].set_xlabel("".join([f"{self.parms.wg.u_coord_name} (μm)"]))
 
         # Complete plot formatting
         fig.tight_layout()
@@ -528,33 +502,31 @@ class Models:
         build the "u / R / log(alpha_bend)" arrays for fitting.
         """
 
-        # For each u entry in the input dictionary: determine the radius value
+        # For each u entry in the input dataclass: determine the radius value
         # "r_alpha_bend_threshold" that corresponds to the value of
         # "alpha_bend_threshold" specified in the input file, by fitting
         # a first order polynomial (parameters A&B) to "ln(alpha_bend) = ln(A) - R*B".
-        for key, value in self.bending_loss_data.items():
+        for key, value in self.parms.geom.items():
             ln_a, neg_b = (
-                Polynomial.fit(x=value["R"], y=np.log(value["alpha_bend"]), deg=1)
+                Polynomial.fit(x=value.r, y=np.log(value.alpha_bend), deg=1)
                 .convert()
                 .coef
             )
-            self.bending_loss_data[key]["r_alpha_bend_threshold"] = (
-                ln_a - np.log(self.α_bend_threshold)
+            self.parms.geom[key].r_alpha_bend_threshold = (
+                ln_a - np.log(self.parms.limits.alpha_bend_threshold)
             ) / -neg_b
 
         # Loop to build "u / R / log(alpha_bend)" data arrays for fitting
-        for u_key_um, value in self.bending_loss_data.items():
-            self.u_data = np.append(self.u_data, u_key_um * np.ones_like(value["R"]))
+        for value in self.parms.geom.values():
+            self.u_data = np.append(self.u_data, value.u * np.ones_like(value.r))
             self.r_alpha_bend_data = np.append(
-                self.r_alpha_bend_data, np.asarray(value["R"])
+                self.r_alpha_bend_data, np.asarray(value.r)
             )
             self.ln_alpha_bend_data = np.append(
-                self.ln_alpha_bend_data, np.log(value["alpha_bend"])
+                self.ln_alpha_bend_data, np.log(value.alpha_bend)
             )
 
         # Determine dynamic range extrema of the bending loss data
-        self.u_domain_min = float(list(self.bending_loss_data.keys())[0])
-        self.u_domain_max = float(list(self.bending_loss_data.keys())[-1])
         self.α_bend_data_min = np.exp(min(self.ln_alpha_bend_data))
         self.r_α_bend_data_min = min(self.r_alpha_bend_data)
         self.r_α_bend_data_max = max(self.r_alpha_bend_data)
@@ -606,48 +578,38 @@ class Models:
                 [
                     "\nWireframes: ",
                     r"fitted $\alpha_{bend}$",
-                    f"(r, {self.core_u_name}) model, ",
-                    f"rms error = {rms_error:.1e}",
-                    r" $\mu$m$^{-1}$",
-                    " (logarithmic)",
+                    f"(r, {self.parms.wg.u_coord_name}) model, ",
+                    rf"rms error = {rms_error:.1e} $\mu$m$^{{-1}}$ (logarithmic)",
                 ]
             )
             + "".join(
                 [
                     "\n",
-                    r"Surface : $\alpha_{prop}$",
-                    f"({self.core_u_name})",
-                    rf" = α$_{{wg}}$({self.core_u_name})",
-                    r"+ $\Gamma_{fluide}",
-                    f"({self.core_u_name})",
-                    r"\times\alpha_{fluid}$, where ",
-                    r"$\alpha_{fluid}$",
-                    f" = {self.α_fluid:.2e} ",
-                    r"$\mu$m$^{-1}$",
+                    rf"Surface : $\alpha_{{prop}}$({self.parms.wg.u_coord_name})",
+                    rf" = α$_{{wg}}$({self.parms.wg.u_coord_name})",
+                    rf"+ $\Gamma_{{fluide}}({self.parms.wg.u_coord_name})",
+                    r"\times\alpha_{fluid}$, where $\alpha_{fluid}$",
+                    rf" = {self.α_fluid:.2e} $\mu$m$^{{-1}}$",
                 ]
             )
             + "".join(
                 [
                     "\nGreen : ",
-                    r"$\alpha_{bend} < \alpha_{prop}$ ",
-                    r"$< \alpha_{bend}\times 10$",
+                    r"$\alpha_{bend} < \alpha_{prop}$ $< \alpha_{bend}\times 10$",
                     r", blue : $\alpha \approx \alpha_{prop}$",
                 ]
             )
             + "".join(
                 [
                     "\n",
-                    r"$\alpha$",
-                    f"(r, {self.core_u_name})",
-                    r" = $\alpha_{bend}$",
-                    f"(r, {self.core_u_name})",
-                    r" + $\alpha_{prop}$",
-                    f"({self.core_u_name})",
+                    rf"$\alpha$(r, {self.parms.wg.u_coord_name}) = $\alpha_{{bend}}$",
+                    rf"(r, {self.parms.wg.u_coord_name}) + $\alpha_{{prop}}$",
+                    f"({self.parms.wg.u_coord_name})",
                 ]
             ),
             y=1.02,
         )
-        ax.set_xlabel("".join([f"{self.core_u_name} (μm)"]))
+        ax.set_xlabel("".join([f"{self.parms.wg.u_coord_name} (μm)"]))
         ax.set_ylabel("log($R$) (μm)")
         ax.set_zlabel(r"log$_{10}$($\alpha_{BEND}$) ($\mu$m$^{-1}$)")
         raw_points = ax.scatter(
@@ -669,8 +631,12 @@ class Models:
 
         # alpha_bend(r, u) wireframe, for r in [Rmin, Rmax] analysis domain
         u_domain, r_domain = np.meshgrid(
-            np.linspace(self.u_domain_min, self.u_domain_max, 75),
-            np.logspace(np.log10(self.r_min), np.log10(self.r_max), 100),
+            np.linspace(self.parms.limits.u_min, self.parms.limits.u_max, 75),
+            np.logspace(
+                np.log10(self.parms.limits.r_min),
+                np.log10(self.parms.limits.r_max),
+                100,
+            ),
         )
         α_bend: np.ndarray = np.asarray(self.α_bend(r=r_domain, u=u_domain))
         α_bend[α_bend < self.α_bend_data_min / 2] = self.α_bend_data_min / 2
@@ -682,13 +648,12 @@ class Models:
             cstride=5,
             alpha=0.30,
             label=r"$\alpha_{bend}$"
-            + f"(r, {self.core_u_name})"
-            + r", $r \in [R_{min}, R_{max}$]",
+            f"(r, {self.parms.wg.u_coord_name})" + r", $r \in [R_{min}, R_{max}$]",
         )
 
         # alpha_bend(r, u) wireframe, for all r in mode solver data
         u_data, r_data = np.meshgrid(
-            np.linspace(self.u_domain_min, self.u_domain_max, 15),
+            np.linspace(self.parms.limits.u_min, self.parms.limits.u_max, 15),
             np.logspace(
                 np.log10(self.r_α_bend_data_min),
                 np.log10(self.r_α_bend_data_max),
@@ -704,8 +669,7 @@ class Models:
             alpha=0.30,
             color="red",
             label=r"$\alpha_{bend}$"
-            + f"(r, {self.core_u_name})"
-            + r", $r \in$ [mode solver data]",
+            f"(r, {self.parms.wg.u_coord_name})" + r", $r \in$ [mode solver data]",
         )
         ax.legend(bbox_to_anchor=(0.1, 0.1))
 
@@ -738,7 +702,7 @@ class Models:
             Y=np.log10(r_domain),
             Z=np.log10(α_prop),
             facecolors=face_colors,
-            label=r"$\alpha_{prop}$" + f"({self.core_u_name}) surface",
+            label=r"$\alpha_{prop}$" f"({self.parms.wg.u_coord_name}) surface",
             linewidth=0,
             rstride=1,
             cstride=1,
@@ -861,7 +825,7 @@ class Models:
         # Check that the model definition and the coefficient matrix are consistent
         assert len(c) == m.shape[1], (
             f"Model ({len(c)} coefficients) and "
-            + f"coefficient matrix ({m.shape[1]} columns) are inconsistent!"
+            f"coefficient matrix ({m.shape[1]} columns) are inconsistent!"
         )
 
         # Linear least-squares fit to "ln(alpha_bend(r, u)" to determine the values of
@@ -909,21 +873,18 @@ class Models:
         # For radii greater than the spline r domain, u is allowed to take on any value
         # in the full u domain during optimization.
 
-        # Fetch list of core geometry values, u, in the input data dictionary
-        u = list(self.bending_loss_data.keys())
+        # Fetch list of core geometry u values
+        u = np.asarray([value.u for value in self.parms.geom.values()])
 
         # Fit the piecewise spline to model h_lower_bound(r)
         r_α_bend_threshold: np.ndarray = np.asarray(
-            [
-                value["r_alpha_bend_threshold"]
-                for value in self.bending_loss_data.values()
-            ]
+            [value.r_alpha_bend_threshold for value in self.parms.geom.values()]
         )
         max_indx: int = int(np.argmax(r_α_bend_threshold))
         r_α_bend_threshold: np.ndarray = r_α_bend_threshold[max_indx:]
         if len(r_α_bend_threshold) <= 1:
             raise ValueError("'ERROR: alpha_bend_threshold' value us too high!")
-        u_α_bend_threshold: np.ndarray = np.asarray(u[max_indx:])
+        u_α_bend_threshold: np.ndarray = u[max_indx:]
         self.r_max_for_u_search_lower_bound = r_α_bend_threshold[0]
         self.r_min_for_u_search_lower_bound = r_α_bend_threshold[-1]
         self.u_lower_bound = interpolate.interp1d(
@@ -931,14 +892,14 @@ class Models:
         )
         if self.r_max_for_u_search_lower_bound < 500:
             self.logger(
-                f"{self.core_u_name} search domain lower bound constrained for R < "
-                + f"{self.r_max_for_u_search_lower_bound:.1f} um"
+                f"{self.parms.wg.u_coord_name} search domain lower bound constrained"
+                f" for R < {self.r_max_for_u_search_lower_bound:.1f} um"
             )
         else:
             self.logger(
-                f"WARNING!: {self.core_u_name} search domain lower"
-                + f"bound ({self.r_max_for_u_search_lower_bound:.1f} um) is unusually "
-                + "high, raise value of 'alpha_bend_threshold' in .toml file."
+                f"WARNING!: {self.parms.wg.u_coord_name} search domain lower"
+                f"bound ({self.r_max_for_u_search_lower_bound:.1f} um) is unusually "
+                "high, raise value of 'alpha_bend_threshold' in .toml file."
             )
 
         # Plot u_lower_bound(r) data and spline interpolation
@@ -946,18 +907,26 @@ class Models:
         fig.suptitle(
             "".join(
                 [
-                    f"Search domain lower bound for {self.core_u_name}",
+                    f"Search domain lower bound for {self.parms.wg.u_coord_name}",
                     " at low radii in the optimization\n",
-                    f"{self.pol}",
+                    f"{self.parms.wg.polarization}",
                 ]
             )
-            + "".join([r", $\lambda$", f" = {self.lambda_res:.3f} ", r"$\mu$m"])
-            + "".join([f", {self.core_v_name} = {self.core_v_value:.3f} ", r"$\mu$m"])
+            + "".join(
+                [r", $\lambda$", f" = {self.parms.wg.lambda_resonance:.3f} ", r"$\mu$m"]
+            )
+            + "".join(
+                [
+                    f", {self.parms.wg.v_coord_name}",
+                    rf" = {self.parms.wg.v_coord_value:.3f} $\mu$m",
+                ]
+            )
             + (
                 "".join(
                     [
-                        f"\nWARNING!: {self.core_u_name} search domain lower bound ",
-                        f"({self.r_max_for_u_search_lower_bound:.1f} um) is VERY HIGH!",
+                        f"\nWARNING!: {self.parms.wg.u_coord_name} search domain",
+                        f" lower bound ({self.r_max_for_u_search_lower_bound:.1f} um)"
+                        " is VERY HIGH!",
                     ]
                 )
                 if self.r_max_for_u_search_lower_bound > 500
@@ -973,14 +942,15 @@ class Models:
         axs.plot(r_α_bend_threshold, u_α_bend_threshold, "o")
         axs.plot(r_α_bend_threshold_i, self.u_lower_bound(r_α_bend_threshold_i))
         axs.set_xlabel(r"R ($\mu$m)")
-        axs.set_ylabel(r"min$\{$" + f"{self.core_u_name}" + r"$\}$ ($\mu$m)")
+        axs.set_ylabel(r"min$\{$" f"{self.parms.wg.u_coord_name}" + r"$\}$ ($\mu$m)")
         out_filename: str = str(
             (
                 self.filename_path.parent
                 / "".join(
                     [
                         f"{self.filename_path.stem}_FITTING_"
-                        + f"{'H' if self.core_v_name == 'w' else 'W'}_SRCH_LOWR_BND.png"
+                        f"{'H' if self.parms.wg.v_coord_name == 'w' else 'W'}"
+                        "_SRCH_LOWR_BND.png"
                     ]
                 )
             )
@@ -1005,16 +975,16 @@ class Models:
         :return: (u_min, u_max) u search domain extrema (um)
         """
 
-        if self.disable_u_search_lower_bound:
-            return self.u_domain_min, self.u_domain_max
+        if self.parms.debug.disable_u_search_lower_bound:
+            return self.parms.limits.u_min, self.parms.limits.u_max
         if r < self.r_min_for_u_search_lower_bound:
-            u_min = self.u_domain_max
+            u_min = self.parms.limits.u_max
         elif r > self.r_max_for_u_search_lower_bound:
-            u_min = self.u_domain_min
+            u_min = self.parms.limits.u_min
         else:
-            u_min = min(float(self.u_lower_bound(r)), self.u_domain_max)
-            u_min = max(u_min, self.u_domain_min)
-        u_max = self.u_domain_max
+            u_min = min(float(self.u_lower_bound(r)), self.parms.limits.u_max)
+            u_min = max(u_min, self.parms.limits.u_min)
+        u_max = self.parms.limits.u_max
         return u_min, u_max
 
     #
@@ -1029,11 +999,15 @@ class Models:
         """
 
         # R domain extrema (complete decades)
-        self.plotting_extrema["r_plot_min"] = 10 ** (np.floor(np.log10(self.r_min)))
-        self.plotting_extrema["r_plot_max"] = 10 ** (np.ceil(np.log10(self.r_max)))
+        self.plotting_extrema["r_plot_min"] = 10 ** (
+            np.floor(np.log10(self.parms.limits.r_min))
+        )
+        self.plotting_extrema["r_plot_max"] = 10 ** (
+            np.ceil(np.log10(self.parms.limits.r_max))
+        )
 
         # u domain extrema
-        u: np.ndarray = np.asarray(list(self.bending_loss_data.keys()))
+        u: np.ndarray = np.asarray([value.u for value in self.parms.geom.values()])
         self.plotting_extrema["u_plot_min"] = u[0] * 0.9
         self.plotting_extrema["u_plot_max"] = u[-1] * 1.1
 

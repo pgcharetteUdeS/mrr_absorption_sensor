@@ -13,7 +13,7 @@ from typing import Callable, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .version import __version__
+from .constants import InputParameters
 from .fileio import (
     load_toml_file,
     validate_excel_results_file,
@@ -23,6 +23,7 @@ from .linear import Linear
 from .models import Models
 from .mrr import Mrr
 from .spiral import Spiral
+from .version import __version__
 
 # matplotlib package initializations
 plt.rcParams.update(
@@ -67,7 +68,7 @@ def analyze(
 
     # Load the problem parameters from the input .toml file
     toml_input_file_path: Path = Path(toml_input_file)
-    (parameters, parms, modes_data, bending_loss_data,) = load_toml_file(
+    parms: InputParameters = load_toml_file(
         filename=toml_input_file_path,
         logger=logger,
     )
@@ -75,16 +76,14 @@ def analyze(
     # Build the filename Path object for the output files
     output_filenames_path: Path = (
         toml_input_file_path.parent
-        / parameters["output_sub_dir"]
+        / parms.io.output_sub_dir
         / toml_input_file_path.name
     )
 
     # Instantiate the Models class to build/fit the interpolation models for
     # gamma_fluid(u), neff(u), alpha_wg(u), and alpha_bend(u, r)
     models: Models = Models(
-        parameters=parameters,
-        modes_data=modes_data,
-        bending_loss_data=bending_loss_data,
+        parms=parms,
         filename_path=output_filenames_path,
         logger=logger,
     )
@@ -94,14 +93,14 @@ def analyze(
         raise ValueError("No radii to analyze!")
 
     # If only model fitting was required, return
-    if parameters["models_only"]:
+    if parms.debug.models_only:
         plt.show()
         return models, None, None, None
 
     # Define output Excel filename: if file is already open, halt with an exception
     # (better to halt here with an exception than AFTER having done the analysis...)
     excel_output_path: Path = Path("")
-    if parameters["write_excel_files"]:
+    if parms.io.write_excel_files:
         excel_output_path = validate_excel_results_file(
             filename_path=output_filenames_path
         )
@@ -114,26 +113,26 @@ def analyze(
     # Analyze sensors
     mrr.analyze()
     linear.analyze()
-    if parameters["analyze_spiral"]:
+    if parms.debug.analyze_spiral:
         spiral.analyze()
 
     # Plot results
     models.calculate_plotting_extrema(max_s=mrr.max_s)
     mrr.plot_optimization_results()
     linear.plot_optimization_results()
-    if parameters["analyze_spiral"]:
+    if parms.debug.analyze_spiral:
         spiral.plot_optimization_results()
     mrr.plot_combined_sensor_optimization_results(linear=linear, spiral=spiral)
 
     # Write the analysis results to the output Excel file
-    if parameters["write_excel_files"]:
+    if parms.io.write_excel_files:
         write_excel_results_file(
             excel_output_path=excel_output_path,
             models=models,
             mrr=mrr,
             linear=linear,
             spiral=spiral,
-            parameters=parameters,
+            parms=parms,
             logger=logger,
         ),
 

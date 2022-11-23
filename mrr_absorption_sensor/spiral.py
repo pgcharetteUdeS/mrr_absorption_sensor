@@ -59,19 +59,14 @@ class Spiral:
         self.models: Models = models
         self.logger: Callable = logger
 
-        # Initialize other class variables
-        self.spacing: float = self.models.parameters["spiral_spacing"]
-        self.turns_min: float = self.models.parameters["spiral_turns_min"]
-        self.turns_max: float = self.models.parameters["spiral_turns_max"]
-
         # Calculate spiral parameters
         self.line_width_min: float = 2 * (
-            (
-                self.models.core_v_value
-                if self.models.core_v_name == "w"
+            float(
+                self.models.parms.wg.v_coord_value
+                if self.models.parms.wg.v_coord_name == "w"
                 else self.models.u_domain_min
             )
-            + self.spacing
+            + self.models.parms.spiral.spacing
         )
         self.a_spiral_min: float = 1.5 * self.line_width_min
         self.b_spiral_min: float = self.line_width_min / (2 * np.pi)
@@ -100,7 +95,7 @@ class Spiral:
         Calculate spiral parameters @ r, w, and n_turns
         """
 
-        line_width: float = 2 * (w + self.spacing)
+        line_width: float = 2 * (w + self.models.parms.spiral.spacing)
         b: float = line_width / (2 * np.pi)
         a: float = 1.5 * line_width
 
@@ -176,7 +171,9 @@ class Spiral:
         # Calculate spiral sequence looping indices (min, max, index)
         biggest_spiral_index: int = int(np.argmax(self.n_turns))
         index_min: int = int(
-            np.argmax(self.n_turns[:biggest_spiral_index] > self.turns_min)
+            np.argmax(
+                self.n_turns[:biggest_spiral_index] > self.models.parms.spiral.turns_min
+            )
         )
         index_max: int = (
             int(np.argmax(self.n_turns[biggest_spiral_index:] < 1))
@@ -201,10 +198,10 @@ class Spiral:
             fig, *_ = self._draw_spiral(
                 r_outer=self.models.r[index],
                 h=self.u[index]
-                if self.models.core_v_name == "w"
-                else self.models.core_v_value,
-                w=self.models.core_v_value
-                if self.models.core_v_name == "w"
+                if self.models.parms.wg.v_coord_name == "w"
+                else self.models.parms.wg.v_coord_value,
+                w=self.models.parms.wg.v_coord_value
+                if self.models.parms.wg.v_coord_name == "w"
                 else self.u[index],
                 n_turns=self.n_turns[index],
                 r_window=(self.models.r[index_max] // 25 + 1) * 25,
@@ -285,11 +282,12 @@ class Spiral:
         fig, axs = plt.subplots(7)
         fig.suptitle(
             "Archimedes spiral\n"
-            + f"{self.models.pol}"
-            + f", λ = {self.models.lambda_res:.3f} μm"
-            + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
-            + f", spacing = {self.spacing:.0f} μm"
-            + f", min turns = {self.turns_min:.2}\n"
+            + f"{self.models.parms.wg.polarization}"
+            + f", λ = {self.models.parms.wg.lambda_resonance:.3f} μm"
+            + f", {self.models.parms.wg.v_coord_name} = "
+            f"{self.models.parms.wg.v_coord_value:.3f} μm"
+            + f", spacing = {self.models.parms.spiral.spacing:.0f} μm"
+            + f", min turns = {self.models.parms.spiral.turns_min:.2}\n"
             + rf"max{{max{{$S$}}}} = {self.max_s:.0f} (RIU$^{{-1}}$)"
             + rf" @ $R$ = {self.max_s_radius:.0f} μm"
         )
@@ -311,7 +309,7 @@ class Spiral:
 
         # u @ max{S}
         axs_index += 1
-        axs[axs_index].set_ylabel(f"{self.models.core_u_name} (μm)")
+        axs[axs_index].set_ylabel(f"{self.models.parms.wg.u_coord_name} (μm)")
         axs[axs_index].semilogx(self.models.r, self.u)
         axs[axs_index].plot(
             [self.max_s_radius, self.max_s_radius],
@@ -422,15 +420,15 @@ class Spiral:
         self._plot_spiral_results_at_optimum()
 
         # Draw the spiral with the greatest number of turns found in the optimization
-        if self.models.parameters["draw_largest_spiral"]:
+        if self.models.parms.io.draw_largest_spiral:
             largest_spiral_index: int = int(np.argmax(self.n_turns))
             (fig, spiral_waveguide_coordinates,) = self._draw_spiral(
                 r_outer=self.models.r[largest_spiral_index],
                 h=self.u[largest_spiral_index]
-                if self.models.core_v_name == "w"
-                else self.models.core_v_value,
-                w=self.models.core_v_value
-                if self.models.core_v_name == "w"
+                if self.models.parms.wg.v_coord_name == "w"
+                else self.models.parms.wg.v_coord_value,
+                w=self.models.parms.wg.v_coord_value
+                if self.models.parms.wg.v_coord_name == "w"
                 else self.u[largest_spiral_index],
                 n_turns=self.n_turns[largest_spiral_index],
                 r_window=(self.models.r[largest_spiral_index] // 25 + 1) * 25,
@@ -443,13 +441,13 @@ class Spiral:
             self.logger(f"Wrote '{filename}'.")
 
             # Write spiral inner and outer waveguide x/y coordinates to an Excel file
-            if self.models.parameters["write_excel_files"]:
+            if self.models.parms.io.write_excel_files:
                 self._write_spiral_waveguide_coordinates_to_excel_file(
                     spiral_waveguide_coordinates=spiral_waveguide_coordinates
                 )
 
         # Write sequence of consecutive spirals with n turns > self.n_turns_min
-        if self.models.parameters["write_spiral_sequence_to_file"]:
+        if self.models.parms.io.write_spiral_sequence_to_file:
             self._write_spiral_sequence_to_file()
 
     def _draw_spiral(
@@ -477,13 +475,15 @@ class Spiral:
             ax.clear()
 
         # Outer spiral
-        theta_max: float = (r_outer - (a_spiral + self.spacing + w)) / b_spiral
+        theta_max: float = (
+            r_outer - (a_spiral + self.models.parms.spiral.spacing + w)
+        ) / b_spiral
         theta_min: float = max(theta_max - (n_turns * 2 * np.pi), 0)
         thetas_spiral: np.ndarray = np.linspace(theta_max, theta_min, 1000)
         theta0: float = -theta_max + np.pi / 2
-        r_outer_spiral_inner: np.ndarray = (a_spiral + self.spacing) + (
-            b_spiral * thetas_spiral
-        )
+        r_outer_spiral_inner: np.ndarray = (
+            a_spiral + self.models.parms.spiral.spacing
+        ) + (b_spiral * thetas_spiral)
 
         outer_spiral_x_in, outer_spiral_y_in = self._plot_arc(
             thetas=thetas_spiral,
@@ -511,7 +511,7 @@ class Spiral:
 
         # Joint: half circle between outer waveguide and S-bend
         thetas_half_circle: np.ndarray = np.linspace(theta_min, theta_min - np.pi, 100)
-        r_joint_inner: np.ndarray = (a_spiral + self.spacing) + (
+        r_joint_inner: np.ndarray = (a_spiral + self.models.parms.spiral.spacing) + (
             b_spiral * thetas_half_circle
         )
         outer_spiral_x_in, outer_spiral_y_in = self._plot_arc(
@@ -617,15 +617,17 @@ class Spiral:
 
         # Plot info & formatting
         s, _, length, _ = self._calc_sensitivity(
-            r=r_outer, u=h if self.models.core_v_name == "w" else w, n_turns=n_turns
+            r=r_outer,
+            u=h if self.models.parms.wg.v_coord_name == "w" else w,
+            n_turns=n_turns,
         )
         ax.set_aspect("equal")
         ax.set_xlim(-r_window, r_window)
         ax.set_ylim(-r_window, r_window)
         ax.set_title(
             f"Archimedes spiral : {n_turns: .2f} turns, "
-            + f"w = {self.models.core_v_value:.3f} μm, "
-            + f"spacing = {self.spacing:.1f} μm, "
+            + f"w = {self.models.parms.wg.v_coord_value:.3f} μm, "
+            + f"spacing = {self.models.parms.spiral.spacing:.1f} μm, "
             + f"h = {h:.3f} μm, "
             + f"S = {s:.0f} RIU$^{{-1}}$"
             + f"\nR = {r_outer:.1f} μm, "
@@ -686,13 +688,17 @@ class Spiral:
         """
 
         # Determine waveguide core width
-        w = self.models.core_v_value if self.models.core_v_name == "w" else u
+        w: float = float(
+            self.models.parms.wg.v_coord_value
+            if self.models.parms.wg.v_coord_name == "w"
+            else u
+        )
 
         # Archimedes spiral: "r = a + b*theta", where "a" is the minimum radius of the
         # outer spiral and "2*pi*b" is the spacing between the lines pairs.
         # Check that r is above the allowed minimum.
         line_width, a_spiral, b_spiral = self._calc_spiral_parameters(w=w)
-        a_spiral_outer: float = a_spiral + self.spacing + w
+        a_spiral_outer: float = a_spiral + self.models.parms.spiral.spacing + w
 
         # Spiral radii and angle extrema
         theta_max: float = (r - a_spiral_outer) / b_spiral
@@ -779,7 +785,7 @@ class Spiral:
         # Calculate the sensitivity of the spiral
         l_total: float = length + l_hc + l_sb1 + l_sb2
         s_nr: float = (
-            (4 * np.pi / self.models.lambda_res)
+            (4 * np.pi / self.models.parms.wg.lambda_resonance)
             * l_total
             * self.models.gamma_of_u(u)
             * wg_a2
@@ -818,30 +824,34 @@ class Spiral:
         u_min, u_max = self.models.u_search_domain(r)
 
         # Spiral properties at minimum core width
-        w_min: float = (
-            self.models.core_v_value if self.models.core_v_name == "w" else u_min
+        w_min: float = float(
+            self.models.parms.wg.v_coord_value
+            if self.models.parms.wg.v_coord_name == "w"
+            else u_min
         )
         line_width_min, a_spiral_min, b_spiral_min = self._calc_spiral_parameters(
             w=w_min
         )
-        theta_min: float = 2 * np.pi * self.turns_min
-        r_min: float = (a_spiral_min + self.spacing + w_min) + theta_min * b_spiral_min
+        theta_min: float = 2 * np.pi * self.models.parms.spiral.turns_min
+        r_min: float = (
+            a_spiral_min + self.models.parms.spiral.spacing + w_min
+        ) + theta_min * b_spiral_min
 
         # Determine search domain maximum for the numer of turns in the spiral
         n_turns_max: float = (r - r_min) / line_width_min
-        n_turns_max = max(n_turns_max, self.turns_min)
-        n_turns_max = min(n_turns_max, self.turns_max)
+        n_turns_max = max(n_turns_max, self.models.parms.spiral.turns_min)
+        n_turns_max = min(n_turns_max, self.models.parms.spiral.turns_max)
 
         # Only proceed with the minimization if the radius at which the solution is
         # sought is greater than the minimum allowed outer spiral radius.
-        if r >= r_min + line_width_min * self.turns_min:
+        if r >= r_min + line_width_min * self.models.parms.spiral.turns_min:
             # If this is the first optimization, set the initial guesses for u at the
             # maximum value in the domain and the numbers of turns at the minimum
             # value (at small radii, bending losses are high, the optimal solution
             # will be at high u and low number of turns),else use previous solution.
             if np.any(self.previous_solution == -1):
                 u0: float = u_max
-                n_turns_0: float = self.turns_min
+                n_turns_0: float = self.models.parms.spiral.turns_min
             else:
                 u0, n_turns_0 = self.previous_solution
 
@@ -849,9 +859,12 @@ class Spiral:
             optimization_result = optimize.minimize(
                 fun=self._obj_fun,
                 x0=np.asarray([u0, n_turns_0]),
-                bounds=((u_min, u_max), (self.turns_min, n_turns_max)),
+                bounds=(
+                    (u_min, u_max),
+                    (self.models.parms.spiral.turns_min, n_turns_max),
+                ),
                 args=(r,),
-                method=self.models.parameters["optimization_method"],
+                method=self.models.parms.fit.optimization_method,
                 tol=1e-9,
             )
             u_max_s = optimization_result.x[0]
@@ -874,7 +887,9 @@ class Spiral:
             a2 = 0
 
             # Update previous solution
-            self.previous_solution = np.asarray([u_max, self.turns_min])
+            self.previous_solution = np.asarray(
+                [u_max, self.models.parms.spiral.turns_min]
+            )
 
         # Calculate other useful parameters at the solution
         gamma: float = self.models.gamma_of_u(u_max_s) * 100

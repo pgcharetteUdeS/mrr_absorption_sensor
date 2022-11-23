@@ -46,7 +46,6 @@ class Mrr:
         self.logger: Callable = logger
 
         # Define class instance internal variables
-        self.lc: float = self.models.parameters["lc"]
         self.previous_solution: float = -1
 
         # Define class instance result variables and arrays
@@ -141,12 +140,12 @@ class Mrr:
         r_2d_map_indices = np.linspace(
             np.log10(self.models.r[0]),
             np.log10(self.models.r[-1]),
-            self.models.parameters["map2D_n_grid_points"],
+            self.models.parms.io.map2D_n_grid_points,
         )
         u_2d_map_indices = np.linspace(
-            list(self.models.bending_loss_data)[0],
-            list(self.models.bending_loss_data)[-1],
-            self.models.parameters["map2D_n_grid_points"],
+            self.models.parms.limits.u_min,
+            self.models.parms.limits.u_max,
+            self.models.parms.io.map2D_n_grid_points,
         )
 
         # Indices for dashed lines at radii for max(Smrr)
@@ -174,23 +173,24 @@ class Mrr:
             r_2d_map_indices,
             u_2d_map_indices,
             s_2d_map,
-            cmap=self.models.parameters["map2D_colormap"],
+            cmap=self.models.parms.io.map2D_colormap,
         )
         ax.invert_yaxis()
         ax.set_title(
-            f"MRR sensitivity as a function of {self.models.core_u_name} and R\n"
-            + f"{self.models.pol}"
-            + f", λ = {self.models.lambda_res:.3f} μm"
-            + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
+            f"MRR sensitivity as a function of {self.models.parms.wg.u_coord_name}"
+            f" and R\n{self.models.parms.wg.polarization}"
+            f", λ = {self.models.parms.wg.lambda_resonance:.3f} μm"
+            f", {self.models.parms.wg.v_coord_name} = "
+            f"{self.models.parms.wg.v_coord_value:.3f} μm"
         )
         ax.set_xlabel("log(R) (μm)")
-        ax.set_ylabel(f"{self.models.core_u_name} (μm)")
+        ax.set_ylabel(f"{self.models.parms.wg.u_coord_name} (μm)")
         fig.colorbar(cm, label=r"S (RIU $^{-1}$)")
         max_s_u_min_index: int = np.where(self.s > self.max_s / 25)[0][0]
         ax.plot(
             np.log10(self.models.r[max_s_u_min_index:]),
             self.u[max_s_u_min_index:],
-            color=self.models.parameters["map2D_overlay_color_light"],
+            color=self.models.parms.io.map2D_overlay_color_light,
             label=r"max$\{S(h, R)\}$",
         )
         max_s_u_line_search: np.ndarray = u_2d_map_indices[np.argmax(s_2d_map, axis=0)]
@@ -213,45 +213,45 @@ class Mrr:
         ax.plot(
             [r_2d_map_indices[0], np.log10(self.max_s_radius)],
             [r_max_s_mrr_u, r_max_s_mrr_u],
-            color=self.models.parameters["map2D_overlay_color_light"],
+            color=self.models.parms.io.map2D_overlay_color_light,
             linestyle=LINE_STYLES["loosely dashdotted"],
             label=rf"max{{max{{$S_{{MRR}}$}}}} = {self.max_s:.0f} RIU $^{{-1}}$"
-            + f" @ R = {self.max_s_radius:.0f} μm"
-            + f", {self.models.core_u_name} = {r_max_s_mrr_u:.3f} μm",
+            f" @ R = {self.max_s_radius:.0f} μm"
+            f", {self.models.parms.wg.u_coord_name} = {r_max_s_mrr_u:.3f} μm",
         )
         ax.plot(
             np.log10(self.r_e),
             self.u_resampled,
-            color=self.models.parameters["map2D_overlay_color_light"],
+            color=self.models.parms.io.map2D_overlay_color_light,
             linestyle="--",
             label=r"Re$(\Gamma_{fluid})$",
         )
         ax.plot(
             np.log10(self.r_w),
             self.u_resampled,
-            color=self.models.parameters["map2D_overlay_color_light"],
+            color=self.models.parms.io.map2D_overlay_color_light,
             linestyle="-.",
             label=r"Rw$(\Gamma_{fluid})$",
         )
         ax.legend(loc="lower right")
         name = (
             f"{self.models.filename_path.stem}_MRR_2DMAP_S_VS_"
-            + f"{self.models.core_u_name}_and_R.png"
+            f"{self.models.parms.wg.u_coord_name}_and_R.png"
         )
         filename = self.models.filename_path.parent / name
         fig.savefig(filename)
         self.logger(f"Wrote '{filename}'.")
-        if self.models.parameters["write_excel_files"]:
+        if self.models.parms.io.write_excel_files:
             fname = (
                 f"{self.models.filename_path.stem}_MRR_2DMAPS_VS_"
-                + f"{self.models.core_u_name}_and_R.xlsx"
+                f"{self.models.parms.wg.u_coord_name}_and_R.xlsx"
             )
             self._write_image_data_to_excel(
                 filename=str(self.models.filename_path.parent / fname),
                 x_array=10**r_2d_map_indices,
                 x_label="R (um)",
                 y_array=u_2d_map_indices,
-                y_label=f"{self.models.core_u_name} (um)",
+                y_label=f"{self.models.parms.wg.u_coord_name} (um)",
                 z_array=[s_2d_map],
                 z_labels=["S (RIU-1)"],
             )
@@ -275,7 +275,7 @@ class Mrr:
                 int(np.argmin(gamma_2d_map))
             ]
             self.logger(
-                f"[yellow]WARNING! Gamma({self.models.core_u_name}) is not "
+                f"[yellow]WARNING! Gamma({self.models.parms.wg.u_coord_name}) is not "
                 + "monotonically decreasing, first/last values replaced"
                 + " with gamma max/min!"
             )
@@ -289,13 +289,14 @@ class Mrr:
             r_2d_map_indices,
             gamma_2d_map,
             s_2d_map,
-            cmap=self.models.parameters["map2D_colormap"],
+            cmap=self.models.parms.io.map2D_colormap,
         )
         ax.set_title(
             r"MRR sensitivity, $S_{MRR}$, as a function of $\Gamma_{fluid}$ and $R$"
-            + f"\n{self.models.pol}"
-            + f", λ = {self.models.lambda_res:.3f} μm"
-            + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
+            f"\n{self.models.parms.wg.polarization}"
+            f", λ = {self.models.parms.wg.lambda_resonance:.3f} μm"
+            f", {self.models.parms.wg.v_coord_name} = "
+            f"{self.models.parms.wg.v_coord_value:.3f} μm"
         )
         ax.set_xlabel("log(R) (μm)")
         ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
@@ -303,36 +304,36 @@ class Mrr:
         ax.plot(
             np.log10(self.models.r),
             self.gamma,
-            color=self.models.parameters["map2D_overlay_color_light"],
+            color=self.models.parms.io.map2D_overlay_color_light,
             label=r"max$\{S_{MRR}(\Gamma_{fluid}, R)\}$",
         )
         """
         ax.plot(
             [np.log10(self.max_S_radius), np.log10(self.max_S_radius)],
             [gamma_2D_map[-1], R_max_Smrr_gamma],
-            color=self.models.parameters["map2D_overlay_color_light"],
+            color=self.models.parms.io.map2D_overlay_color_light,
         )
         """
         ax.plot(
             [r_2d_map_indices[0], np.log10(self.max_s_radius)],
             [r_max_s_mrr_gamma, r_max_s_mrr_gamma],
-            color=self.models.parameters["map2D_overlay_color_light"],
+            color=self.models.parms.io.map2D_overlay_color_light,
             linestyle=LINE_STYLES["loosely dashdotted"],
             label=rf"max{{max{{$S_{{MRR}}$}}}} = {self.max_s:.0f} RIU$^{{-1}}$"
-            + f" @ R = {self.max_s_radius:.0f} μm"
-            + rf", $\Gamma$ = {r_max_s_mrr_gamma:.0f}$\%$",
+            f" @ R = {self.max_s_radius:.0f} μm"
+            rf", $\Gamma$ = {r_max_s_mrr_gamma:.0f}$\%$",
         )
         ax.plot(
             np.log10(self.r_e),
             self.gamma_resampled * 100,
-            color=self.models.parameters["map2D_overlay_color_light"],
+            color=self.models.parms.io.map2D_overlay_color_light,
             linestyle="--",
             label=r"Re$(\Gamma_{fluid})$",
         )
         ax.plot(
             np.log10(self.r_w),
             self.gamma_resampled * 100,
-            color=self.models.parameters["map2D_overlay_color_light"],
+            color=self.models.parms.io.map2D_overlay_color_light,
             linestyle="-.",
             label=r"Rw$(\Gamma_{fluid})$",
         )
@@ -344,7 +345,7 @@ class Mrr:
                     np.log10(self.models.plotting_extrema["r_plot_max"]),
                 ],
                 [line, line],
-                color=self.models.parameters["map2D_overlay_color_light"],
+                color=self.models.parms.io.map2D_overlay_color_light,
                 linestyle=LINE_STYLES["loosely dotted"],
             )
         """
@@ -373,19 +374,20 @@ class Mrr:
             r_2d_map_indices,
             gamma_2d_map,
             s_nr_2d_map,
-            cmap=self.models.parameters["map2D_colormap"],
+            cmap=self.models.parms.io.map2D_colormap,
         )
         ax.plot(
             np.log10(self.models.r),
             self.gamma,
-            color=self.models.parameters["map2D_overlay_color_dark"],
+            color=self.models.parms.io.map2D_overlay_color_dark,
             label=r"max$\{S_{MRR}\}$",
         )
         ax.set_title(
             r"MRR $S_{NR}$ as a function of $\Gamma_{fluid}$ and $R$"
-            + f"\n{self.models.pol}"
-            + f", λ = {self.models.lambda_res:.3f} μm"
-            + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
+            f"\n{self.models.parms.wg.polarization}"
+            f", λ = {self.models.parms.wg.lambda_resonance:.3f} μm"
+            f", {self.models.parms.wg.v_coord_name} = "
+            f"{self.models.parms.wg.v_coord_value:.3f} μm"
         )
         ax.set_xlabel("log(R) (μm)")
         ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
@@ -415,19 +417,20 @@ class Mrr:
             r_2d_map_indices,
             gamma_2d_map,
             s_e_2d_map,
-            cmap=self.models.parameters["map2D_colormap"],
+            cmap=self.models.parms.io.map2D_colormap,
         )
         ax.plot(
             np.log10(self.models.r),
             self.gamma,
-            color=self.models.parameters["map2D_overlay_color_dark"],
+            color=self.models.parms.io.map2D_overlay_color_dark,
             label=r"max$\{S_{MRR}\}$",
         )
         ax.set_title(
             r"MRR $S_e$ as a function of $\Gamma_{fluid}$ and $R$"
-            + f"\n{self.models.pol}"
-            + f", λ = {self.models.lambda_res:.3f} μm"
-            + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
+            f"\n{self.models.parms.wg.polarization}"
+            f", λ = {self.models.parms.wg.lambda_resonance:.3f} μm"
+            f", {self.models.parms.wg.v_coord_name} = "
+            f"{self.models.parms.wg.v_coord_value:.3f} μm"
         )
         ax.set_xlabel("log(R) (μm)")
         ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
@@ -461,19 +464,20 @@ class Mrr:
             r_2d_map_indices,
             gamma_2d_map,
             s_e_times_a_2d_map,
-            cmap=self.models.parameters["map2D_colormap"],
+            cmap=self.models.parms.io.map2D_colormap,
         )
         ax.plot(
             np.log10(self.models.r),
             self.gamma,
-            color=self.models.parameters["map2D_overlay_color_dark"],
+            color=self.models.parms.io.map2D_overlay_color_dark,
             label=r"max$\{S_{MRR}\}$",
         )
         ax.set_title(
             r"MRR $S_e \times a$ as a function of $\Gamma_{fluid}$ and $R$"
-            + f"\n{self.models.pol}"
-            + f", λ = {self.models.lambda_res:.3f} μm"
-            + f", {self.models.core_v_name} = {self.models.core_v_value:.3f}μm"
+            f"\n{self.models.parms.wg.polarization}"
+            f", λ = {self.models.parms.wg.lambda_resonance:.3f} μm"
+            f", {self.models.parms.wg.v_coord_name} = "
+            f"{self.models.parms.wg.v_coord_value:.3f}μm"
         )
         ax.set_xlabel("log(R) (μm)")
         ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
@@ -503,33 +507,34 @@ class Mrr:
             r_2d_map_indices,
             gamma_2d_map,
             wg_a2_map,
-            cmap=self.models.parameters["map2D_colormap"],
+            cmap=self.models.parms.io.map2D_colormap,
         )
         ax.plot(
             np.log10(self.models.r),
             self.gamma,
-            color=self.models.parameters["map2D_overlay_color_light"],
+            color=self.models.parms.io.map2D_overlay_color_light,
             label=r"max$\{S_{MRR}\}$",
         )
         ax.plot(
             np.log10(self.r_e),
             self.gamma_resampled * 100,
-            color=self.models.parameters["map2D_overlay_color_light"],
+            color=self.models.parms.io.map2D_overlay_color_light,
             linestyle="--",
             label=r"Re$(\Gamma_{fluid})$",
         )
         ax.plot(
             np.log10(self.r_w),
             self.gamma_resampled * 100,
-            color=self.models.parameters["map2D_overlay_color_light"],
+            color=self.models.parms.io.map2D_overlay_color_light,
             linestyle="-.",
             label=r"Rw$(\Gamma_{fluid})$",
         )
         ax.set_title(
             r"MRR $a^2$ as a function of $\Gamma_{fluid}$ and $R$"
-            + f"\n{self.models.pol}"
-            + f", λ = {self.models.lambda_res:.3f} μm"
-            + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
+            f"\n{self.models.parms.wg.polarization}"
+            f", λ = {self.models.parms.wg.lambda_resonance:.3f} μm"
+            f", {self.models.parms.wg.v_coord_name} = "
+            f"{self.models.parms.wg.v_coord_value:.3f} μm"
         )
         ax.set_xlabel("log(R) (μm)")
         ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
@@ -566,25 +571,25 @@ class Mrr:
             r_2d_map_indices,
             gamma_2d_map,
             αl_2d_map,
-            cmap=self.models.parameters["map2D_colormap"],
+            cmap=self.models.parms.io.map2D_colormap,
         )
         ax.plot(
             np.log10(self.models.r),
             self.gamma,
-            color=self.models.parameters["map2D_overlay_color_dark"],
+            color=self.models.parms.io.map2D_overlay_color_dark,
             label=r"max$\{S_{MRR}\}$",
         )
         ax.plot(
             np.log10(self.r_e),
             self.gamma_resampled * 100,
-            color=self.models.parameters["map2D_overlay_color_dark"],
+            color=self.models.parms.io.map2D_overlay_color_dark,
             linestyle="--",
             label=r"Re$(\Gamma_{fluid})$",
         )
         ax.plot(
             np.log10(self.r_w),
             self.gamma_resampled * 100,
-            color=self.models.parameters["map2D_overlay_color_dark"],
+            color=self.models.parms.io.map2D_overlay_color_dark,
             linestyle="-.",
             label=r"Rw$(\Gamma_{fluid})$",
         )
@@ -596,15 +601,16 @@ class Mrr:
                     np.log10(self.models.plotting_extrema["r_plot_max"]),
                 ],
                 [line, line],
-                color=self.models.parameters["map2D_overlay_color_dark"],
+                color=self.models.parms.io.map2D_overlay_color_dark,
                 linestyle=LINE_STYLES["loosely dotted"],
             )
         """
         ax.set_title(
             r"MRR $\alpha L$ as a function of $\Gamma_{fluid}$ and $R$"
-            + f"\n{self.models.pol}"
-            + f", λ = {self.models.lambda_res:.3f} μm"
-            + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
+            f"\n{self.models.parms.wg.polarization}"
+            f", λ = {self.models.parms.wg.lambda_resonance:.3f} μm"
+            f", {self.models.parms.wg.v_coord_name} = "
+            f"{self.models.parms.wg.v_coord_value:.3f} μm"
         )
         ax.set_xlabel("log(R) (μm)")
         ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
@@ -637,25 +643,25 @@ class Mrr:
             r_2d_map_indices,
             gamma_2d_map,
             α_inv_2d_map,
-            cmap=self.models.parameters["map2D_colormap"],
+            cmap=self.models.parms.io.map2D_colormap,
         )
         ax.plot(
             np.log10(self.models.r),
             self.gamma,
-            color=self.models.parameters["map2D_overlay_color_dark"],
+            color=self.models.parms.io.map2D_overlay_color_dark,
             label=r"max$\{S_{MRR}\}$",
         )
         ax.plot(
             np.log10(self.r_e),
             self.gamma_resampled * 100,
-            color=self.models.parameters["map2D_overlay_color_dark"],
+            color=self.models.parms.io.map2D_overlay_color_dark,
             linestyle="--",
             label=r"Re$(\Gamma_{fluid})$",
         )
         ax.plot(
             np.log10(self.r_w),
             self.gamma_resampled * 100,
-            color=self.models.parameters["map2D_overlay_color_dark"],
+            color=self.models.parms.io.map2D_overlay_color_dark,
             linestyle="-.",
             label=r"Rw$(\Gamma_{fluid})$",
         )
@@ -667,15 +673,16 @@ class Mrr:
                     np.log10(self.models.plotting_extrema["r_plot_max"]),
                 ],
                 [line, line],
-                color=self.models.parameters["map2D_overlay_color_dark"],
+                color=self.models.parms.io.map2D_overlay_color_dark,
                 linestyle=LINE_STYLES["loosely dotted"],
             )
         """
         ax.set_title(
             r"MRR 1/$\alpha$ as a function of $\Gamma_{fluid}$ and $R$"
-            + f"\n{self.models.pol}"
-            + f", λ = {self.models.lambda_res:.3f} μm"
-            + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
+            f"\n{self.models.parms.wg.polarization}"
+            f", λ = {self.models.parms.wg.lambda_resonance:.3f} μm"
+            f", {self.models.parms.wg.v_coord_name} = "
+            f"{self.models.parms.wg.v_coord_value:.3f} μm"
         )
         ax.set_xlabel("log(R) (μm)")
         ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
@@ -694,7 +701,7 @@ class Mrr:
         self.logger(f"Wrote '{filename}'.")
 
         # Save 2D map data as a function of gamma and R to output Excel file
-        if self.models.parameters["write_excel_files"]:
+        if self.models.parms.io.write_excel_files:
             # Add additional (non-plotted) 2d maps
             α_2d_map = np.asarray(
                 [
@@ -789,12 +796,13 @@ class Mrr:
         fig, axs = plt.subplots(7)
         fig.suptitle(
             "MRR - Sensing parameters\n"
-            + f"{self.models.pol}"
-            + f", λ = {self.models.lambda_res:.3f} μm"
-            + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
-            + f", Lc = {self.lc:.1f} μm\n"
-            + rf"max{{max{{$S$}}}} = {self.max_s:.0f} (RIU$^{{-1}}$)"
-            + rf" @ $R$ = {self.max_s_radius:.0f} μm"
+            f"{self.models.parms.wg.polarization}"
+            f", λ = {self.models.parms.wg.lambda_resonance:.3f} μm"
+            f", {self.models.parms.wg.v_coord_name} = "
+            f"{self.models.parms.wg.v_coord_value:.3f} μm"
+            f", Lc = {self.models.parms.ring.coupling_length:.1f} μm\n"
+            rf"max{{max{{$S$}}}} = {self.max_s:.0f} (RIU$^{{-1}}$)"
+            rf" @ $R$ = {self.max_s_radius:.0f} μm"
         )
 
         # max{S}
@@ -856,7 +864,7 @@ class Mrr:
             ],
             "r--",
         )
-        axs[axs_index].set_ylabel(f"{self.models.core_u_name} (μm)")
+        axs[axs_index].set_ylabel(f"{self.models.parms.wg.u_coord_name} (μm)")
         axs[axs_index].set_xlim(
             self.models.plotting_extrema["r_plot_min"],
             self.models.plotting_extrema["r_plot_max"],
@@ -937,11 +945,12 @@ class Mrr:
         fig, axs = plt.subplots(6)
         fig.suptitle(
             "MRR - Ring parameters"
-            + f"\n{self.models.pol}"
-            + f", λ = {self.models.lambda_res:.3f} μm"
-            + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm\n"
-            + rf"max{{max{{$S$}}}} = {self.max_s:.0f} (RIU$^{{-1}}$)"
-            + rf" @ $R$ = {self.max_s_radius:.0f} μm"
+            f"\n{self.models.parms.wg.polarization}"
+            f", λ = {self.models.parms.wg.lambda_resonance:.3f} μm"
+            f", {self.models.parms.wg.v_coord_name} = "
+            f"{self.models.parms.wg.v_coord_value:.3f} μm\n"
+            rf"max{{max{{$S$}}}} = {self.max_s:.0f} (RIU$^{{-1}}$)"
+            rf" @ $R$ = {self.max_s_radius:.0f} μm"
         )
         # max{S}
         axs_index = 0
@@ -1067,7 +1076,7 @@ class Mrr:
         """
         self._plot_mrr_sensing_parameters_at_optimum()
         self._plot_mrr_ring_parameters_at_optimum()
-        if self.models.parameters["write_2D_maps"]:
+        if self.models.parms.io.write_2D_maps:
             self._plot_mrr_result_2d_maps()
 
     def plot_combined_sensor_optimization_results(self, linear: Linear, spiral: Spiral):
@@ -1084,18 +1093,20 @@ class Mrr:
         # Calculate minimum sensitivity required to detect the minimum resolvable
         # change in ni for a given transmission measurement SNR
         s_min: float = (
-            10 ** (-self.models.parameters["T_SNR"] / 10)
-            / self.models.parameters["min_delta_ni"]
+            10 ** (-self.models.parms.limits.T_SNR / 10)
+            / self.models.parms.limits.min_delta_ni
         )
 
         # Create plot figure
         fig, ax = plt.subplots()
         ax.set_title(
             "Maximum sensitivity for MRR, linear, and spiral sensors\n"
-            if self.models.parameters["analyze_spiral"]
+            if self.models.parms.debug.analyze_spiral
             else "Maximum sensitivity for MRR and linear sensors\n"
-            + f"{self.models.pol}, λ = {self.models.lambda_res:.3f} μm"
-            + f", {self.models.core_v_name} = {self.models.core_v_value:.3f} μm"
+            f"{self.models.parms.wg.polarization}, "
+            f"λ = {self.models.parms.wg.lambda_resonance:.3f} μm"
+            f", {self.models.parms.wg.v_coord_name} = "
+            f"{self.models.parms.wg.v_coord_value:.3f} μm"
         )
 
         # MRR
@@ -1120,8 +1131,8 @@ class Mrr:
             label="".join(
                 [
                     r"min$\{S\}$ to resolve $\Delta n_{i}$",
-                    f" = {self.models.parameters['min_delta_ni']:.0E} "
-                    + f"@ SNR = {self.models.parameters['T_SNR']:.0f} dB",
+                    f" = {self.models.parms.limits.min_delta_ni:.0E} "
+                    f"@ SNR = {self.models.parms.limits.T_SNR:.0f} dB",
                 ]
             ),
         )
@@ -1132,13 +1143,13 @@ class Mrr:
         ax.set_ylim(100, 1000000)
 
         # Spiral and MRR/spiral sensitivity ratio, if required
-        if self.models.parameters["analyze_spiral"]:
+        if self.models.parms.debug.analyze_spiral:
             ax.loglog(
                 self.models.r[spiral.s > 1],
                 spiral.s[spiral.s > 1],
                 color="k",
-                label=f"Spiral (spacing = {spiral.spacing:.0f} μm"
-                + f", min turns = {spiral.turns_min:.2f})",
+                label=f"Spiral (spacing = {self.models.parms.spiral.spacing:.0f} μm"
+                f", min turns = {self.models.parms.spiral.turns_min:.2f})",
             )
             ax_right = ax.twinx()
             ax_right.semilogx(
@@ -1251,7 +1262,9 @@ class Mrr:
         Propagation loss component of total round-trip losses : α_prop*L
         """
 
-        return self._α_prop(u=u) * ((2 * np.pi * r) + (2 * self.lc))
+        return self._α_prop(u=u) * (
+            (2 * np.pi * r) + (2 * self.models.parms.ring.coupling_length)
+        )
 
     def _calc_α_bend_l(self, r: float, u: float) -> float:
         """
@@ -1278,8 +1291,8 @@ class Mrr:
         Calculate Snr (see paper)
         """
         return (
-            (4 * np.pi / self.models.lambda_res)
-            * ((2 * np.pi * r) + (2 * self.lc))
+            (4 * np.pi / self.models.parms.wg.lambda_resonance)
+            * ((2 * np.pi * r) + (2 * self.models.parms.ring.coupling_length))
             * self.models.gamma_of_u(u)
             * self._calc_wg_a2(r=r, u=u)
         )
@@ -1361,13 +1374,13 @@ class Mrr:
 
         # Find u that maximizes S at radius r.
         if u_min != u_max:
-            if self.models.parameters["optimization_local"]:
+            if self.models.parms.fit.optimization_local:
                 optimization_result = optimize.minimize(
                     fun=self._obj_fun,
                     x0=np.asarray([u0]),
                     bounds=((u_min, u_max),),
                     args=(r,),
-                    method=self.models.parameters["optimization_method"],
+                    method=self.models.parms.fit.optimization_method,
                     tol=1e-9,
                 )
             else:
@@ -1397,8 +1410,10 @@ class Mrr:
         gamma: float = self.models.gamma_of_u(u_max_s) * 100
         n_eff: float = self.models.n_eff_of_u(u_max_s)
         finesse: float = np.pi * (np.sqrt(tau * a)) / (1 - tau * a)
-        q: float = (n_eff * (2 * np.pi * r) / self.models.lambda_res) * finesse
-        fwhm: float = self.models.lambda_res / q
+        q: float = (
+            n_eff * (2 * np.pi * r) / self.models.parms.wg.lambda_resonance
+        ) * finesse
+        fwhm: float = self.models.parms.wg.lambda_resonance / q
         fsr: float = finesse * fwhm
         contrast: float = t_max - t_min
         er: float = 10 * np.log10(t_max / t_min)
@@ -1475,9 +1490,9 @@ class Mrr:
         self.max_s_radius = self.models.r[np.argmax(self.s)]
 
         # Calculate Re(gamma) and Rw(gamma)
-        gamma_min: float = list(self.models.modes_data.values())[-1]["gamma"]
-        gamma_max: float = list(self.models.modes_data.values())[0]["gamma"]
-        self.gamma_resampled = np.linspace(gamma_min, gamma_max, 500)
+        self.gamma_resampled = np.linspace(
+            self.models.parms.limits.gamma_min, self.models.parms.limits.gamma_max, 500
+        )
         self.u_resampled = np.asarray(
             [self.models.u_of_gamma(g) for g in self.gamma_resampled]
         )
