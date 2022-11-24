@@ -52,20 +52,13 @@ import argparse
 import logging
 from rich import print
 from rich.logging import RichHandler
-import sys
 import time
 from pathlib import Path
-
 import matplotlib.pyplot as plt
+import sys
 
-# mrr_absorption_sensor package
-# KLUDGE? Choose correct import statement depending on if running from .bat file
-# or from an IDE.
-if sys.gettrace() is not None:
-    from mrr_absorption_sensor import analyze
-else:
-    from mrr_absorption_sensor.mrr_absorption_sensor import analyze
-from plot_article_figures import plot_article_figures
+sys.path.append("..\\")
+from mrr_absorption_sensor import analyze
 
 
 def mrr_absorption_sensor_vs_spiral(toml_input_filename: str):

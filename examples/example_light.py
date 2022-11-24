@@ -1,23 +1,14 @@
 """
-
-To run:
-   - run the script from the SAME directory as the mrr_absorption_sensor package.
- OR:
-   - run the script from anywhere, but the PYTHONDIR environment variable must contain
-     the PARENT directory of the mrr_absorption_sensor package.
-
+Simplified use of the mrr_absorption_sensor package using "example_light.toml"
 """
 
-import sys
 import matplotlib.pyplot as plt
 from plot_article_figures import plot_article_figures
+import sys
 
-# KLUDGE? Choose correct import statement depending on if running from .bat file
-# or from an IDE.
-if sys.gettrace() is not None:
-    from mrr_absorption_sensor import analyze
-else:
-    from mrr_absorption_sensor.mrr_absorption_sensor import analyze
+sys.path.append("..\\")
+from mrr_absorption_sensor import analyze
+
 
 plt.rcParams.update(
     {
@@ -28,6 +19,7 @@ plt.rcParams.update(
         "figure.max_open_warning": 25,
     },
 )
+
 analyze("example_light.toml")
 plot_article_figures(
     results_file_name="data\\example_light_ALL_RESULTS.xlsx",
