@@ -62,12 +62,15 @@ models_only = false						# Calculate and plot models only, without analysing the
 analyze_spiral = true					# Analyse the MRR and linear waveguides only (boolean, default = True)
 
 #
-# Mode solver solution data as a function of waveguide geometry free parameter (u):
-# - u: either the core height or width in um, depending on which of "core_width"
-#      OR "core_height" was specified in the "wg" section
-# - gamma: normalized proportion of mode power in the cladding
-# - r: list of radii at which the bending losses are specified
-# - alpha_bend: list of corresponding bending losses (dB/90o)
+# Mode solver solution data as a function of the waveguide geometry free parameter (u):
+# - u (um): EITHER the core height or width, depending on which of "core_width"
+#           OR "core_height" was specified in the "wg" section
+# - gamma ([0..1]): normalized proportion of mode power in the cladding
+# - r (um): list of radii at which the bending losses are specified (um)
+# - alpha_bend (dB/um): list of corresponding bending losses
+#
+# NB: The dctionary keys for each value of "u" must be of the form "geom.X",
+#     where X is any user-defined index (the simplest is just to use 1, 2, 3, ...)
 
 [geom.1]
 u = 0.145
