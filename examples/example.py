@@ -50,11 +50,14 @@ sys.path.append("..\\")
 from mrr_absorption_sensor import analyze
 
 
-def mrr_absorption_sensor_vs_spiral(toml_input_filename: str):
+def mrr_absorption_sensor_vs_spiral(toml_input_filename: str) -> None:
     """
 
-    :param toml_input_filename: input .toml filename
-    :return: None
+    Args:
+        toml_input_filename (str): input .toml filename
+
+    Returns: None
+
     """
 
     # Start execution timer
@@ -115,6 +118,9 @@ def mrr_absorption_sensor_vs_spiral(toml_input_filename: str):
         f"[magenta3]Time: {time.strftime('%M:%S', time.gmtime(elapsed_time))}"
         " (MM:SS)"
     )
+
+    # Explicit None return
+    return None
 
 
 if __name__ == "__main__":
