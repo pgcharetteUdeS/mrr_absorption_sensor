@@ -29,6 +29,12 @@ class Linear:
     """
 
     def __init__(self, models: Models, logger: Callable = print):
+        """
+
+        Args:
+            models (Models): Models object instance
+            logger (Callable): console logger
+        """
 
         # Load class instance parameter values
         self.models: Models = models
@@ -48,8 +54,13 @@ class Linear:
     # Plotting
     #
 
-    def plot_optimization_results(self):
-        """ " """
+    def plot_optimization_results(self) -> None:
+        """
+        PLot linear waveguide optimization results
+
+        Returns: None
+
+        """
 
         # Create figure
         fig, axs = plt.subplots(5)
@@ -133,13 +144,22 @@ class Linear:
         fig.savefig(filename)
         self.logger(f"Wrote '{filename}'.")
 
+        # Explicit None return
+        return None
+
     #
     # Optimization
     #
 
     def _α_prop(self, u: float) -> float:
         """
-        α_prop = α_wg + gamma_fluid*α_fluid
+        alpha_prop = alpha_wg + gamma_fluid*alpha_fluid
+
+        Args:
+            u (float): waveguide core geometry free parameter
+
+        Returns: alpha_prop(u)
+
         """
 
         return self.models.α_wg_of_u(u=u) + (
@@ -148,14 +168,28 @@ class Linear:
 
     def _calc_wg_a2(self, r: float, u: float) -> float:
         """
-        Calculate a2
+        a2 = e**(-alpha_prop * length)
+
+        Args:
+            r (float): "radius" (length of waveguide = 2r)
+            u (float): waveguide core geometry free parameter
+
+        Returns:
+
         """
 
         return np.e ** -(self._α_prop(u=u) * (2 * r))
 
     def _calc_sensitivity(self, r: float, u: float) -> float:
         """
-        Calculate sensitivity at radius r (length 2r) for a given core dimension u
+        Calculate sensitivity at radius r for a given core dimension u
+
+        Args:
+            r (float): "radius" (length of waveguide = 2r)
+            u (float): waveguide core geometry free parameter
+
+        Returns: sensitivity(r, u)
+
         """
 
         # Calculate sensitivity
@@ -172,6 +206,13 @@ class Linear:
     def _obj_fun(self, u: float, r: float) -> float:
         """
         Objective function used for minimization in find_max_sensitivity(u) @ r
+
+        Args:
+            u (float): waveguide core geometry free parameter
+            r (float): "radius" (length of waveguide = 2r)
+
+        Returns: negative of sensitivity (for maximizing sensitivity)
+
         """
 
         # Minimizer sometimes tries values of the solution vector outside the bounds...
@@ -180,11 +221,21 @@ class Linear:
 
         # Calculate sensitivity at current solution vector S(r, h)
         s: float = self._calc_sensitivity(r=r, u=u)
+
         return -s / 1000
 
     def _find_max_sensitivity(self, r: float) -> Tuple[float, float, float, float]:
         """
-        Calculate maximum sensitivity at r over all u
+        Calculate maximum sensitivity at radius r over all u
+
+        Args:
+            r (float): "radius" (length of waveguide = 2*r)
+
+        Returns: max_s (maximum sensitivity)
+                 u_max_s (u @ max_s)
+                 gamma (gamma @ max_s)
+                 wg_a2 (waveguide loss a2 @ max_s)
+
         """
 
         # If this is the first optimization, set the initial guess for u at the
@@ -197,7 +248,7 @@ class Linear:
         )
 
         # Find u that maximizes S at radius R
-        optimization_result = optimize.minimize(
+        optimization_result: optimize.OptimizeResult = optimize.minimize(
             fun=self._obj_fun,
             x0=np.asarray([u0]),
             bounds=((self.models.parms.limits.u_min, self.models.parms.limits.u_max),),
@@ -211,7 +262,7 @@ class Linear:
         self.previous_solution = u_max_s
 
         # Calculate sensitivity at the solution
-        max_s = self._calc_sensitivity(r=r, u=u_max_s)
+        max_s: float = self._calc_sensitivity(r=r, u=u_max_s)
 
         # Calculate other useful parameters at the solution
         gamma: float = self.models.gamma_of_u(u_max_s) * 100
@@ -220,12 +271,14 @@ class Linear:
         # Return results to calling program
         return max_s, u_max_s, gamma, wg_a2
 
-    def analyze(self):
+    def analyze(self) -> None:
         """
         Analyse the linear waveguide sensor performance for all radii in the R domain
 
-        :return: None
+        Returns: None
+
         """
+
         # Analyse the sensor performance for all radii in the R domain
         self.results = [self._find_max_sensitivity(r=r) for r in self.models.r]
 
@@ -240,3 +293,6 @@ class Linear:
 
         # Console message
         self.logger("Linear sensor analysis done.")
+
+        # Explicit None return
+        return None

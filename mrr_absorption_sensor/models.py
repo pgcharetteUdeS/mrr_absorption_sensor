@@ -14,11 +14,13 @@ from typing import Callable, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import colors
-from matplotlib.collections import PolyCollection
+from matplotlib.axes import Axes
+from matplotlib.collections import LineCollection, PolyCollection, PathCollection
 from matplotlib.widgets import Button, CheckButtons
 from numpy.polynomial import Polynomial
 from rich import print
 from scipy import interpolate, optimize
+from sympy.core.function import FunctionClass
 from scipy.linalg import lstsq
 from sympy import functions, lambdify, symbols
 
@@ -56,6 +58,13 @@ class Models:
         filename_path: Path,
         logger: Callable = print,
     ):
+        """
+
+        Args:
+            parms (InputParameters): problem input parameters
+            filename_path (Path): output file Path
+            logger (Callable): console logger
+        """
 
         # Load class instance variables
         self.parms: InputParameters = parms
@@ -151,7 +160,7 @@ class Models:
         # else the optimization erroneously converges to a local minima.
         self.r_min_for_u_search_lower_bound: float = 0
         self.r_max_for_u_search_lower_bound: float = 0
-        self.u_lower_bound: interpolate.interp1d = interpolate.interp1d([0, 1], [0, 1])
+        self.u_lower_bound: interpolate.interp1d | None
         if not self.parms.debug.disable_u_search_lower_bound:
             self._set_u_search_lower_bound()
 
@@ -159,10 +168,21 @@ class Models:
     # alpha_wg(u), gamma(u), u(gamma), and neffs(u) modeling
     #
 
-    # Payne and Lacey model for propagataion losses from vertical sidewall roughness
+    # Payne and Lacey model for propagation losses from vertical sidewall roughness
     def _calc_k_parallel_projections(
         self, theta: float, n_clad: float, n_core: float, n_sub: float
     ) -> Tuple[float, float, float]:
+        """
+
+        Args:
+            theta (float): projection angle between k and the film plane
+            n_clad (float): cladding index
+            n_core (float): core index
+            n_sub (float): substrate index
+
+        Returns: gamma_clad, kx_core, gamma_sub
+
+        """
 
         # Calculate wave-numbers
         k0: float = (2 * np.pi) / (self.parms.wg.lambda_resonance * 1e-6)
@@ -186,15 +206,28 @@ class Models:
         n_clad: float,
         n_core: float,
         n_sub: float,
-        pol: str,
+        polarization: str,
     ) -> float:
+        """
+
+        Args:
+            theta (float): projection angle between k and the film plane
+            h (float): core thickness
+            n_clad (float): cladding index
+            n_core (float): core index
+            n_sub (float): substrate index
+            polarization (str): light polarization
+
+        Returns: squared loss exponent
+
+        """
 
         # Calculate squared residual
         a: float = h / 2
         [gamma_clad, kx_core, gamma_sub] = self._calc_k_parallel_projections(
             theta=theta, n_clad=n_clad, n_core=n_core, n_sub=n_sub
         )
-        if pol == "TE":
+        if polarization == "TE":
             e = (
                 2 * a * kx_core
                 - np.arctan2(gamma_sub, kx_core)
@@ -214,28 +247,50 @@ class Models:
         n_clad: float,
         n_core: float,
         n_sub: float,
-        pol: str,
+        polarization: str,
     ) -> Tuple[float, float]:
+        """
+
+        Args:
+            h (float): core thickness
+            n_clad (float): cladding index
+            n_core (float): core index
+            n_sub (float): substrate index
+            polarization (str):
+
+        Returns: n_eff, residual from the fit
+
+        """
 
         theta_max: float = np.pi / 2
-        theta_min = (
+        theta_min: float = (
             np.arcsin(n_sub / n_core) if n_sub > n_clad else np.arcsin(n_clad / n_core)
         )
-        optimization_result = optimize.minimize(
+        optimization_result: optimize.OptimizeResult = optimize.minimize(
             fun=self._calculate_mode_parameters_obj_fun,
             x0=np.asarray([(theta_max + theta_min) / 2]),
             bounds=((theta_min, theta_max),),
             method="Powell",
-            args=(h, n_clad, n_core, n_sub, pol),
+            args=(h, n_clad, n_core, n_sub, polarization),
         )
         theta: float = optimization_result.x[0]
-        residual = optimization_result.fun
+        residual: float = optimization_result.fun
         n_eff: float = n_core * np.sin(theta)
 
         # Return results
         return n_eff, residual
 
     def _calc_alpha_db_per_cm(self, n_eff: float, height: float, width: float) -> float:
+        """
+
+        Args:
+            n_eff (float): mode effective index
+            height (float): core height
+            width (float): cor width
+
+        Returns: alpha (db/cm)
+
+        """
 
         # Physical variables and mode parameters
         k0: float = 2 * np.pi / (self.parms.wg.lambda_resonance * 1e-6)
@@ -247,20 +302,8 @@ class Models:
             n_clad=self.parms.wg.n_clad,
             n_core=self.parms.wg.n_core,
             n_sub=self.parms.wg.n_sub,
-            pol=self.parms.wg.polarization,
+            polarization=self.parms.wg.polarization,
         )
-
-        """
-        # Calculate effective index for mode in 1d vertical stack (DEBUG)
-        n_eff_2d, residual_2d = self._calc_mode_effective_index(
-            h=width * 1e-6,
-            n_clad=self.parms.wg.n_clad,
-            n_core=n_eff_1d,
-            n_sub=self.parms.wg.n_clad,
-            pol="TM" if self.parms.wg.polarization == "TE" else "TE",
-        )
-        n_eff = n_eff_2d
-        """
 
         # Payne and Lacey model
         u: float = k0 * d * np.sqrt(n_eff_1d**2 - n_eff**2)
@@ -288,9 +331,9 @@ class Models:
         """
 
         Args:
-            u ():
+            u (float): core geometry free parameter
 
-        Returns:
+        Returns: alpha_wg
 
         """
         # If no height or width specified, return minimum alpha_wg value
@@ -318,53 +361,71 @@ class Models:
     def gamma_of_u(self, u: float) -> float:
         """
 
-        :param u:  waveguide core u dimension (um)
-        :return: gamma(u) polynomial model estimate
+        Args:
+            u (float): : core geometry free parameter
+
+        Returns: gamma(u)
+
         """
         return self._interpolate(model=self.gamma_model, x=u)
 
     def u_of_gamma(self, gamma: float) -> float:
         """
 
-        :param gamma:  gamma
-        :return: u(gamma) polynomial model estimate
+        Args:
+            gamma (float): gamma
+
+        Returns: u(gamma)
+
         """
         return self._interpolate(model=self.u_model, x=gamma)
 
     def n_eff_of_u(self, u: float) -> float:
         """
 
-        :param u: waveguide core dimension (um)
-        :return:  neff(u) polynomial model estimate
+        Args:
+            u (float): : core geometry free parameter():
+
+        Returns: neff(u)
+
         """
         return self._interpolate(model=self.n_eff_model, x=u)
 
     @staticmethod
     def _interpolate(model: dict, x: float) -> float:
         """
-        Interpolate gamma(u), u(gamma), and neffs(u) with models fitted
-        by _fit_1D_models(), limit x to the allowed bounds.
+
+        Args:
+            model (dict): interpolation model
+            x (float): model free parameter
+
+        Returns: interpolated value
+
         """
 
         value: float = model["model"](x)
         value = max(model["min"], value)
+
         return min(model["max"], value)
 
     # FIt alpha_wg(u), gamma(u), u(gamma), neff(u) 1D models to the mode solver data
-    def _fit_1d_models(self):
+    def _fit_1d_models(self) -> None:
         """
         1) Fit polynomial models to alpha_wg(u), gamma(u), u(gamma), and neffs(u),
            load the info (model parameters, bounds) into dictionaries for each.
 
         2) Fit interpolation models for r(u) @ max(alpha_bend) and r(u)
            @ min(alpha_bend), i.e. to R[0](u) and R[-1](u).
+
+        Returns: None
+
         """
 
         # Polynomial model for alpha_wg(u) in the input mode solver data
-        u_data = np.asarray([value.u for value in self.parms.geom.values()])
-        α_wg_data = (
-                np.asarray([value.alpha_wg for value in self.parms.geom.values()])
-                / CONSTANTS.per_um_to_db_per_cm
+        u_data: np.ndarray = np.asarray([value.u for value in self.parms.geom.values()])
+        α_wg_data: np.ndarray = (
+            np.asarray([value.alpha_wg for value in self.parms.geom.values()])
+            / CONSTANTS.per_um_to_db_per_cm
         )
         self.α_wg_model = {
             "name": "alpha_wg",
@@ -376,7 +437,9 @@ class Models:
         }
 
         # Polynomial models for gamma(u) and u(gamma) in the input mode solver data
-        gamma_data = np.asarray([value.gamma for value in self.parms.geom.values()])
+        gamma_data: np.ndarray = np.asarray(
+            [value.gamma for value in self.parms.geom.values()]
+        )
         self.gamma_model = {
             "name": "gamma",
             "model": Polynomial.fit(
@@ -395,7 +458,9 @@ class Models:
         }
 
         # Polynomial model for neff(u) in the input mode solver data
-        n_eff_data = np.asarray([value.neff for value in self.parms.geom.values()])
+        n_eff_data: np.ndarray = np.asarray(
+            [value.neff for value in self.parms.geom.values()]
+        )
         self.n_eff_model = {
             "name": "neff",
             "model": Polynomial.fit(
@@ -427,7 +492,7 @@ class Models:
         axs_index: int = 0
 
         # Plot of gamma(h)
-        gamma_modeled = [100 * self.gamma_of_u(u) for u in u_interp]
+        gamma_modeled: list = [100 * self.gamma_of_u(u) for u in u_interp]
         axs[axs_index].plot(u_data, gamma_data * 100, ".")
         axs[axs_index].plot(u_interp, gamma_modeled)
         axs[axs_index].set_title(
@@ -439,7 +504,7 @@ class Models:
         axs_index += 1
 
         # plot of u(gamma)
-        u_modeled = [self.u_of_gamma(gamma) for gamma in gamma_interp]
+        u_modeled: list = [self.u_of_gamma(gamma) for gamma in gamma_interp]
         axs[axs_index].plot(gamma_data * 100, u_data, ".")
         axs[axs_index].plot(gamma_interp * 100, u_modeled)
         axs[axs_index].set_title(
@@ -451,7 +516,7 @@ class Models:
         axs_index += 1
 
         # plot of neff(u)
-        neff_modeled = [self.n_eff_of_u(h) for h in u_interp]
+        neff_modeled: list = [self.n_eff_of_u(h) for h in u_interp]
         axs[axs_index].plot(u_data, n_eff_data, ".")
         axs[axs_index].plot(u_interp, neff_modeled)
         axs[axs_index].set_title(
@@ -463,8 +528,9 @@ class Models:
         axs_index += 1
 
         # Plot of alpha_wg(u)
-        alpha_wg_modeled = np.asarray([self.α_wg_of_u(u) for u in u_interp]) * (
-            CONSTANTS.per_um_to_db_per_cm
+        alpha_wg_modeled: np.ndarray = (
+            np.asarray([self.α_wg_of_u(u) for u in u_interp])
+            * CONSTANTS.per_um_to_db_per_cm
         )
         axs[axs_index].plot(u_interp, alpha_wg_modeled)
         if self.parms.fit.alpha_wg_exponential_model:
@@ -494,14 +560,20 @@ class Models:
         fig.savefig(out_filename)
         self.logger(f"Wrote '{out_filename}'.")
 
+        # Explicit None return
+        return None
+
     #
     # alpha_bend(r, h) modeling
     #
 
-    def _parse_bending_loss_mode_solver_data(self):
+    def _parse_bending_loss_mode_solver_data(self) -> None:
         """
         Parse the alpha_bend(R, u) mode solver data, determine the extrema,
         build the "u / R / log(alpha_bend)" arrays for fitting.
+
+        Returns: None
+
         """
 
         # For each u entry in the input dataclass: determine the radius value
@@ -533,34 +605,112 @@ class Models:
         self.r_α_bend_data_min = min(self.r_alpha_bend_data)
         self.r_α_bend_data_max = max(self.r_alpha_bend_data)
 
-    def _α_bend_model_fig_check_button_callback(self, label):
+        # Explicit None return
+        return None
+
+    def _α_bend_model_fig_check_button_callback(self, label: str) -> None:
+        """
+        alpha_bend(r, h) 3D figure check button callback
+
+        Args:
+            label (str): check button label
+
+        Returns: None
+
+        """
         index = self._α_bend_model_fig["labels"].index(label)
         self._α_bend_model_fig["lines"][index].set_visible(
             not self._α_bend_model_fig["lines"][index].get_visible()
         )
         plt.draw()
 
-    def _α_bend_model_fig_slider_callback(self, *_, **__):
+        # Explicit None return
+        return None
+
+    def _α_bend_model_fig_slider_callback(self, *_, **__) -> None:
+        """
+        alpha_bend(r, h) 3D figure slider callback
+
+        Args:
+            *_ ():
+            **__ ():
+
+        Returns: None
+
+        """
+
         self._α_bend_model_fig["surface"].set_alpha(
             self._α_bend_model_fig["slider"].val
         )
         plt.draw()
 
-    def _α_bend_model_fig_save(self, *_, **__):
+        # Explicit None return
+        return None
+
+    def _α_bend_model_fig_save(self, *_, **__) -> None:
+        """
+        alpha_bend(r, h) 3D figure save button callback
+
+        Args:
+            *_ ():
+            **__ ():
+
+        Returns: None
+
+        """
+
         self._α_bend_model_fig["fig"].savefig(self._α_bend_model_fig["out_filename"])
         self.logger(f"Wrote '{self._α_bend_model_fig['out_filename']}'.")
 
-    def _α_bend_model_fig_top_view(self, *_, **__):
+        # Explicit None return
+        return None
+
+    def _α_bend_model_fig_top_view(self, *_, **__) -> None:
+        """
+        alpha_bend(r, h) 3D figure "top view" button callback
+
+        Args:
+            *_ ():
+            **__ ():
+
+        Returns: None
+
+        """
+
         self._α_bend_model_fig["ax"].view_init(azim=0, elev=90)
         plt.draw()
 
-    def _α_bend_model_fig_reset_view(self, *_, **__):
+        # Explicit None return
+        return None
+
+    def _α_bend_model_fig_reset_view(self, *_, **__) -> None:
+        """
+        alpha_bend(r, h) 3D figure "reset view"" button callback
+
+        Args:
+            *_ ():
+            **__ ():
+
+        Returns: None
+
+        """
+
         self._α_bend_model_fig["ax"].view_init(
             azim=self._α_bend_model_fig_azim, elev=self._α_bend_model_fig_elev
         )
         plt.draw()
 
-    def _plot_α_bend_model_fitting_results(self):
+        # Explicit None return
+        return None
+
+    def _plot_α_bend_model_fitting_results(self) -> None:
+        """
+        plot alpha_bend(r, h) in the 3D figure
+
+        Returns: None
+
+        """
+
         # Calculate rms error over the data points
         α_bend_fitted: np.ndarray = np.asarray(
             self.α_bend(r=self.r_alpha_bend_data, u=self.u_data)
@@ -572,7 +722,7 @@ class Models:
         # Plot model solver data, fitted points, and 3D wireframes & surface
         # to verify the goodness of fit of the alpha_bend(r, u) model.
         self._α_bend_model_fig["fig"] = plt.figure()
-        ax = self._α_bend_model_fig["fig"].add_subplot(projection="3d")
+        ax: Axes = self._α_bend_model_fig["fig"].add_subplot(projection="3d")
         self._α_bend_model_fig["ax"] = ax
         ax.set_title(
             rf"α$_{{bend}}$(r, u) = {str(self.α_bend_model_symbolic)}"
@@ -614,7 +764,7 @@ class Models:
         ax.set_xlabel("".join([f"{self.parms.wg.u_coord_name} (μm)"]))
         ax.set_ylabel("log($R$) (μm)")
         ax.set_zlabel(r"log$_{10}$($\alpha_{BEND}$) ($\mu$m$^{-1}$)")
-        raw_points = ax.scatter(
+        raw_points: PathCollection = ax.scatter(
             self.u_data,
             np.log10(self.r_alpha_bend_data),
             self.ln_alpha_bend_data * np.log10(np.e),
@@ -622,7 +772,7 @@ class Models:
             label="Mode solver points (raw)",
             s=1,
         )
-        fitted_points = ax.scatter(
+        fitted_points: PathCollection = ax.scatter(
             self.u_data,
             np.log10(self.r_alpha_bend_data),
             np.log10(α_bend_fitted),
@@ -642,7 +792,7 @@ class Models:
         )
         α_bend: np.ndarray = np.asarray(self.α_bend(r=r_domain, u=u_domain))
         α_bend[α_bend < self.α_bend_data_min / 2] = self.α_bend_data_min / 2
-        model_mesh = ax.plot_wireframe(
+        model_mesh: LineCollection = ax.plot_wireframe(
             X=u_domain,
             Y=np.log10(r_domain),
             Z=np.log10(α_bend),
@@ -664,7 +814,7 @@ class Models:
         )
         α_bend_data: np.ndarray = np.asarray(self.α_bend(r=r_data, u=u_data))
         α_bend_data[α_bend_data < self.α_bend_data_min / 2] = self.α_bend_data_min / 2
-        data_mesh = ax.plot_wireframe(
+        data_mesh: LineCollection = ax.plot_wireframe(
             X=u_data,
             Y=np.log10(r_data),
             Z=np.log10(α_bend_data),
@@ -679,12 +829,6 @@ class Models:
         #   red:    alpha_prop < alpha_bend
         #   green:  alpha_bend < alpha_prop < alpha_bend x 10
         #   blue:   alpha_prop > alpha_bend x 10, alpha_prop dominates
-        """
-        gamma: np.ndarray = np.ones_like(u_domain)
-        for g, u in np.nditer([gamma, u_domain], op_flags=["readwrite"]):
-            g[...] = self.gamma_of_u(u[...])
-        alpha_prop: np.ndarray = self.alpha_wg_of_u() + (gamma * self.alpha_fluid)
-        """
         α_prop: np.ndarray = np.ones_like(u_domain)
         for αp, u in np.nditer(
             [α_prop, u_domain], op_flags=[["readwrite"], ["readonly"]]
@@ -766,7 +910,10 @@ class Models:
 
         self._α_bend_model_fig_save()
 
-    def _fit_α_bend_model(self):
+        # Explicit None return
+        return None
+
+    def _fit_α_bend_model(self) -> None:
         """
         Polynomial model least squares fit to ln(alpha_bend(r, u))
 
@@ -793,7 +940,7 @@ class Models:
         # Define the symbolic polynomial model. The monomials (terms) in the model
         # must match the column definitions in the "M" matrix below exactly.
         r, u = symbols("r, u")
-        c = symbols("c:7")
+        c: tuple = symbols("c:7")
         self.α_bend_model_symbolic: functions.exp = functions.exp(
             c[0]
             + c[1] * u
@@ -842,7 +989,7 @@ class Models:
         # Insert the fitted coefficient values into the model, then convert the symbolic
         # model to a lambda function for faster evaluation.
         α_bend_model_fitted = self.α_bend_model_symbolic.subs(list(zip(c, c_fitted)))
-        self.α_bend = lambdify([r, u], α_bend_model_fitted, "numpy")
+        self.α_bend: FunctionClass = lambdify([r, u], α_bend_model_fitted, "numpy")
 
         # Calculate rms fitting error over the data set
         rms_error: float = float(
@@ -853,11 +1000,14 @@ class Models:
         )
         self.logger(f"Fitted ln(alpha_bend) model, rms error = {rms_error:.1e}.")
 
+        # Explicit None return
+        return None
+
     #
     # Utilities for use in optimization in the find_max_sensitivity() sensor methods
     #
 
-    def _set_u_search_lower_bound(self):
+    def _set_u_search_lower_bound(self) -> None:
         # At small ring radii, the interpolation model for alpha_bend(u, r) is
         # unreliable at low u. As a result, the search for optimal u in the optimization
         # sometimes converges towards a solution at low u whereas the solution at small
@@ -876,7 +1026,7 @@ class Models:
         # in the full u domain during optimization.
 
         # Fetch list of core geometry u values
-        u = np.asarray([value.u for value in self.parms.geom.values()])
+        u: np.ndarray = np.asarray([value.u for value in self.parms.geom.values()])
 
         # Fit the piecewise spline to model h_lower_bound(r)
         r_α_bend_threshold: np.ndarray = np.asarray(
@@ -969,34 +1119,44 @@ class Models:
                 "Decrease value of 'alpha_bend_threshold' in .toml file."
             )
 
+        # Explicit None return
+        return None
+
     def u_search_domain(self, r: float) -> Tuple[float, float]:
         """
         Determine u search domain extrema, see _set_u_search_lower_bound()
 
-        :param r: waveguide bending radius (um)
-        :return: (u_min, u_max) u search domain extrema (um)
+        Args:
+            r (float): waveguide bending radius (um)
+
+        Returns: (u_min, u_max) u search domain extrema (um)
+
         """
 
         if self.parms.debug.disable_u_search_lower_bound:
             return self.parms.limits.u_min, self.parms.limits.u_max
         if r < self.r_min_for_u_search_lower_bound:
-            u_min = self.parms.limits.u_max
+            u_min: float = self.parms.limits.u_max
         elif r > self.r_max_for_u_search_lower_bound:
             u_min = self.parms.limits.u_min
         else:
             u_min = min(float(self.u_lower_bound(r)), self.parms.limits.u_max)
             u_min = max(u_min, self.parms.limits.u_min)
-        u_max = self.parms.limits.u_max
+        u_max: float = self.parms.limits.u_max
+
         return u_min, u_max
 
     #
     # Calculate shared values for sensor Class instance plotting
     #
 
-    def calculate_plotting_extrema(self, max_s: float):
+    def calculate_plotting_extrema(self, max_s: float) -> None:
         """
 
-        Returns:
+        Args:
+            max_s (float): maximum sensitivity
+
+        Returns: None
 
         """
 
@@ -1023,3 +1183,6 @@ class Models:
 
         # max{S} vertical marker
         self.plotting_extrema["S_plot_max"] = 10 ** np.ceil(np.log10(max_s))
+
+        # Explicit None return
+        return None
