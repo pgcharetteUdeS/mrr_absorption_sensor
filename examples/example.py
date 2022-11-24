@@ -1,6 +1,4 @@
-"""
-
-FILENAME: example.py
+"""example.py
 
 PURPOSE: Determine the maximum achievable sensitivity as a function of the waveguide
          core geometry free parameter (height or width) over a range of ring/spiral
@@ -16,7 +14,6 @@ COMMAND LINE PARAMETERS (optional):
         disable "pause while waiting for user input" at the end of the script (this
         is useful when running multiple analyses from a .bat file so that the .bat
         file doesn't pause for user input after every call to the script).
-
 
 IDEs issues/notes:
     PyCharm:
@@ -46,6 +43,8 @@ import time
 from pathlib import Path
 import matplotlib.pyplot as plt
 import sys
+
+from plot_article_figures import plot_article_figures
 
 sys.path.append("..\\")
 from mrr_absorption_sensor import analyze

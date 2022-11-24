@@ -1,10 +1,13 @@
-"""
+"""example_light.py
+
 Simplified use of the mrr_absorption_sensor package using "example_light.toml"
+
 """
 
 import matplotlib.pyplot as plt
-from plot_article_figures import plot_article_figures
 import sys
+
+from plot_article_figures import plot_article_figures
 
 sys.path.append("..\\")
 from mrr_absorption_sensor import analyze
