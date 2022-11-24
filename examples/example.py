@@ -78,10 +78,12 @@ def mrr_absorption_sensor_vs_spiral(toml_input_filename: str):
     logger: logging.Logger = logging.getLogger("rich")
 
     # Parser for command line parameter input (ex: running from .bat file)
-    parser = argparse.ArgumentParser(description="Analyse waveguide sensors")
+    parser: argparse.ArgumentParser = argparse.ArgumentParser(
+        description="Analyse waveguide sensors"
+    )
     parser.add_argument("--in_data_file", type=str)
     parser.add_argument("--no_pause", action="store_true")
-    args = parser.parse_args()
+    args: argparse.Namespace = parser.parse_args()
 
     # Load input .toml file name from the command line if supplied, else use filename
     # passed as a parameter to the function. Verify that the file exists.
