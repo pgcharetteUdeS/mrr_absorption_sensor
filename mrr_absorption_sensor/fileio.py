@@ -15,15 +15,15 @@ import dacite
 from dacite import from_dict
 from dataclasses import asdict
 from openpyxl.workbook import Workbook
+from openpyxl.worksheet.worksheet import Worksheet
 from pathlib import Path
 from typing import Callable
 
 import numpy as np
 import toml
 from rich import print
-import sys
 
-from .constants import constants, InputParameters
+from .constants import CONSTANTS, InputParameters
 from .version import __version__
 
 
@@ -83,32 +83,31 @@ def validate_excel_results_file(filename_path: Path) -> Path:
 
     """
 
-    excel_output_filename: Path = Path(
-        filename_path.parent / f"{filename_path.stem}_ALL_RESULTS.xlsx"
+    excel_output_filename: Path = filename_path.with_name(
+        f"{filename_path.stem}_ALL_RESULTS.xlsx"
     )
 
     try:
-        with open(str(excel_output_filename), "w"):
+        with open(str(excel_output_filename), "a"):
             pass
     except IOError:
-        print(
+        raise IOError(
             f"Could not open '{excel_output_filename}', close it "
             "if it's already open!"
-        )
-        sys.exit()
+        ) from None
 
     return excel_output_filename
 
 
 def write_excel_results_file(
-    excel_output_path: Path,
+    excel_output_path: Path | None,
     models: Models,
     mrr: Mrr,
     linear: Linear,
     spiral: Spiral,
     parms: InputParameters,
     logger: Callable = print,
-):
+) -> None:
     """
     Write the analysis results to the output Excel file from a dictionary of
     key:value pairs, where the keys are the Excel file column header text strings
@@ -127,19 +126,19 @@ def write_excel_results_file(
 
     """
     # Create Excel workbook
-    wb = Workbook()
+    wb: Workbook = Workbook()
 
     # Save the MMR data to a sheet
-    mrr_data_dict = {
+    mrr_data_dict: dict = {
         "R_um": models.r,
         "neff": mrr.n_eff,
         "maxS_RIU_inv": mrr.s,
         "Se": mrr.s_e,
         "Snr_RIU_inv": mrr.s_nr,
-        "alpha_bend_dB_per_cm": mrr.α_bend * constants.PER_UM_TO_DB_PER_CM,
-        "alpha_wg_dB_per_cm": mrr.α_wg * constants.PER_UM_TO_DB_PER_CM,
-        "alpha_prop_dB_per_cm": mrr.α_prop * constants.PER_UM_TO_DB_PER_CM,
-        "alpha_dB_per_cm": mrr.α * constants.PER_UM_TO_DB_PER_CM,
+        "alpha_bend_dB_per_cm": mrr.α_bend * CONSTANTS.per_um_to_db_per_cm,
+        "alpha_wg_dB_per_cm": mrr.α_wg * CONSTANTS.per_um_to_db_per_cm,
+        "alpha_prop_dB_per_cm": mrr.α_prop * CONSTANTS.per_um_to_db_per_cm,
+        "alpha_dB_per_cm": mrr.α * CONSTANTS.per_um_to_db_per_cm,
         "alphaL": mrr.αl,
         "a2": mrr.wg_a2,
         "tau": mrr.tau,
@@ -155,35 +154,34 @@ def write_excel_results_file(
         "FSR_um": mrr.fsr,
     }
     mrr_data: np.ndarray = np.asarray(list(mrr_data_dict.values())).T
-    mrr_sheet = wb["Sheet"]
+    mrr_sheet: Worksheet = wb["Sheet"]
     mrr_sheet.title = "MRR"
     mrr_sheet.append(list(mrr_data_dict.keys()))
     for row in mrr_data:
         mrr_sheet.append(row.tolist())
 
     # Save the calculated and interpolated alpha_wg(u) values to a sheet
-    alpha_wg_sheet = wb.create_sheet("alpha_wg")
-    alpha_wg_interp_sheet = wb.create_sheet("alpha_wg_interp")
+    alpha_wg_sheet: Worksheet = wb.create_sheet("alpha_wg")
+    alpha_wg_interp_sheet: Worksheet = wb.create_sheet("alpha_wg_interp")
     if models.parms.wg.v_coord_name == "w":
         alpha_wg_sheet.append(["height_um", "alpha_wg_dB_per_cm"])
+        alpha_wg_interp_sheet.append(["height_um", "alpha_wg_dB_per_cm"])
     else:
         alpha_wg_sheet.append(["width_um", "alpha_wg_dB_per_cm"])
-    if models.parms.wg.v_coord_name == "w":
-        alpha_wg_interp_sheet.append(["height_ump", "alpha_wg_dB_per_cm"])
-    else:
         alpha_wg_interp_sheet.append(["width_um", "alpha_wg_dB_per_cm"])
     for value in models.parms.geom.values():
         alpha_wg_sheet.append([value.u, value.alpha_wg])
-    u_data = np.asarray([value.u for value in models.parms.geom.values()])
+    u_data: np.ndarray = np.asarray([value.u for value in models.parms.geom.values()])
     u_interp: np.ndarray = np.linspace(u_data[0], u_data[-1], 100)
-    alpha_wg_modeled = np.asarray([models.α_wg_of_u(u) for u in u_interp]) * (
-        constants.PER_UM_TO_DB_PER_CM
+    alpha_wg_modeled: np.ndarray = (
+        np.asarray([models.α_wg_of_u(u) for u in u_interp])
+        * CONSTANTS.per_um_to_db_per_cm
     )
     for u, alpha_wg in zip(u_interp, alpha_wg_modeled):
         alpha_wg_interp_sheet.append([u, alpha_wg])
 
     # Save the Re(gamma) & Rw(gamma) arrays to a sheet
-    re_rw_sheet = wb.create_sheet("Re and Rw")
+    re_rw_sheet: Worksheet = wb.create_sheet("Re and Rw")
     re_rw_sheet.append(
         [
             "gamma_percent",
@@ -205,7 +203,7 @@ def write_excel_results_file(
         re_rw_sheet.append(line)
 
     # Save the linear waveguide data to a sheet
-    linear_data_dict = {
+    linear_data_dict: dict = {
         "R_um": models.r,
         "maxS_RIU_inv": linear.s,
         f"{models.parms.wg.u_coord_name}_um": linear.u,
@@ -214,14 +212,14 @@ def write_excel_results_file(
         "a2": linear.wg_a2,
     }
     linear_data: np.ndarray = np.asarray(list(linear_data_dict.values())).T
-    linear_sheet = wb.create_sheet("Linear")
+    linear_sheet: Worksheet = wb.create_sheet("Linear")
     linear_sheet.append(list(linear_data_dict.keys()))
     for row in linear_data:
         linear_sheet.append(row.tolist())
 
     # If required, save the spiral data to a sheet
     if parms.debug.analyze_spiral:
-        spiral_data_dict = {
+        spiral_data_dict: dict = {
             "R_um": models.r,
             "maxS_RIU_inv": spiral.s,
             f"{models.parms.wg.u_coord_name}_um": spiral.u,
@@ -232,7 +230,7 @@ def write_excel_results_file(
             "a2": spiral.wg_a2,
         }
         spiral_data: np.ndarray = np.asarray(list(spiral_data_dict.values())).T
-        spiral_sheet = wb.create_sheet("Spiral")
+        spiral_sheet: Worksheet = wb.create_sheet("Spiral")
         spiral_sheet.append(list(spiral_data_dict.keys()))
         for row in spiral_data:
             spiral_sheet.append(row.tolist())
@@ -240,3 +238,6 @@ def write_excel_results_file(
     # Save the Excel file to disk
     wb.save(filename=str(excel_output_path))
     logger(f"Wrote '{excel_output_path}'.")
+
+    # Explicit None return
+    return None

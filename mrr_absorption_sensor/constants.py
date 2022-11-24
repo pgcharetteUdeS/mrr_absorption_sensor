@@ -1,9 +1,9 @@
-"""constants.PY
+"""CONSTANTS.PY
 
-Global constants
+Global CONSTANTS
 
 """
-__all__ = ["constants", "LINE_STYLES", "InputParameters"]
+__all__ = ["CONSTANTS", "LINE_STYLES", "InputParameters"]
 
 from dataclasses import dataclass, field
 from dacite import from_dict
@@ -14,15 +14,15 @@ from typing import cast
 
 
 class Constants(NamedTuple):
-    """Global constants
-    - PER_UM_TO_DB_PER_CM: covert losses from um-1 in exponent form to
+    """Global CONSTANTS
+    - per_um_to_db_per_cm: covert losses from um-1 in exponent form to
                            dB/cm in DB form.
     """
 
-    PER_UM_TO_DB_PER_CM: float
+    per_um_to_db_per_cm: float
 
 
-constants: Constants = Constants(np.log10(np.e) * 10 * 10000)
+CONSTANTS: Constants = Constants(np.log10(np.e) * 10 * 10000)
 
 
 # Define extra line styles, see:

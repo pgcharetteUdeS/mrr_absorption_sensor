@@ -16,7 +16,7 @@ from openpyxl.workbook import Workbook
 from rich import print
 from scipy import optimize, integrate
 
-from .constants import constants
+from .constants import CONSTANTS
 from .models import Models
 
 
@@ -358,7 +358,7 @@ class Spiral:
         axs[axs_index].semilogx(
             self.models.r,
             np.asarray([self.models.α_wg_of_u(u) for u in self.u])
-            * constants.PER_UM_TO_DB_PER_CM,
+            * CONSTANTS.per_um_to_db_per_cm,
         )
         axs[axs_index].set_ylabel(r"α$_{wg}$")
         axs[axs_index].set_xlim(
@@ -366,8 +366,8 @@ class Spiral:
             self.models.plotting_extrema["r_plot_max"],
         )
         axs[axs_index].set_ylim(
-            np.floor(self.models.α_wg_model["min"] * constants.PER_UM_TO_DB_PER_CM),
-            np.ceil(self.models.α_wg_model["max"] * constants.PER_UM_TO_DB_PER_CM),
+            np.floor(self.models.α_wg_model["min"] * CONSTANTS.per_um_to_db_per_cm),
+            np.ceil(self.models.α_wg_model["max"] * CONSTANTS.per_um_to_db_per_cm),
         )
 
         # n turns @ max{S}

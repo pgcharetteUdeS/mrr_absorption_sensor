@@ -22,7 +22,7 @@ from scipy import interpolate, optimize
 from scipy.linalg import lstsq
 from sympy import functions, lambdify, symbols
 
-from .constants import constants, InputParameters
+from .constants import CONSTANTS, InputParameters
 
 
 class Models:
@@ -75,6 +75,8 @@ class Models:
             ),
             base=10,
         )
+        if np.size(self.r) == 0:
+            raise ValueError("No radii to analyze!")
 
         # Define propagation losses in the fluid medium (1/um)
         self.α_fluid: float = (
@@ -118,7 +120,7 @@ class Models:
         self.u_model: dict = {}
         self.n_eff_model: dict = {}
         self._fit_1d_models()
-        self.α_wg_db_per_cm: float = self.α_wg_of_u() * constants.PER_UM_TO_DB_PER_CM
+        self.α_wg_db_per_cm: float = self.α_wg_of_u() * CONSTANTS.per_um_to_db_per_cm
 
         # Check that the bending loss mode solver data covers the required h & R ranges
         α_prop_min: float = self.α_wg_of_u() + (
@@ -310,7 +312,7 @@ class Models:
                 / (self.parms.limits.u_max - self.parms.limits.u_min)
                 * 5
             )
-        ) / constants.PER_UM_TO_DB_PER_CM
+        ) / CONSTANTS.per_um_to_db_per_cm
 
     # gamma(u), u(gamma), neff(u) wrappers for model-specific calls to _interpolate()
     def gamma_of_u(self, u: float) -> float:
@@ -361,8 +363,8 @@ class Models:
         # Polynomial model for alpha_wg(u) in the input mode solver data
         u_data = np.asarray([value.u for value in self.parms.geom.values()])
         α_wg_data = (
-            np.asarray([value.alpha_wg for value in self.parms.geom.values()])
-            / constants.PER_UM_TO_DB_PER_CM
+                np.asarray([value.alpha_wg for value in self.parms.geom.values()])
+                / CONSTANTS.per_um_to_db_per_cm
         )
         self.α_wg_model = {
             "name": "alpha_wg",
@@ -462,7 +464,7 @@ class Models:
 
         # Plot of alpha_wg(u)
         alpha_wg_modeled = np.asarray([self.α_wg_of_u(u) for u in u_interp]) * (
-            constants.PER_UM_TO_DB_PER_CM
+            CONSTANTS.per_um_to_db_per_cm
         )
         axs[axs_index].plot(u_interp, alpha_wg_modeled)
         if self.parms.fit.alpha_wg_exponential_model:
@@ -470,7 +472,7 @@ class Models:
                 rf"$\alpha_{{wg}}$ ({self.parms.wg.u_coord_name}), exponential model"
             )
         else:
-            axs[axs_index].plot(u_data, α_wg_data * constants.PER_UM_TO_DB_PER_CM, ".")
+            axs[axs_index].plot(u_data, α_wg_data * CONSTANTS.per_um_to_db_per_cm, ".")
             axs[axs_index].set_title(
                 rf"$\alpha_{{wg}}$({self.parms.wg.u_coord_name})"
                 f", polynomial model order: {self.parms.fit.alpha_wg_order}"

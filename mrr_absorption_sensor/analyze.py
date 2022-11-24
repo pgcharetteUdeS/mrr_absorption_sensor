@@ -9,9 +9,7 @@ __all__ = ["analyze"]
 from pathlib import Path
 from rich import print, traceback
 from typing import Callable, Tuple
-
 import matplotlib.pyplot as plt
-import numpy as np
 
 from .constants import InputParameters
 from .fileio import (
@@ -88,18 +86,14 @@ def analyze(
         logger=logger,
     )
 
-    # Check that the array of radii to be analyzed is not empty
-    if np.size(models.r) == 0:
-        raise ValueError("No radii to analyze!")
-
     # If only model fitting was required, return
     if parms.debug.models_only:
         plt.show()
         return models, None, None, None
 
-    # Define output Excel filename: if file is already open, halt with an exception
+    # Define output Excel filename Path: if file is already open, halt with an exception
     # (better to halt here with an exception than AFTER having done the analysis...)
-    excel_output_path: Path = Path("")
+    excel_output_path: Path | None = None
     if parms.io.write_excel_files:
         excel_output_path = validate_excel_results_file(
             filename_path=output_filenames_path
@@ -124,7 +118,7 @@ def analyze(
         spiral.plot_optimization_results()
     mrr.plot_combined_sensor_optimization_results(linear=linear, spiral=spiral)
 
-    # Write the analysis results to the output Excel file
+    # Write the analysis results to the output Excel file, if required
     if parms.io.write_excel_files:
         write_excel_results_file(
             excel_output_path=excel_output_path,
@@ -134,7 +128,7 @@ def analyze(
             spiral=spiral,
             parms=parms,
             logger=logger,
-        ),
+        )
 
     # Show plots, return instantiated classes
     plt.show(block=block)
