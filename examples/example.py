@@ -17,16 +17,6 @@ COMMAND LINE PARAMETERS (optional):
         is useful when running multiple analyses from a .bat file so that the .bat
         file doesn't pause for user input after every call to the script).
 
-NOTES:
-    1) To include the "mrr_absorption_sensor" package, use one of the following options:
-       - Copy the package directory to the project directory.
-       - Add the parent directory of the package directory to the Python search path
-         (on Windows, add it to the PYTHONPATH environment variable).
-       - In PyCharm, add the directory to the IDE search path:
-         <Settings><Project Interpreter>, wheel icon next to the interpreter,
-         <Show all...>, "Show paths for selected interpreter" icon.
-        - In the script, use the "sys.path.append(<package parent directory>)"
-
 
 IDEs issues/notes:
     PyCharm:
