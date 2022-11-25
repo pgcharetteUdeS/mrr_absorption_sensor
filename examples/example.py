@@ -5,6 +5,12 @@ PURPOSE: Determine the maximum achievable sensitivity as a function of the waveg
          radii for micro-ring resonator, Archimedes spiral, and linear (straight)
          waveguide sensors.
 
+See:
+    P. Girault et al., "Influence of Losses, Device Size, and Mode Confinement on
+    Integrated Micro-Ring Resonator Performance for Absorption Spectroscopy Using
+    Evanescent Field Sensing," in Journal of Lightwave Technology, 2022
+    doi: 10.1109/JLT.2022.3220982.
+
 COMMAND LINE PARAMETERS (optional):
     --in_data_file <filename.toml>
         .toml file containing the problem specification parameters, see "example.toml"

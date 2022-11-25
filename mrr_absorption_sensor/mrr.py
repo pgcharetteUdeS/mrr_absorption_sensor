@@ -321,7 +321,7 @@ class Mrr:
 
         # 2D map of Smrr(gamma, R)
         fig, ax = plt.subplots()
-        cm: QuadMesh = ax.pcolormesh(
+        cm = ax.pcolormesh(
             r_2d_map_indices,
             gamma_2d_map,
             s_2d_map,
@@ -406,7 +406,7 @@ class Mrr:
             ]
         )
         fig, ax = plt.subplots()
-        cm: QuadMesh = ax.pcolormesh(
+        cm = ax.pcolormesh(
             r_2d_map_indices,
             gamma_2d_map,
             s_nr_2d_map,
@@ -1471,7 +1471,7 @@ class Mrr:
         r: float = args[0]
 
         # Minimizer sometimes tries values of the solution vector outside the bounds...
-        u: float = min(u, self.models.parms.limits.u_max)
+        u = min(u, self.models.parms.limits.u_max)
         u = max(u, self.models.parms.limits.u_min)
 
         # Calculate sensitivity at current solution vector S(r, h)
@@ -1511,20 +1511,20 @@ class Mrr:
             r (float): radius
 
         Returns:
-            s (float): maximum sensitivity
+            s (float): ring maximum sensitivity
             u_max_s (float): u @ max{S}
-            gamma (float):gamma @ max{S}
-            s_nr (float): Snr @ max{S}
-            s_e (float): Se @ max{S}
-            α_bend (float): alpha_bend @ max{S}
-            α_wg (float): alpha_wg @ max{S}
-            α_prop (float): alpha_prop @ max{S}
-            α (float): alpha @ max{S}
+            gamma (float): waveguide gamma @ max{S}
+            s_nr (float): ring Snr @ max{S}
+            s_e (float): ring Se @ max{S}
+            α_bend (float): waveguide alpha_bend @ max{S}
+            α_wg (float): waveguide alpha_wg @ max{S}
+            α_prop (float): waveguide alpha_prop @ max{S}
+            α (float): waveguide a @ max{S}
             αl (float): alpha*length @ max{S}
             wg_a2 (float): ring a2 @ max{S}
             tau (float): ring tau @ max{S}
-            t_max (float): ring t min @ max{S}
-            t_min (float): ring t max @ max{S}
+            t_max (float): ring t-a @ max{S}
+            t_min (float): ring t+a @ max{S}
             er (float): ring extinction ratio @ max{S}
             contrast (float): ring contrast @ max{S}
             n_eff (float): neff @ max{S}
@@ -1555,7 +1555,7 @@ class Mrr:
                     tol=1e-9,
                 )
             else:
-                optimization_result: optimize.OptimizeResult = optimize.shgo(
+                optimization_result = optimize.shgo(
                     func=self._obj_fun,
                     bounds=[(u_min, u_max)],
                     args=(r,),

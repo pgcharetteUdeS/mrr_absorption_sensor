@@ -5,6 +5,12 @@ for micro-ring resonator, spiral, and linear waveguide absorption sensors. The w
 core has either a fixed width or height and the other (free) core geometry parameter
 is allowed to vary over a specified range in the optimization at each bending radius.
 
+See:
+    P. Girault et al., "Influence of Losses, Device Size, and Mode Confinement on
+    Integrated Micro-Ring Resonator Performance for Absorption Spectroscopy Using
+    Evanescent Field Sensing," in Journal of Lightwave Technology, 2022
+    doi: 10.1109/JLT.2022.3220982.
+
 Main interface method: analyze.analyze()
 
 """
