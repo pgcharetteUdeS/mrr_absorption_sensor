@@ -11,7 +11,10 @@ See:
     Evanescent Field Sensing," in Journal of Lightwave Technology, 2022
     doi: 10.1109/JLT.2022.3220982.
 
-Main interface method: analyze.analyze()
+Note:
+    - All lengths are in units of um
+
+    - Main interface method: analyze.analyze()
 
 """
 

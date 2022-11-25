@@ -246,14 +246,28 @@ class InputParameters:
         for val in self.geom.values():
             r_array: np.ndarray = np.asarray(val.r)
             alpha_bend_array: np.ndarray = np.asarray(val.alpha_bend)
-            if (
-                len(r_array) < 3
-                or len(r_array) != len(alpha_bend_array)
-                or len(np.unique(r_array)) != len(r_array)
-                or not np.all(r_array[:-1] < r_array[1:])
-                or r_array[0] <= 0
-            ):
+            if len(r_array) < 3:
                 raise KeyError(
-                    f"{self.filename}: Invalid bending loss data"
+                    f"{self.filename}: Insufficient number of bending loss data"
+                    f" entries at u = {val.u:.3f} (number must be > 3)!"
+                )
+            elif len(r_array) != len(alpha_bend_array):
+                raise KeyError(
+                    f"{self.filename}: Unequal length radius and bending loss data"
+                    f" arrays at u = {val.u:.3f}!"
+                )
+            elif len(np.unique(r_array)) != len(r_array):
+                raise KeyError(
+                    f"{self.filename}: Duplicate radius value in bending loss data"
+                    f" at u = {val.u:.3f}!"
+                )
+            elif not np.all(r_array[:-1] < r_array[1:]):
+                raise KeyError(
+                    f"{self.filename}: Radius values are not in ascending order in"
+                    f" bending loss data at u = {val.u:.3f}!"
+                )
+            elif r_array[0] <= 0:
+                raise KeyError(
+                    f"{self.filename}:  Negative radius value in bending loss data"
                     f" at u = {val.u:.3f}!"
                 )

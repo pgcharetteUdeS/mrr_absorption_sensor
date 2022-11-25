@@ -1,5 +1,13 @@
 # Change Log
 
+## 2.2
+
+### Changed
+
+* Clean up (added missing type hinting and function docstrings)
+
+
+
 ## 2.1
 
 ### Added
@@ -14,6 +22,8 @@
 
 * Nothin'...
 
+
+
 ## 2.0
 
 ### Added
@@ -27,6 +37,8 @@
 ### Removed
 
 * Nothin'...
+
+
 
 ## 1.01
 
