@@ -1035,7 +1035,11 @@ class Models:
         max_indx: int = int(np.argmax(r_α_bend_threshold))
         r_α_bend_threshold: np.ndarray = r_α_bend_threshold[max_indx:]
         if len(r_α_bend_threshold) <= 1:
-            raise ValueError("'ERROR: alpha_bend_threshold' value us too high!")
+            raise ValueError(
+                "ERROR: 'alpha_bend_threshold' value "
+                f"({self.parms.limits.alpha_bend_threshold:.3f})"
+                " is too high, decrease value in .toml file."
+            )
         u_α_bend_threshold: np.ndarray = u[max_indx:]
         self.r_max_for_u_search_lower_bound = r_α_bend_threshold[0]
         self.r_min_for_u_search_lower_bound = r_α_bend_threshold[-1]
