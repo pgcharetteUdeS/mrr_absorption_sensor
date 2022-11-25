@@ -1459,7 +1459,7 @@ class Mrr:
         Objective function for the non-linear minimization in find_max_sensitivity()
 
         Args:
-            u (float): waveguide core free parameter
+            u (float): waveguide core free parameter in the optimization
             *args (float): r, radius
 
         Returns: negative of sensitivity (to maximize sensitivity in the optimization,
@@ -1621,9 +1621,10 @@ class Mrr:
             fsr,
         )
 
-    def analyze(self):
+    def analyze(self) -> None:
         """
-        Analyse the MRR sensor performance for all radii in the r domain
+        Analyse the MRR sensor performance for all radii in the r domain,
+        store the results in the Mrr object instance
 
         Returns: None
 
@@ -1685,3 +1686,6 @@ class Mrr:
 
         # Console message
         self.logger("MRR sensor analysis done.")
+
+        # Explicit None return
+        return None

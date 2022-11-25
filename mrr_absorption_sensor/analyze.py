@@ -115,7 +115,7 @@ def analyze(
     mrr.plot_mrr_optimization_results()
     linear.plot_optimization_results()
     if parms.debug.analyze_spiral:
-        spiral.plot_optimization_results()
+        spiral.plot_optimization_results_and_spiral_shape()
     mrr.plot_combined_sensor_optimization_results(linear=linear, spiral=spiral)
 
     # Write the analysis results to the output Excel file, if required

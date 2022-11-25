@@ -273,7 +273,8 @@ class Linear:
 
     def analyze(self) -> None:
         """
-        Analyse the linear waveguide sensor performance for all radii in the R domain
+        Analyse the linear waveguide sensor performance for all radii in the r domain,
+        store the results in the Mrr object instance
 
         Returns: None
 

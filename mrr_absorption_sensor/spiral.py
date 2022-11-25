@@ -7,12 +7,14 @@ __all__ = ["Spiral"]
 
 
 import io
-from typing import Callable, Tuple
+from typing import Callable
 
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image, TiffImagePlugin
 from openpyxl.workbook import Workbook
+from openpyxl.worksheet.worksheet import Worksheet
+from pathlib import Path
 from rich import print
 from scipy import optimize, integrate
 
@@ -54,6 +56,12 @@ class Spiral:
         models: Models,
         logger: Callable = print,
     ):
+        """
+
+        Args:
+            models (Models): Models object that contains the problem data
+            logger (Callable): console logger
+        """
 
         # Load class instance parameter values
         self.models: Models = models
@@ -90,9 +98,15 @@ class Spiral:
     # Plotting
     #
 
-    def _calc_spiral_parameters(self, w: float) -> Tuple[float, float, float]:
+    def _calc_spiral_parameters(self, w: float) -> tuple[float, float, float]:
         """
-        Calculate spiral parameters @ r, w, and n_turns
+        Calculate spiral parameters line_width, a, b as a function of waveguide width
+
+        Args:
+            w (float): waveguide width
+
+        Returns: spiral line_width (float), a (float), b (float)
+
         """
 
         line_width: float = 2 * (w + self.models.parms.spiral.spacing)
@@ -110,10 +124,22 @@ class Spiral:
         theta0: float = 0,
         spiral_x: np.ndarray = np.asarray([]),
         spiral_y: np.ndarray = np.asarray([]),
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Calculate parametric arc theta(n) & r(n) centered at [x0,y0] and rotated by
         theta0, append arc x[n]/y[n] arc sample coordinates to x/y spiral arrays
+
+        Args:
+            thetas (np.ndarray): array of angles spanning the arc
+            r (np.ndarray): array of radii spanning the arc
+            x0 (float): spiral center x coordinate
+            y0 (float): spiral center y coordinate
+            theta0 (float): spiral rotation about the center
+            spiral_x (np.ndarray): array of current spiral point x coordinates to update
+            spiral_y (np.ndarray): array of current spiral point y coordinates to update
+
+        Returns: updated spiral_x (np.ndarray), spiral_y (np.ndarray)
+
         """
 
         # Build array of radii by duplication if r is a float
@@ -129,23 +155,18 @@ class Spiral:
         return np.append(spiral_x, x), np.append(spiral_y, y)
 
     @staticmethod
-    def _append_image_to_seq(images: list, fig: plt.Figure):
+    def _append_image_to_seq(images: list, fig: plt.Figure) -> None:
         """
         Append a matplotlib Figure to a list of PIL Image objects (from figs2tiff.py)
 
-        NB: An empty list must be declared in the calling program prior to
-            the first call to the function.
+        Args:
+            images (list): List of PIL Image objects to which to append the figure
+            fig (matplotlib.pyplot.Figure): matplotlib Figure object to append to list
 
-        Parameters
-        ----------
-        images :
-            List of PIL Image objects to which to append the figure.
-        fig : matplotlib.pyplot.Figure
-            matplotlib Figure object to append to the List.
+        Note: An empty list must be declared in the calling program prior to
+              the first call to the function.
 
-        Returns
-        -------
-        None.
+        Returns: None
 
         """
 
@@ -163,9 +184,15 @@ class Spiral:
             # Append Image object to the List
             images.append(img)
 
-    def _write_spiral_sequence_to_file(self):
+        # Explicit None return
+        return None
+
+    def _write_spiral_sequence_to_file(self) -> None:
         """
-        Write sequence of consecutive spirals with n turns > self.n_turns_min
+        Write sequence of consecutive spirals to file, if n turns > self.n_turns_min
+
+        Returns: None
+
         """
 
         # Calculate spiral sequence looping indices (min, max, index)
@@ -211,7 +238,7 @@ class Spiral:
         plt.close(fig)
 
         # Save sequence to tiff multi-image file
-        filename = (
+        filename: Path = (
             self.models.filename_path.parent
             / f"{self.models.filename_path.stem}_SPIRAL_sequence.tif"
         )
@@ -223,19 +250,29 @@ class Spiral:
         )
         self.logger(f"Wrote '{filename}'.")
 
+        # Explicit None return
+        return None
+
     def _write_spiral_waveguide_coordinates_to_excel_file(
         self, spiral_waveguide_coordinates: dict
-    ):
+    ) -> None:
         """
-        Write the spiral inner and outer waveguide x/y coordinates to an Excel file
+         Write the spiral inner and outer waveguide x/y coordinates to an Excel file
+
+        Args:
+            spiral_waveguide_coordinates (dict): dictionary fo spiral inner
+            and outer waveguide edge point coordinates
+
+        Returns: None
+
         """
 
-        filename = (
+        filename: Path = (
             self.models.filename_path.parent
             / f"{self.models.filename_path.stem}_SPIRAL_SCHEMATIC.xlsx"
         )
-        wb = Workbook()
-        outer_spiral_sheet = wb["Sheet"]
+        wb: Workbook = Workbook()
+        outer_spiral_sheet: Worksheet = wb["Sheet"]
         outer_spiral_sheet.title = "Outer waveguide"
         outer_spiral_sheet.append(
             [
@@ -252,7 +289,7 @@ class Spiral:
             spiral_waveguide_coordinates["outer_spiral_y_in"],
         ):
             outer_spiral_sheet.append(row)
-        inner_spiral_sheet = wb.create_sheet("Inner waveguide")
+        inner_spiral_sheet: Worksheet = wb.create_sheet("Inner waveguide")
         inner_spiral_sheet.append(
             [
                 "Outer edge x (um)",
@@ -271,10 +308,15 @@ class Spiral:
         wb.save(filename=filename)
         self.logger(f"Wrote '{filename}'.")
 
-    def _plot_spiral_results_at_optimum(self):
-        """
+        # Explicit None return
+        return None
 
-        Returns:
+    def _plot_spiral_results_at_optimum(self) -> None:
+        """
+        Plot the optimization results for the spiral at optimum (maximum sensitivity
+        as a function of spiral outer radius)
+
+        Returns: None
 
         """
 
@@ -292,7 +334,7 @@ class Spiral:
             + rf" @ $R$ = {self.max_s_radius:.0f} μm"
         )
         # max{S}
-        axs_index = 0
+        axs_index: int = 0
         axs[axs_index].set_ylabel(r"max$\{S\}$" + "\n" + r"(RIU$^{-1}$)")
         axs[axs_index].loglog(self.models.r, self.s)
         axs[axs_index].plot(
@@ -402,17 +444,22 @@ class Spiral:
         )
         axs[axs_index].set_ylim(100, self.models.plotting_extrema["S_plot_max"])
         axs[axs_index].set_xlabel("Ring radius (μm)")
-        filename = (
+        filename: Path = (
             self.models.filename_path.parent
             / f"{self.models.filename_path.stem}_SPIRAL.png"
         )
         fig.savefig(filename)
         self.logger(f"Wrote '{filename}'.")
 
-    def plot_optimization_results(self):
-        """
+        # Explicit None return
+        return None
 
-        Returns:
+    def plot_optimization_results_and_spiral_shape(self) -> None:
+        """
+        Plot the optimization results and shape for the spiral at optimum (maximum
+        sensitivity as a function of r)
+
+        Returns: None
 
         """
 
@@ -450,6 +497,9 @@ class Spiral:
         if self.models.parms.io.write_spiral_sequence_to_file:
             self._write_spiral_sequence_to_file()
 
+        # Explicit None return
+        return None
+
     def _draw_spiral(
         self,
         r_outer: float,
@@ -458,9 +508,22 @@ class Spiral:
         n_turns: float,
         r_window: float,
         figure: plt.Figure = None,
-    ) -> Tuple[plt.Figure, dict,]:
+    ) -> tuple[plt.Figure, dict,]:
         """
-        This function actually draws a spiral!
+
+        Args:
+            r_outer (float): spiral outer radius
+            h (float): waveguide core width
+            w (float): waveguide core height
+            n_turns (float): number of turns in the spiral
+            r_window (float): square plotting window width/height
+            figure (plt.Figure): plotting figure, if supplied
+
+        Returns:
+            fig (plt.Figure): plotting window
+            spiral_waveguide_coordinates (dict): dictionary of spiral waveguide
+                                                 xy point coordinate arrays
+
         """
 
         # Archimedes spiral parameters
@@ -553,7 +616,7 @@ class Spiral:
         )
 
         # Joint: half S-bend between inner waveguide and origin
-        thetas_s_bend_inner = np.linspace(
+        thetas_s_bend_inner: np.ndarray = np.linspace(
             thetas_spiral[-1], thetas_spiral[-1] - np.pi, 100
         )
         inner_spiral_x_in, inner_spiral_y_in = self._plot_arc(
@@ -604,7 +667,7 @@ class Spiral:
         spiral_length: float = outer_spiral_length + inner_spiral_length
 
         # Build dictionary of spiral waveguide vertex coordinates
-        spiral_waveguide_coordinates = {
+        spiral_waveguide_coordinates: dict = {
             "outer_spiral_x_out": outer_spiral_x_out,
             "outer_spiral_y_out": outer_spiral_y_out,
             "outer_spiral_x_in": outer_spiral_x_in,
@@ -654,7 +717,13 @@ class Spiral:
 
     def _α_prop(self, u: float) -> float:
         """
-        α_prop = α_wg + gamma_fluid*α_fluid
+        alpha_prop(u) = alpha_wg(u) + gamma_fluid(u)*alpha_fluid
+
+        Args:
+            u (float): waveguide core geometry free parameter
+
+        Returns: alpha_prop (float)
+
         """
 
         return self.models.α_wg_of_u(u=u) + (
@@ -666,6 +735,13 @@ class Spiral:
         Line element for numerical integration in polar coordinates (r, theta)
         "dl = sqrt(r**2 + (dr/dtheta)**2)*dtheta", converted to a function of "r" only
         with the spiral equation (r = a + b*theta) to "dl(r) = sqrt((r/b)**2 + 1)*dr".
+
+        Args:
+            r (float): spiral outer radius
+            w (float): waveguide core width
+
+        Returns: dl (float)
+
         """
 
         _, _, b = self._calc_spiral_parameters(w=w)
@@ -675,16 +751,36 @@ class Spiral:
     def _line_element_bend_loss(self, r: float, u: float, w: float) -> float:
         """
         Bending losses for a line element: alpha_bend(r)*dl(r)
+
+        Args:
+            r (float): spiral outer radius
+            u (float): waveguide core geometry free parameter
+            w (float): waveguide core width
+
+        Returns: alpha_bend(r)*dl(r) (float)
+
         """
 
         return self.models.α_bend(r=r, u=u) * self._line_element(r=r, w=w)
 
     def _calc_sensitivity(
         self, r: float, u: float, n_turns: float
-    ) -> Tuple[float, float, float, float]:
+    ) -> tuple[float, float, float, float]:
         """
-        Calculate sensitivity at radius r for a given core height & height
+        Calculate sensitivity at radius r for a given core height & width
         and number of turns
+
+        Args:
+            r (float): spiral outer radius
+            u (float): waveguide core geometry free parameter
+            n_turns (float): number of turns in the spiral
+
+        Returns:
+            s_nr (float): Snr
+            outer_spiral_r_min (float): outer spiral minimum radius
+            l_total (float): total length of spiral
+            wg_a2 (float): a2 loss parameter for spiral waveguides
+
         """
 
         # Determine waveguide core width
@@ -793,9 +889,16 @@ class Spiral:
 
         return s_nr, outer_spiral_r_min, l_total, wg_a2
 
-    def _obj_fun(self, x, r: float) -> float:
+    def _obj_fun(self, x: np.ndarray, r: float) -> float:
         """
         Objective function for the optimization in find_max_sensitivity()
+
+        Args:
+            x (float): array of free parameters in the optimization (u, n_turns)
+            r (float): spiral outer radius
+
+        Returns: negative of sensitivity, scaled by 1000 to aid convergence (float)
+
         """
 
         # Fetch the solution vector components
@@ -815,9 +918,22 @@ class Spiral:
 
     def _find_max_sensitivity(
         self, r: float
-    ) -> Tuple[float, float, float, float, float, float, float]:
+    ) -> tuple[float, float, float, float, float, float, float]:
         """
         Calculate maximum sensitivity at r over all h and n_turns
+
+        Args:
+            r (float): spiral outer radius
+
+        Returns:
+            s (float): maximum sensitivity, max{S}
+            u_max_s (float): u @ max{S}
+            n_turns_max_s (float): number of turns @ max{S}
+            outer_spiral_r_min (float): outer spiral radius @ max{S}
+            length (float): spiral length @ max{S}
+            gamma (float): waveguide gamma @ max{S}
+            a2 (float): waveguide loss factor a2 @ max{S}
+
         """
 
         # Determine search domain extrema for u
@@ -856,7 +972,7 @@ class Spiral:
                 u0, n_turns_0 = self.previous_solution
 
             # Find h and n_turns that maximize S at radius R
-            optimization_result = optimize.minimize(
+            optimization_result: optimize.OptimizeResult = optimize.minimize(
                 fun=self._obj_fun,
                 x0=np.asarray([u0, n_turns_0]),
                 bounds=(
@@ -867,8 +983,8 @@ class Spiral:
                 method=self.models.parms.fit.optimization_method,
                 tol=1e-9,
             )
-            u_max_s = optimization_result.x[0]
-            n_turns_max_s = optimization_result.x[1]
+            u_max_s: float = optimization_result.x[0]
+            n_turns_max_s: float = optimization_result.x[1]
 
             # Calculate maximum sensitivity at the solution
             s, outer_spiral_r_min, length, a2 = self._calc_sensitivity(
@@ -896,12 +1012,14 @@ class Spiral:
 
         return s, u_max_s, n_turns_max_s, outer_spiral_r_min, length, gamma, a2
 
-    def analyze(self):
+    def analyze(self) -> None:
         """
-        Analyse the sensor performance for all radii in the R domain
+        Analyse the sensor performance for all radii in the r domain,
+        store the results in the Spiral object instance
 
-        :return: None
+        return: None
         """
+
         # Analyse the sensor performance for all radii in the R domain
         self.results = [self._find_max_sensitivity(r=r) for r in self.models.r]
 
