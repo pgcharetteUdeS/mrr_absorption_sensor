@@ -112,7 +112,7 @@ def analyze(
 
     # Plot results
     models.calculate_plotting_extrema(max_s=mrr.max_s)
-    mrr.plot_optimization_results()
+    mrr.plot_mrr_optimization_results()
     linear.plot_optimization_results()
     if parms.debug.analyze_spiral:
         spiral.plot_optimization_results()

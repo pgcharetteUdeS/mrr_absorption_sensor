@@ -7,11 +7,13 @@ __all__ = ["Mrr"]
 
 from math import e
 from pathlib import Path
-from typing import Callable, Tuple
+from typing import Callable
 
 import matplotlib.pyplot as plt
+from matplotlib.collections import QuadMesh
 import numpy as np
 from openpyxl.workbook import Workbook
+from openpyxl.worksheet.worksheet import Worksheet
 from rich import print
 from scipy import optimize
 from scipy.special import lambertw
@@ -40,6 +42,12 @@ class Mrr:
     """
 
     def __init__(self, models: Models, logger: Callable = print):
+        """
+
+        Args:
+            models (Models): Models class object containing the problem data
+            logger (Callable): console logger
+        """
 
         # Load class instance input parameters
         self.models: Models = models
@@ -85,7 +93,15 @@ class Mrr:
     # Plotting
     #
 
-    def _calculate_plotting_extrema(self):
+    def _calculate_plotting_extrema(self) -> None:
+        """
+        Calculate the "Se" and "Finesse" plotting maxima so that
+        separate plots have the same y axis dynamic range.
+
+        Returns: None
+
+        """
+
         # Other extrema for Mrr plots
         self.plotting_extrema["Se_plot_max"] = (
             np.ceil(np.amax(self.s_e * np.sqrt(self.wg_a2)) * 1.1 / 10) * 10
@@ -93,6 +109,9 @@ class Mrr:
         self.plotting_extrema["Finesse_plot_max"] = (
             np.ceil(np.amax(self.finesse / (2 * np.pi)) * 1.1 / 10) * 10
         )
+
+        # Explicit None return
+        return None
 
     @staticmethod
     def _write_image_data_to_excel(
@@ -103,20 +122,32 @@ class Mrr:
         y_label: str,
         z_array: list,
         z_labels: list,
-    ):
+    ) -> None:
         """
-        Write image data to Excel file
+        Write xyz image data to Excel file
+
+        Args:
+            filename ():
+            x_array ():
+            x_label ():
+            y_array ():
+            y_label ():
+            z_array ():
+            z_labels ():
+
+        Returns: None
+
         """
 
-        wb = Workbook()
+        wb: Workbook = Workbook()
 
         # X sheet
-        x_sheet = wb["Sheet"]
+        x_sheet: Worksheet = wb["Sheet"]
         x_sheet.title = x_label
         x_sheet.append(x_array.tolist())
 
         # Y sheet
-        y_sheet = wb.create_sheet(y_label)
+        y_sheet: Worksheet = wb.create_sheet(y_label)
         for y in y_array:
             y_sheet.append([y])
 
@@ -129,20 +160,25 @@ class Mrr:
         # Save file
         wb.save(filename=filename)
 
-    def _plot_mrr_result_2d_maps(self):
-        """
+        # explicit None return
+        return None
 
-        Returns:
+    def _plot_mrr_result_2d_maps(self) -> None:
+        """
+        Plot 2D maps of MRR parameters (S, Snr, Se, u, gamma_fluid, a2, alpha_wg, etc.)
+        as a function of (r, u) and (r, gamma), and save to file
+
+        Returns: None
 
         """
 
         # Generate 2D map row/column index R,u arrays (x/y)
-        r_2d_map_indices = np.linspace(
+        r_2d_map_indices: np.ndarray = np.linspace(
             np.log10(self.models.r[0]),
             np.log10(self.models.r[-1]),
             self.models.parms.io.map2D_n_grid_points,
         )
-        u_2d_map_indices = np.linspace(
+        u_2d_map_indices: np.ndarray = np.linspace(
             self.models.parms.limits.u_min,
             self.models.parms.limits.u_max,
             self.models.parms.io.map2D_n_grid_points,
@@ -155,11 +191,11 @@ class Mrr:
         r_max_s_mrr_u: float = self.u[r_max_s_mrr_index]
 
         #
-        # 2D maps as a function of R/u
+        # 2D maps as a function of r/u
         #
 
         # 2D map of S(u, R)
-        s_2d_map = np.asarray(
+        s_2d_map: np.ndarray = np.asarray(
             [
                 [
                     self._calc_sensitivity(r=10**log10_R, u=u)
@@ -169,7 +205,7 @@ class Mrr:
             ]
         )
         fig, ax = plt.subplots()
-        cm = ax.pcolormesh(
+        cm: QuadMesh = ax.pcolormesh(
             r_2d_map_indices,
             u_2d_map_indices,
             s_2d_map,
@@ -234,11 +270,11 @@ class Mrr:
             label=r"Rw$(\Gamma_{fluid})$",
         )
         ax.legend(loc="lower right")
-        name = (
+        name: str = (
             f"{self.models.filename_path.stem}_MRR_2DMAP_S_VS_"
             f"{self.models.parms.wg.u_coord_name}_and_R.png"
         )
-        filename = self.models.filename_path.parent / name
+        filename: Path = self.models.filename_path.parent / name
         fig.savefig(filename)
         self.logger(f"Wrote '{filename}'.")
         if self.models.parms.io.write_excel_files:
@@ -264,7 +300,7 @@ class Mrr:
         # Generate gamma(u) array matching u array. If the values are not monotonically
         # decreasing due to positive curvature of the modeled values at the beginning of
         # the array, flag as warning and replace values, else pcolormesh() complains.
-        gamma_2d_map = np.asarray(
+        gamma_2d_map: np.ndarray = np.asarray(
             [self.models.gamma_of_u(u) * 100 for u in u_2d_map_indices]
         )
         if np.any(np.diff(gamma_2d_map) > 0):
@@ -285,7 +321,7 @@ class Mrr:
 
         # 2D map of Smrr(gamma, R)
         fig, ax = plt.subplots()
-        cm = ax.pcolormesh(
+        cm: QuadMesh = ax.pcolormesh(
             r_2d_map_indices,
             gamma_2d_map,
             s_2d_map,
@@ -363,14 +399,14 @@ class Mrr:
         self.logger(f"Wrote '{filename}'.")
 
         # 2D map of Snr(gamma, R)
-        s_nr_2d_map = np.asarray(
+        s_nr_2d_map: np.ndarray = np.asarray(
             [
                 [self._calc_s_nr(r=10**log10_R, u=u) for log10_R in r_2d_map_indices]
                 for u in u_2d_map_indices
             ]
         )
         fig, ax = plt.subplots()
-        cm = ax.pcolormesh(
+        cm: QuadMesh = ax.pcolormesh(
             r_2d_map_indices,
             gamma_2d_map,
             s_nr_2d_map,
@@ -406,7 +442,7 @@ class Mrr:
         self.logger(f"Wrote '{filename}'.")
 
         # 2D map of Se(gamma, R)
-        s_e_2d_map = np.asarray(
+        s_e_2d_map: np.ndarray = np.asarray(
             [
                 [self._calc_s_e(r=10**log10_R, u=u) for log10_R in r_2d_map_indices]
                 for u in u_2d_map_indices
@@ -449,7 +485,7 @@ class Mrr:
         self.logger(f"Wrote '{filename}'.")
 
         # 2D map of Se*a(gamma, R)
-        s_e_times_a_2d_map = np.asarray(
+        s_e_times_a_2d_map: np.ndarray = np.asarray(
             [
                 [
                     self._calc_s_e(r=10**log10_R, u=u)
@@ -496,7 +532,7 @@ class Mrr:
         self.logger(f"Wrote '{filename}'.")
 
         # 2D map of a2(gamma, R)
-        wg_a2_map = np.asarray(
+        wg_a2_map: np.ndarray = np.asarray(
             [
                 [self._calc_wg_a2(r=10**log10_R, u=u) for log10_R in r_2d_map_indices]
                 for u in u_2d_map_indices
@@ -554,7 +590,7 @@ class Mrr:
 
         # 2D map of alpha*L(gamma, R)
         scale_to_db: float = 10 * np.log10(np.e)
-        αl_2d_map = (
+        αl_2d_map: np.ndarray = (
             np.asarray(
                 [
                     [
@@ -629,7 +665,7 @@ class Mrr:
         self.logger(f"Wrote '{filename}'.")
 
         # 2D map of 1/alpha(gamma, R)
-        α_inv_2d_map = np.asarray(
+        α_inv_2d_map: np.ndarray = np.asarray(
             [
                 [
                     1 / (self._α_prop(u=u) + self.models.α_bend(r=10**log10_R, u=u))
@@ -702,8 +738,8 @@ class Mrr:
 
         # Save 2D map data as a function of gamma and R to output Excel file
         if self.models.parms.io.write_excel_files:
-            # Add additional (non-plotted) 2d maps
-            α_2d_map = np.asarray(
+            # Construct additional (non-plotted) 2d maps
+            α_2d_map: np.ndarray = np.asarray(
                 [
                     [
                         self._α_prop(u=u) + self.models.α_bend(r=10**log10_R, u=u)
@@ -712,11 +748,11 @@ class Mrr:
                     for u in u_2d_map_indices
                 ]
             )
-            α_prop_2d_map = np.tile(
+            α_prop_2d_map: np.ndarray = np.tile(
                 [self._α_prop(u=u) for u in u_2d_map_indices],
                 (r_2d_map_indices.size, 1),
             ).T
-            α_prop_l_2d_map = (
+            α_prop_l_2d_map: np.ndarray = (
                 np.asarray(
                     [
                         [
@@ -728,7 +764,7 @@ class Mrr:
                 )
                 * scale_to_db
             )
-            α_bend_2d_map = np.asarray(
+            α_bend_2d_map: np.ndarray = np.asarray(
                 [
                     [
                         self.models.α_bend(r=10**log10_R, u=u)
@@ -737,7 +773,7 @@ class Mrr:
                     for u in u_2d_map_indices
                 ]
             )
-            α_bend_l_2d_map = (
+            α_bend_l_2d_map: np.ndarray = (
                 np.asarray(
                     [
                         [
@@ -785,10 +821,15 @@ class Mrr:
             )
             self.logger(f"Wrote '{filename.with_suffix('.xlsx')}'.")
 
-    def _plot_mrr_sensing_parameters_at_optimum(self):
-        """
+        # Explicit None return
+        return None
 
-        Returns:
+    def _plot_mrr_sensing_parameters_at_optimum(self) -> None:
+        """
+        Plots of MRR sensing parameters (max{S}, Snr, Se, u, gamma_fluid, a2, alpha_wg)
+        at optimum (max sensitivity) as a function of r, and save to file
+
+        Returns: None
 
         """
 
@@ -934,10 +975,15 @@ class Mrr:
         fig.savefig(filename)
         self.logger(f"Wrote '{filename}'.")
 
-    def _plot_mrr_ring_parameters_at_optimum(self):
-        """
+        # Explicit None return
+        return None
 
-        Returns:
+    def _plot_mrr_ring_parameters_at_optimum(self) -> None:
+        """
+        Plots of MRR ring parameters (max{S}, Q, Finesse, FWHM, FSR, contrast, etc.)
+        at optimum (max sensitivity) as a function of r, and save to file
+
+        Returns: None
 
         """
 
@@ -1061,17 +1107,21 @@ class Mrr:
         axs[axs_index].set_zorder(ax_right.get_zorder() + 1)
 
         # Write figure to file
-        filename = (
+        filename: Path = (
             self.models.filename_path.parent
             / f"{self.models.filename_path.stem}_MRR_ring_parms.png"
         )
         fig.savefig(filename)
         self.logger(f"Wrote '{filename}'.")
 
-    def plot_optimization_results(self):
-        """
+        # Explicit None return
+        return None
 
-        Returns:
+    def plot_mrr_optimization_results(self) -> None:
+        """
+        Plot all MRR optimization results
+
+        Returns: None
 
         """
         self._plot_mrr_sensing_parameters_at_optimum()
@@ -1079,14 +1129,20 @@ class Mrr:
         if self.models.parms.io.write_2D_maps:
             self._plot_mrr_result_2d_maps()
 
-    def plot_combined_sensor_optimization_results(self, linear: Linear, spiral: Spiral):
+        # Explicit None return
+        return None
+
+    def plot_combined_sensor_optimization_results(
+        self, linear: Linear, spiral: Spiral
+    ) -> None:
         """
+        Plot all 3 sensor optimization results on common plot, and save to file
 
         Args:
-            linear ():
-            spiral ():
+            linear (Linear): Linear sensor object
+            spiral (Spiral): Spiral sensor object
 
-        Returns:
+        Returns: None
 
         """
 
@@ -1177,16 +1233,25 @@ class Mrr:
             ax.legend(loc="lower right")
 
         # Save figure
-        filename = (
+        filename: Path = (
             self.models.filename_path.parent
             / f"{self.models.filename_path.stem}_ALL_RESULTS.png"
         )
         fig.savefig(filename)
         self.logger(f"Wrote '{filename}'.")
 
-    def _calc_α_bend_a_and_b(self, gamma: float) -> Tuple[float, float]:
+        # Explicit None return
+        return None
+
+    def _calc_α_bend_a_and_b(self, gamma: float) -> tuple[float, float]:
         """
-        Fit A & B model parameters to alpha_bend(R) = A*exp(-B*R) @ gamma
+        Fit A & B model parameters for alpha_bend(r) = A*exp(-B*r) @ gamma
+
+        Args:
+            gamma (float): gamma value for the model fit
+
+        Returns: model parameters e**(ln(A)) and -B (floats)
+
         """
 
         u: float = self.models.u_of_gamma(gamma=gamma)
@@ -1207,8 +1272,17 @@ class Mrr:
         self, r: float, u: float, α_bend_a: float, α_bend_b: float
     ) -> float:
         """
-        Calculate the residual squared with the current solution for Rw,
-        using equation (15) in the paper.
+        Calculate the residual for the current solution of Rw modeled
+        using equation (15) in the paper
+
+        Args:
+            r (float): radius
+            u (float): waveguide core free parameter
+            α_bend_a (float): alpha_bend(r) model parameter A
+            α_bend_b (float): alpha_bend(r) model parameter B
+
+        Returns: residual (float)
+
         """
 
         α_bend: float = α_bend_a * np.exp(-α_bend_b * r)
@@ -1218,9 +1292,16 @@ class Mrr:
 
         return residual**2
 
-    def _calc_r_e_and_r_w(self, gamma: float) -> Tuple[float, float, float, float]:
+    def _calc_r_e_and_r_w(self, gamma: float) -> tuple[float, float, float, float]:
         """
         Calculate Re(gamma) and Rw(gamma)
+
+        Args:
+            gamma (float): gamma
+
+        Returns: Re(float), Rw(float)
+                 A, B (floats, alpha_bend(r) model parameters A & B)
+
         """
 
         # u corresponding to gamma
@@ -1250,7 +1331,13 @@ class Mrr:
 
     def _α_prop(self, u: float) -> float:
         """
-        α_prop = α_wg + gamma_fluid*α_fluid
+        alpha_prop(u) = alpha_wg(u) + gamma_fluid(u)*alpha_fluid
+
+        Args:
+            u (float): waveguide core free parameter
+
+        Returns: alpha_prop (float)
+
         """
 
         return self.models.α_wg_of_u(u=u) + (
@@ -1259,7 +1346,14 @@ class Mrr:
 
     def _calc_α_prop_l(self, r: float, u: float) -> float:
         """
-        Propagation loss component of total round-trip losses : α_prop*L
+        Propagation loss component of total round-trip losses : alpha_prop(u)*length(r)
+
+        Args:
+            r (float): radius
+            u (float): waveguide core free parameter
+
+        Returns: alpha_prop(u)*length(r) (float)
+
         """
 
         return self._α_prop(u=u) * (
@@ -1268,27 +1362,55 @@ class Mrr:
 
     def _calc_α_bend_l(self, r: float, u: float) -> float:
         """
-        Bending loss component of total round-trip losses: α_bend*L
+        Bending loss component of total round-trip losses: alpha_bend(r, u)*length(r)
+
+        Args:
+            r (float): radius
+            u (float): waveguide core free parameter
+
+        Returns: alpha_bend(r, u)*length(r) (float)
+
         """
         return self.models.α_bend(r=r, u=u) * (2 * np.pi * r)
 
     def _calc_α_l(self, r: float, u: float) -> float:
         """
-        Total ring round-trip loss factor: αL = (α_prop + α_bend)*L
+        Total ring round-trip loss factor: alpha*L = (alpha*_prop + alpha__bend)*length
+
+        Args:
+            r (float): radius
+            u (float): waveguide core free parameter
+
+        Returns: alpha*L (float)
+
         """
 
         return self._calc_α_prop_l(r=r, u=u) + self._calc_α_bend_l(r=r, u=u)
 
     def _calc_wg_a2(self, r: float, u: float) -> float:
         """
-        Ring round trio losses: a2 = e**(-α*L)
+        Ring round trip losses: a2 = e**(-alpha*length)
+
+        Args:
+            r (float): radius
+            u (float): waveguide core free parameter
+
+        Returns: a2 (float)
+
         """
 
         return np.e ** -self._calc_α_l(r=r, u=u)
 
     def _calc_s_nr(self, r: float, u: float) -> float:
         """
-        Calculate Snr (see paper)
+        Calculate "non-resonant" portion of mrr sensitivity Snr (see eq.2 in paper)
+
+        Args:
+            r (float): radius
+            u (float): waveguide core free parameter
+
+        Returns: Snr (float)
+
         """
         return (
             (4 * np.pi / self.models.parms.wg.lambda_resonance)
@@ -1299,7 +1421,14 @@ class Mrr:
 
     def _calc_s_e(self, r: float, u: float) -> float:
         """
-        Calculate Se (see paper)
+        Calculate "resonant" portion of mrr sensitivity Se (see eq.2 in paper)
+
+        Args:
+            r (float): radius
+            u (float): waveguide core free parameter
+
+        Returns: Se (float)
+
         """
 
         return (
@@ -1310,7 +1439,14 @@ class Mrr:
 
     def _calc_sensitivity(self, r: float, u: float) -> float:
         """
-        Calculate sensitivity at radius r for a given core dimension u
+        Calculate rig sensitivity at radius r for a given core dimension u
+
+        Args:
+            r (float): radius
+            u (float): waveguide core free parameter
+
+        Returns: sensitivity (float)
+
         """
 
         s: float = self._calc_s_nr(r=r, u=u) * self._calc_s_e(r=r, u=u)
@@ -1321,13 +1457,21 @@ class Mrr:
     def _obj_fun(self, u: float, *args) -> float:
         """
         Objective function for the non-linear minimization in find_max_sensitivity()
+
+        Args:
+            u (float): waveguide core free parameter
+            *args (float): r, radius
+
+        Returns: negative of sensitivity (to maximize sensitivity in the optimization,
+                 scaled by 1000 for a reasonable range to aid convergence)
+
         """
 
         # Fetch additional parameters
-        r = args[0]
+        r: float = args[0]
 
         # Minimizer sometimes tries values of the solution vector outside the bounds...
-        u = min(u, self.models.parms.limits.u_max)
+        u: float = min(u, self.models.parms.limits.u_max)
         u = max(u, self.models.parms.limits.u_min)
 
         # Calculate sensitivity at current solution vector S(r, h)
@@ -1337,7 +1481,7 @@ class Mrr:
 
     def _find_max_sensitivity(
         self, r: float
-    ) -> Tuple[
+    ) -> tuple[
         float,
         float,
         float,
@@ -1361,7 +1505,34 @@ class Mrr:
         float,
     ]:
         """
-        Calculate maximum sensitivity at radius "r" over all u
+        Calculate maximum mrr sensitivity at radius r over all u
+
+        Args:
+            r (float): radius
+
+        Returns:
+            s (float): maximum sensitivity
+            u_max_s (float): u @ max{S}
+            gamma (float):gamma @ max{S}
+            s_nr (float): Snr @ max{S}
+            s_e (float): Se @ max{S}
+            α_bend (float): alpha_bend @ max{S}
+            α_wg (float): alpha_wg @ max{S}
+            α_prop (float): alpha_prop @ max{S}
+            α (float): alpha @ max{S}
+            αl (float): alpha*length @ max{S}
+            wg_a2 (float): ring a2 @ max{S}
+            tau (float): ring tau @ max{S}
+            t_max (float): ring t min @ max{S}
+            t_min (float): ring t max @ max{S}
+            er (float): ring extinction ratio @ max{S}
+            contrast (float): ring contrast @ max{S}
+            n_eff (float): neff @ max{S}
+            q (float): ring Q @ max{S}
+            finesse (float): ring Finesse @ max{S}
+            fwhm (float): ring FWHM @ max{S}
+            fsr (float): ring FSR @ max{S}
+
         """
 
         # Determine u search domain extrema
@@ -1370,12 +1541,12 @@ class Mrr:
         # If this is the first optimization, set the initial guess for u at the
         # maximum value in the domain (at small radii, bending losses are high,
         # the optimal solution will be at high u), else use previous solution.
-        u0 = u_max if self.previous_solution == -1 else self.previous_solution
+        u0: float = u_max if self.previous_solution == -1 else self.previous_solution
 
         # Find u that maximizes S at radius r.
         if u_min != u_max:
             if self.models.parms.fit.optimization_local:
-                optimization_result = optimize.minimize(
+                optimization_result: optimize.OptimizeResult = optimize.minimize(
                     fun=self._obj_fun,
                     x0=np.asarray([u0]),
                     bounds=((u_min, u_max),),
@@ -1384,14 +1555,14 @@ class Mrr:
                     tol=1e-9,
                 )
             else:
-                optimization_result = optimize.shgo(
+                optimization_result: optimize.OptimizeResult = optimize.shgo(
                     func=self._obj_fun,
                     bounds=[(u_min, u_max)],
                     args=(r,),
                     iters=3,
                     options={"minimize_every_iter": True},
                 )
-            u_max_s = optimization_result.x[0]
+            u_max_s: float = optimization_result.x[0]
         else:
             u_max_s = u0
 
@@ -1399,7 +1570,7 @@ class Mrr:
         self.previous_solution = u_max_s
 
         # Calculate sensitivity and other parameters at the solution
-        s = self._calc_sensitivity(r=r, u=u_max_s)
+        s: float = self._calc_sensitivity(r=r, u=u_max_s)
 
         # Calculate other useful MRR parameters at the solution
         wg_a2: float = self._calc_wg_a2(r=r, u=u_max_s)
@@ -1452,10 +1623,12 @@ class Mrr:
 
     def analyze(self):
         """
-        Analyse the MRR sensor performance for all radii in the R domain
+        Analyse the MRR sensor performance for all radii in the r domain
 
-        :return: None
+        Returns: None
+
         """
+
         # Analyse the sensor performance for all radii in the R domain
         self.results = [self._find_max_sensitivity(r=r) for r in self.models.r]
 
