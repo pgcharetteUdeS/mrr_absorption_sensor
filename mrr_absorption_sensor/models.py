@@ -9,7 +9,7 @@ and gamma, etc.).
 __all__ = ["Models"]
 
 from pathlib import Path
-from typing import Callable, Tuple
+from typing import Callable, cast, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -24,7 +24,7 @@ from sympy.core.function import FunctionClass
 from scipy.linalg import lstsq
 from sympy import functions, lambdify, symbols
 
-from .constants import CONSTANTS, InputParameters
+from .constants import CONSTANTS, InputParameters, PolyModel1D
 
 
 class Models:
@@ -124,10 +124,10 @@ class Models:
                 )
 
         # Fit gamma(h), h(gamma), and neff(h) 1D poly models to the mode solver data
-        self.α_wg_model: dict = {}
-        self.gamma_model: dict = {}
-        self.u_model: dict = {}
-        self.n_eff_model: dict = {}
+        self.α_wg_model: PolyModel1D
+        self.gamma_model: PolyModel1D
+        self.u_model: PolyModel1D
+        self.n_eff_model: PolyModel1D
         self._fit_1d_models()
         self.α_wg_db_per_cm: float = self.α_wg_of_u() * CONSTANTS.per_um_to_db_per_cm
 
@@ -338,11 +338,11 @@ class Models:
         """
         # If no height or width specified, return minimum alpha_wg value
         if u is None:
-            return self.α_wg_model["min"]
+            return self.α_wg_model.min
 
         # Normal function return: polynomial model for alpha_wg(u)
         if not self.parms.fit.alpha_wg_exponential_model:
-            return self.α_wg_model["model"](u)
+            return self.α_wg_model.model(u)
 
         # Debugging: hard-coded exponential model for alpha_wg(u)
         α_wg_min: float = [value.alpha_wg for value in self.parms.geom.values()][-1]
@@ -392,21 +392,21 @@ class Models:
         return self._interpolate(model=self.n_eff_model, x=u)
 
     @staticmethod
-    def _interpolate(model: dict, x: float) -> float:
+    def _interpolate(model: PolyModel1D, x: float) -> float:
         """
 
         Args:
             model (dict): interpolation model
             x (float): model free parameter
 
-        Returns: interpolated value
+        Returns: interpolated value and clip to min/max boundaries
 
         """
 
-        value: float = model["model"](x)
-        value = max(model["min"], value)
+        value: float = model.model(x)
+        value = max(model.min, value)
 
-        return min(model["max"], value)
+        return min(model.max, value)
 
     # FIt alpha_wg(u), gamma(u), u(gamma), neff(u) 1D models to the mode solver data
     def _fit_1d_models(self) -> None:
@@ -427,48 +427,54 @@ class Models:
             np.asarray([value.alpha_wg for value in self.parms.geom.values()])
             / CONSTANTS.per_um_to_db_per_cm
         )
-        self.α_wg_model = {
-            "name": "alpha_wg",
-            "model": Polynomial.fit(
-                x=u_data, y=α_wg_data, deg=self.parms.fit.alpha_wg_order
+        self.α_wg_model = PolyModel1D(
+            "alpha_wg",
+            cast(
+                Polynomial,
+                Polynomial.fit(
+                    x=u_data, y=α_wg_data, deg=self.parms.fit.alpha_wg_order
+                ),
             ),
-            "min": min(α_wg_data),
-            "max": max(α_wg_data),
-        }
+            min(α_wg_data),
+            max(α_wg_data),
+        )
 
         # Polynomial models for gamma(u) and u(gamma) in the input mode solver data
         gamma_data: np.ndarray = np.asarray(
             [value.gamma for value in self.parms.geom.values()]
         )
-        self.gamma_model = {
-            "name": "gamma",
-            "model": Polynomial.fit(
-                x=u_data, y=gamma_data, deg=self.parms.fit.gamma_order
+        self.gamma_model = PolyModel1D(
+            "gamma",
+            cast(
+                Polynomial,
+                Polynomial.fit(x=u_data, y=gamma_data, deg=self.parms.fit.gamma_order),
             ),
-            "min": 0,
-            "max": 1,
-        }
-        self.u_model = {
-            "name": "u",
-            "model": Polynomial.fit(
-                x=gamma_data, y=u_data, deg=self.parms.fit.gamma_order
+            0,
+            1,
+        )
+        self.u_model = PolyModel1D(
+            "u",
+            cast(
+                Polynomial,
+                Polynomial.fit(x=gamma_data, y=u_data, deg=self.parms.fit.gamma_order),
             ),
-            "min": u_data[0],
-            "max": u_data[-1],
-        }
+            u_data[0],
+            u_data[-1],
+        )
 
         # Polynomial model for neff(u) in the input mode solver data
         n_eff_data: np.ndarray = np.asarray(
             [value.neff for value in self.parms.geom.values()]
         )
-        self.n_eff_model = {
-            "name": "neff",
-            "model": Polynomial.fit(
-                x=u_data, y=n_eff_data, deg=self.parms.fit.neff_order
+        self.n_eff_model = PolyModel1D(
+            "neff",
+            cast(
+                Polynomial,
+                Polynomial.fit(x=u_data, y=n_eff_data, deg=self.parms.fit.neff_order),
             ),
-            "min": min(n_eff_data),
-            "max": max(n_eff_data),
-        }
+            min(n_eff_data),
+            max(n_eff_data),
+        )
 
         # Interpolation models for r(u) @ max(alpha_bend) and r(u) @ min(alpha_bend)
         # in the mode solver data, i.e. r(u)[0] and r(u)[-1].
@@ -495,36 +501,36 @@ class Models:
         gamma_modeled: list = [100 * self.gamma_of_u(u) for u in u_interp]
         axs[axs_index].plot(u_data, gamma_data * 100, ".")
         axs[axs_index].plot(u_interp, gamma_modeled)
-        axs[axs_index].set_title(
-            rf"$\Gamma_{{fluide}}$({self.parms.wg.u_coord_name})"
-            f", polynomial model order: {self.parms.fit.gamma_order}"
+        axs[axs_index].set(
+            title=rf"$\Gamma_{{fluide}}$({self.parms.wg.u_coord_name})"
+            f", polynomial model order: {self.parms.fit.gamma_order}",
+            xlabel=f"{self.parms.wg.u_coord_name} (μm)",
+            ylabel=r"$\Gamma_{fluide}$ (%)",
         )
-        axs[axs_index].set_xlabel("".join([f"{self.parms.wg.u_coord_name}", "(μm)"]))
-        axs[axs_index].set_ylabel(r"$\Gamma_{fluide}$ (%)")
         axs_index += 1
 
         # plot of u(gamma)
         u_modeled: list = [self.u_of_gamma(gamma) for gamma in gamma_interp]
         axs[axs_index].plot(gamma_data * 100, u_data, ".")
         axs[axs_index].plot(gamma_interp * 100, u_modeled)
-        axs[axs_index].set_title(
-            rf"{self.parms.wg.u_coord_name}$(\Gamma_{{fluide}}$)"
-            f", polynomial model order: {self.parms.fit.gamma_order}"
+        axs[axs_index].set(
+            title=rf"{self.parms.wg.u_coord_name}$(\Gamma_{{fluide}}$)"
+            f", polynomial model order: {self.parms.fit.gamma_order}",
+            xlabel=r"$\Gamma_{fluide}$",
+            ylabel=f"{self.parms.wg.u_coord_name} (μm)",
         )
-        axs[axs_index].set_xlabel(r"$\Gamma_{fluide}$")
-        axs[axs_index].set_ylabel("".join([f"{self.parms.wg.u_coord_name}", "(μm)"]))
         axs_index += 1
 
         # plot of neff(u)
         neff_modeled: list = [self.n_eff_of_u(h) for h in u_interp]
         axs[axs_index].plot(u_data, n_eff_data, ".")
         axs[axs_index].plot(u_interp, neff_modeled)
-        axs[axs_index].set_title(
-            rf"n$_{{eff}}$({self.parms.wg.u_coord_name})"
-            f", polynomial model order: {self.parms.fit.neff_order}"
+        axs[axs_index].set(
+            title=rf"n$_{{eff}}$({self.parms.wg.u_coord_name})"
+            f", polynomial model order: {self.parms.fit.neff_order}",
+            xlabel=f"{self.parms.wg.u_coord_name} (μm)",
+            ylabel=r"n$_{eff}$ (RIU)",
         )
-        axs[axs_index].set_ylabel(r"n$_{eff}$ (RIU)")
-        axs[axs_index].set_xlabel("".join([f"{self.parms.wg.u_coord_name} (μm)"]))
         axs_index += 1
 
         # Plot of alpha_wg(u)
@@ -543,9 +549,11 @@ class Models:
                 rf"$\alpha_{{wg}}$({self.parms.wg.u_coord_name})"
                 f", polynomial model order: {self.parms.fit.alpha_wg_order}"
             )
-        axs[axs_index].set_ylabel(r"$\alpha_{wg}$ (dB/cm)")
+        axs[axs_index].set(
+            ylabel=r"$\alpha_{wg}$ (dB/cm)",
+            xlabel=f"{self.parms.wg.u_coord_name} (μm)",
+        )
         axs[axs_index].set_ylim(bottom=0)
-        axs[axs_index].set_xlabel("".join([f"{self.parms.wg.u_coord_name} (μm)"]))
 
         # Complete plot formatting
         fig.tight_layout()
@@ -761,9 +769,11 @@ class Models:
             ),
             y=1.02,
         )
-        ax.set_xlabel("".join([f"{self.parms.wg.u_coord_name} (μm)"]))
-        ax.set_ylabel("log($R$) (μm)")
-        ax.set_zlabel(r"log$_{10}$($\alpha_{BEND}$) ($\mu$m$^{-1}$)")
+        ax.set(
+            xlabel=f"{self.parms.wg.u_coord_name} (μm)",
+            ylabel="log($R$) (μm)",
+            zlabel=r"log$_{10}$($\alpha_{BEND}$) ($\mu$m$^{-1}$)",
+        )
         raw_points: PathCollection = ax.scatter(
             self.u_data,
             np.log10(self.r_alpha_bend_data),
@@ -1090,15 +1100,17 @@ class Models:
             ),
             color="black" if self.r_max_for_u_search_lower_bound < 500 else "red",
         )
-        r_α_bend_threshold_i: np.ndarra = np.linspace(
+        r_α_bend_threshold_i: np.ndarray = np.linspace(
             self.r_min_for_u_search_lower_bound,
             self.r_max_for_u_search_lower_bound,
             100,
         )
         axs.plot(r_α_bend_threshold, u_α_bend_threshold, "o")
         axs.plot(r_α_bend_threshold_i, self.u_lower_bound(r_α_bend_threshold_i))
-        axs.set_xlabel(r"R ($\mu$m)")
-        axs.set_ylabel(r"min$\{$" f"{self.parms.wg.u_coord_name}" + r"$\}$ ($\mu$m)")
+        axs.set(
+            xlabel=r"R ($\mu$m)",
+            ylabel=r"min$\{$" f"{self.parms.wg.u_coord_name}" + r"$\}$ ($\mu$m)",
+        )
         out_filename: str = str(
             (
                 self.filename_path.parent

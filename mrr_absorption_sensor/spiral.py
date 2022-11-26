@@ -335,23 +335,24 @@ class Spiral:
         )
         # max{S}
         axs_index: int = 0
-        axs[axs_index].set_ylabel(r"max$\{S\}$" + "\n" + r"(RIU$^{-1}$)")
         axs[axs_index].loglog(self.models.r, self.s)
         axs[axs_index].plot(
             [self.max_s_radius, self.max_s_radius],
             [100, self.models.plotting_extrema["S_plot_max"]],
             "--",
         )
-        axs[axs_index].set_ylim(100, self.models.plotting_extrema["S_plot_max"])
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
+        axs[axs_index].set(
+            ylabel=r"max$\{S\}$" + "\n" + r"(RIU$^{-1}$)",
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylim=(100, self.models.plotting_extrema["S_plot_max"]),
+            xticklabels=([]),
         )
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
         # u @ max{S}
         axs_index += 1
-        axs[axs_index].set_ylabel(f"{self.models.parms.wg.u_coord_name} (μm)")
         axs[axs_index].semilogx(self.models.r, self.u)
         axs[axs_index].plot(
             [self.max_s_radius, self.max_s_radius],
@@ -361,39 +362,46 @@ class Spiral:
             ],
             "--",
         )
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
+        axs[axs_index].set(
+            ylabel=f"{self.models.parms.wg.u_coord_name} (μm)",
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylim=(
+                self.models.plotting_extrema["u_plot_min"],
+                self.models.plotting_extrema["u_plot_max"],
+            ),
+            xticklabels=([]),
         )
-        axs[axs_index].set_ylim(
-            self.models.plotting_extrema["u_plot_min"],
-            self.models.plotting_extrema["u_plot_max"],
-        )
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
         # gamma_fluid @ max{S}
         axs_index += 1
-        axs[axs_index].set_ylabel(r"$\Gamma_{fluide}$ ($\%$)")
         axs[axs_index].semilogx(self.models.r, self.gamma)
         axs[axs_index].plot([self.max_s_radius, self.max_s_radius], [0, 100], "--")
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
+        axs[axs_index].set(
+            ylabel=r"$\Gamma_{fluide}$ ($\%$)",
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylim=(0, 100),
+            xticklabels=([]),
         )
-        axs[axs_index].set_ylim(0, 100)
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
         # a2 @ max{S}
         axs_index += 1
-        axs[axs_index].set_ylabel(r"$a^2$")
         axs[axs_index].semilogx(self.models.r, self.wg_a2)
         axs[axs_index].plot([self.max_s_radius, self.max_s_radius], [0, 1], "--")
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
+        axs[axs_index].set(
+            ylabel=r"$a^2$",
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylim=(0, 1),
+            xticklabels=([]),
         )
-        axs[axs_index].set_ylim(0, 1)
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
         # alpha_wg @ max{S}
         axs_index += 1
@@ -402,48 +410,55 @@ class Spiral:
             np.asarray([self.models.α_wg_of_u(u) for u in self.u])
             * CONSTANTS.per_um_to_db_per_cm,
         )
-        axs[axs_index].set_ylabel(r"α$_{wg}$")
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
-        )
-        axs[axs_index].set_ylim(
-            np.floor(self.models.α_wg_model["min"] * CONSTANTS.per_um_to_db_per_cm),
-            np.ceil(self.models.α_wg_model["max"] * CONSTANTS.per_um_to_db_per_cm),
+        axs[axs_index].set(
+            ylabel=r"α$_{wg}$",
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylim=(
+                np.floor(self.models.α_wg_model.min * CONSTANTS.per_um_to_db_per_cm),
+                np.ceil(self.models.α_wg_model.max * CONSTANTS.per_um_to_db_per_cm),
+            ),
+            xticklabels=([]),
         )
 
         # n turns @ max{S}
         axs_index += 1
         n_turns_plot_max: float = np.ceil(np.amax(self.n_turns) * 1.1 / 10) * 10 * 2
-        axs[axs_index].set_ylabel("n turns\n(inner+outer)")
         axs[axs_index].semilogx(self.models.r, self.n_turns * 2)
         axs[axs_index].plot(
             [self.max_s_radius, self.max_s_radius],
             [0, n_turns_plot_max],
             "--",
         )
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
+        axs[axs_index].set(
+            ylabel="n turns\n(inner+outer)",
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylim=(0, n_turns_plot_max),
+            xticklabels=([]),
         )
-        axs[axs_index].set_ylim(0, n_turns_plot_max)
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
         # L @ max{S}
         axs_index += 1
-        axs[axs_index].set_ylabel("L (μm)")
         axs[axs_index].loglog(self.models.r, self.l)
         axs[axs_index].plot(
             [self.max_s_radius, self.max_s_radius],
             [100, self.models.plotting_extrema["S_plot_max"]],
             "--",
         )
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
+        axs[axs_index].set(
+            xlabel="Ring radius (μm)",
+            ylabel="L (μm)",
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylim=(100, self.models.plotting_extrema["S_plot_max"]),
         )
-        axs[axs_index].set_ylim(100, self.models.plotting_extrema["S_plot_max"])
-        axs[axs_index].set_xlabel("Ring radius (μm)")
         filename: Path = (
             self.models.filename_path.parent
             / f"{self.models.filename_path.stem}_SPIRAL.png"
@@ -666,6 +681,33 @@ class Spiral:
         ) / 2
         spiral_length: float = outer_spiral_length + inner_spiral_length
 
+        # Plot info & formatting
+        s, _, length, _ = self._calc_sensitivity(
+            r=r_outer,
+            u=h if self.models.parms.wg.v_coord_name == "w" else w,
+            n_turns=n_turns,
+        )
+        ax.set(
+            title=f"Archimedes spiral : {n_turns: .2f} turns, "
+            f"w = {self.models.parms.wg.v_coord_value:.3f} μm, "
+            f"spacing = {self.models.parms.spiral.spacing:.1f} μm, "
+            f"h = {h:.3f} μm, "
+            f"S = {s:.0f} RIU$^{{-1}}$"
+            f"\nR = {r_outer:.1f} μm, "
+            f"R$_{{min}}$ = {r_joint_inner[-1]:.1f} μm, "
+            f"S-bend radius = {(r_joint_inner[-1] - w / 2) / 2:.1f} μm, "
+            f"L = {length:.1f} ({spiral_length:.2f} by finite diffs) μm",
+            aspect="equal",
+            xlabel=r"$\mu$m",
+            ylabel=r"$\mu$m",
+            xlim=(-r_window, r_window),
+            ylim=(-r_window, r_window),
+        )
+        ax.plot(outer_spiral_x_in, outer_spiral_y_in, color="red")
+        ax.plot(outer_spiral_x_out, outer_spiral_y_out, color="red")
+        ax.plot(inner_spiral_x_in, inner_spiral_y_in, color="blue")
+        ax.plot(inner_spiral_x_out, inner_spiral_y_out, color="blue")
+
         # Build dictionary of spiral waveguide vertex coordinates
         spiral_waveguide_coordinates: dict = {
             "outer_spiral_x_out": outer_spiral_x_out,
@@ -678,34 +720,7 @@ class Spiral:
             "inner_spiral_y_in": inner_spiral_y_in,
         }
 
-        # Plot info & formatting
-        s, _, length, _ = self._calc_sensitivity(
-            r=r_outer,
-            u=h if self.models.parms.wg.v_coord_name == "w" else w,
-            n_turns=n_turns,
-        )
-        ax.set_aspect("equal")
-        ax.set_xlim(-r_window, r_window)
-        ax.set_ylim(-r_window, r_window)
-        ax.set_title(
-            f"Archimedes spiral : {n_turns: .2f} turns, "
-            + f"w = {self.models.parms.wg.v_coord_value:.3f} μm, "
-            + f"spacing = {self.models.parms.spiral.spacing:.1f} μm, "
-            + f"h = {h:.3f} μm, "
-            + f"S = {s:.0f} RIU$^{{-1}}$"
-            + f"\nR = {r_outer:.1f} μm, "
-            + f"R$_{{min}}$ = {r_joint_inner[-1]:.1f} μm, "
-            + f"S-bend radius = {(r_joint_inner[-1] - w / 2) / 2:.1f} μm, "
-            + f"L = {length:.1f} ({spiral_length:.2f} by finite diffs) μm"
-        )
-
-        ax.plot(outer_spiral_x_in, outer_spiral_y_in, color="red")
-        ax.plot(outer_spiral_x_out, outer_spiral_y_out, color="red")
-        ax.plot(inner_spiral_x_in, inner_spiral_y_in, color="blue")
-        ax.plot(inner_spiral_x_out, inner_spiral_y_out, color="blue")
-        ax.set_xlabel(r"$\mu$m")
-        ax.set_ylabel(r"$\mu$m")
-
+        # Return the figure and the dictionary of spiral point coordinates
         return (
             fig,
             spiral_waveguide_coordinates,

@@ -11,6 +11,7 @@ from typing import Callable
 
 import matplotlib.pyplot as plt
 from matplotlib.collections import QuadMesh
+from matplotlib.axes import Axes
 import numpy as np
 from openpyxl.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
@@ -22,6 +23,33 @@ from .constants import CONSTANTS, LINE_STYLES
 from .linear import Linear
 from .models import Models
 from .spiral import Spiral
+
+#
+# Type aliasing
+#
+tuple_of_21_floats = tuple[
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+]
 
 
 class Mrr:
@@ -210,15 +238,16 @@ class Mrr:
             cmap=self.models.parms.io.map2D_colormap,
         )
         ax.invert_yaxis()
-        ax.set_title(
-            f"MRR sensitivity as a function of {self.models.parms.wg.u_coord_name}"
-            f" and R\n{self.models.parms.wg.polarization}"
+        ax.set(
+            title="MRR sensitivity as a function of "
+            f"{self.models.parms.wg.u_coord_name} and R\n"
+            "{self.models.parms.wg.polarization}"
             f", λ = {self.models.parms.wg.lambda_resonance:.3f} μm"
             f", {self.models.parms.wg.v_coord_name} = "
-            f"{self.models.parms.wg.v_coord_value:.3f} μm"
+            f"{self.models.parms.wg.v_coord_value:.3f} μm",
+            xlabel="log(R) (μm)",
+            ylabel=f"{self.models.parms.wg.u_coord_name} (μm)",
         )
-        ax.set_xlabel("log(R) (μm)")
-        ax.set_ylabel(f"{self.models.parms.wg.u_coord_name} (μm)")
         fig.colorbar(cm, label=r"S (RIU $^{-1}$)")
         max_s_u_min_index: int = np.where(self.s > self.max_s / 25)[0][0]
         ax.plot(
@@ -237,13 +266,6 @@ class Mrr:
             "k--",
             label=r"max$\{S(h, R)\}$ - line search",
         )
-        """
-        ax.plot(
-            [np.log10(self.max_S_radius), np.log10(self.max_S_radius)],
-            [u_2D_map[-1], R_max_Smrr_u],
-            color=self.models.parameters["map2D_overlay_color_dark"],
-        )
-        """
         ax.plot(
             [r_2d_map_indices[0], np.log10(self.max_s_radius)],
             [r_max_s_mrr_u, r_max_s_mrr_u],
@@ -325,15 +347,16 @@ class Mrr:
             s_2d_map,
             cmap=self.models.parms.io.map2D_colormap,
         )
-        ax.set_title(
-            r"MRR sensitivity, $S_{MRR}$, as a function of $\Gamma_{fluid}$ and $R$"
-            f"\n{self.models.parms.wg.polarization}"
-            f", λ = {self.models.parms.wg.lambda_resonance:.3f} μm"
-            f", {self.models.parms.wg.v_coord_name} = "
-            f"{self.models.parms.wg.v_coord_value:.3f} μm"
+        ax.set(
+            title=r"MRR sensitivity, $S_{MRR}$, as a function of $\Gamma_{fluid}$ "
+            f"and R\n"
+            f"{self.models.parms.wg.polarization}, "
+            f"λ = {self.models.parms.wg.lambda_resonance:.3f} μm, "
+            f"{self.models.parms.wg.v_coord_name} = "
+            f"{self.models.parms.wg.v_coord_value:.3f} μm",
+            xlabel="log(R) (μm)",
+            ylabel=r"$\Gamma_{fluid}$ ($\%$)",
         )
-        ax.set_xlabel("log(R) (μm)")
-        ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
         fig.colorbar(cm, label=r"$S_{MRR}$ (RIU $^{-1}$)")
         ax.plot(
             np.log10(self.models.r),
@@ -341,13 +364,6 @@ class Mrr:
             color=self.models.parms.io.map2D_overlay_color_light,
             label=r"max$\{S_{MRR}(\Gamma_{fluid}, R)\}$",
         )
-        """
-        ax.plot(
-            [np.log10(self.max_S_radius), np.log10(self.max_S_radius)],
-            [gamma_2D_map[-1], R_max_Smrr_gamma],
-            color=self.models.parms.io.map2D_overlay_color_light,
-        )
-        """
         ax.plot(
             [r_2d_map_indices[0], np.log10(self.max_s_radius)],
             [r_max_s_mrr_gamma, r_max_s_mrr_gamma],
@@ -371,23 +387,13 @@ class Mrr:
             linestyle="-.",
             label=r"Rw$(\Gamma_{fluid})$",
         )
-        """
-        for line in self.models.parameters["map_line_profiles"] or []:
-            ax.plot(
-                [
-                    np.log10(self.models.plotting_extrema["r_plot_min"]),
-                    np.log10(self.models.plotting_extrema["r_plot_max"]),
-                ],
-                [line, line],
-                color=self.models.parms.io.map2D_overlay_color_light,
-                linestyle=LINE_STYLES["loosely dotted"],
-            )
-        """
-        ax.set_xlim(
-            left=np.log10(self.models.plotting_extrema["r_plot_min"]),
-            right=np.log10(self.models.plotting_extrema["r_plot_max"]),
+        ax.set(
+            xlim=(
+                np.log10(self.models.plotting_extrema["r_plot_min"]),
+                np.log10(self.models.plotting_extrema["r_plot_max"]),
+            ),
+            ylim=(gamma_2d_map[-1], gamma_2d_map[0]),
         )
-        ax.set_ylim(bottom=gamma_2d_map[-1], top=gamma_2d_map[0])
         ax.legend(loc="lower right")
         filename = (
             self.models.filename_path.parent
@@ -416,21 +422,21 @@ class Mrr:
             color=self.models.parms.io.map2D_overlay_color_dark,
             label=r"max$\{S_{MRR}\}$",
         )
-        ax.set_title(
-            r"MRR $S_{NR}$ as a function of $\Gamma_{fluid}$ and $R$"
+        ax.set(
+            title=r"MRR $S_{NR}$ as a function of $\Gamma_{fluid}$ and $R$"
             f"\n{self.models.parms.wg.polarization}"
             f", λ = {self.models.parms.wg.lambda_resonance:.3f} μm"
             f", {self.models.parms.wg.v_coord_name} = "
-            f"{self.models.parms.wg.v_coord_value:.3f} μm"
+            f"{self.models.parms.wg.v_coord_value:.3f} μm",
+            xlabel="log(R) (μm)",
+            ylabel=r"$\Gamma_{fluid}$ ($\%$)",
+            xlim=(
+                np.log10(self.models.plotting_extrema["r_plot_min"]),
+                np.log10(self.models.plotting_extrema["r_plot_max"]),
+            ),
+            ylim=(gamma_2d_map[-1], gamma_2d_map[0]),
         )
-        ax.set_xlabel("log(R) (μm)")
-        ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
         fig.colorbar(cm, label=r"$S_{NR}$ (RIU$^{-1}$)")
-        ax.set_xlim(
-            left=np.log10(self.models.plotting_extrema["r_plot_min"]),
-            right=np.log10(self.models.plotting_extrema["r_plot_max"]),
-        )
-        ax.set_ylim(bottom=gamma_2d_map[-1], top=gamma_2d_map[0])
         ax.legend(loc="lower right")
         filename = (
             self.models.filename_path.parent
@@ -459,21 +465,21 @@ class Mrr:
             color=self.models.parms.io.map2D_overlay_color_dark,
             label=r"max$\{S_{MRR}\}$",
         )
-        ax.set_title(
-            r"MRR $S_e$ as a function of $\Gamma_{fluid}$ and $R$"
+        ax.set(
+            title=r"MRR $S_e$ as a function of $\Gamma_{fluid}$ and $R$"
             f"\n{self.models.parms.wg.polarization}"
             f", λ = {self.models.parms.wg.lambda_resonance:.3f} μm"
             f", {self.models.parms.wg.v_coord_name} = "
-            f"{self.models.parms.wg.v_coord_value:.3f} μm"
+            f"{self.models.parms.wg.v_coord_value:.3f} μm",
+            xlabel="log(R) (μm)",
+            ylabel=r"$\Gamma_{fluid}$ ($\%$)",
+            xlim=(
+                np.log10(self.models.plotting_extrema["r_plot_min"]),
+                np.log10(self.models.plotting_extrema["r_plot_max"]),
+            ),
+            ylim=(gamma_2d_map[-1], gamma_2d_map[0]),
         )
-        ax.set_xlabel("log(R) (μm)")
-        ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
         fig.colorbar(cm, label=r"$S_e$")
-        ax.set_xlim(
-            left=np.log10(self.models.plotting_extrema["r_plot_min"]),
-            right=np.log10(self.models.plotting_extrema["r_plot_max"]),
-        )
-        ax.set_ylim(bottom=gamma_2d_map[-1], top=gamma_2d_map[0])
         ax.legend(loc="lower right")
         filename = (
             self.models.filename_path.parent
@@ -506,21 +512,21 @@ class Mrr:
             color=self.models.parms.io.map2D_overlay_color_dark,
             label=r"max$\{S_{MRR}\}$",
         )
-        ax.set_title(
-            r"MRR $S_e \times a$ as a function of $\Gamma_{fluid}$ and $R$"
-            f"\n{self.models.parms.wg.polarization}"
-            f", λ = {self.models.parms.wg.lambda_resonance:.3f} μm"
-            f", {self.models.parms.wg.v_coord_name} = "
-            f"{self.models.parms.wg.v_coord_value:.3f}μm"
+        ax.set(
+            title=r"MRR $S_e \times a$ as a function of $\Gamma_{fluid}$ and $R$"
+            f"\n{self.models.parms.wg.polarization}, "
+            f"λ = {self.models.parms.wg.lambda_resonance:.3f} μm, "
+            f"{self.models.parms.wg.v_coord_name} = "
+            f"{self.models.parms.wg.v_coord_value:.3f} μm",
+            xlabel="log(R) (μm)",
+            ylabel=r"$\Gamma_{fluid}$ ($\%$)",
+            xlim=(
+                np.log10(self.models.plotting_extrema["r_plot_min"]),
+                np.log10(self.models.plotting_extrema["r_plot_max"]),
+            ),
+            ylim=(gamma_2d_map[-1], gamma_2d_map[0]),
         )
-        ax.set_xlabel("log(R) (μm)")
-        ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
         fig.colorbar(cm, label=r"$S_e \times a$")
-        ax.set_xlim(
-            left=np.log10(self.models.plotting_extrema["r_plot_min"]),
-            right=np.log10(self.models.plotting_extrema["r_plot_max"]),
-        )
-        ax.set_ylim(bottom=gamma_2d_map[-1], top=gamma_2d_map[0])
         ax.legend(loc="lower right")
         filename = (
             self.models.filename_path.parent
@@ -563,21 +569,21 @@ class Mrr:
             linestyle="-.",
             label=r"Rw$(\Gamma_{fluid})$",
         )
-        ax.set_title(
-            r"MRR $a^2$ as a function of $\Gamma_{fluid}$ and $R$"
-            f"\n{self.models.parms.wg.polarization}"
-            f", λ = {self.models.parms.wg.lambda_resonance:.3f} μm"
-            f", {self.models.parms.wg.v_coord_name} = "
-            f"{self.models.parms.wg.v_coord_value:.3f} μm"
+        ax.set(
+            title=r"MRR $a^2$ as a function of $\Gamma_{fluid}$ and $R$"
+            f"\n{self.models.parms.wg.polarization}, "
+            f"λ = {self.models.parms.wg.lambda_resonance:.3f} μm, "
+            f"{self.models.parms.wg.v_coord_name} = "
+            f"{self.models.parms.wg.v_coord_value:.3f} μm",
+            xlabel="log(R) (μm)",
+            ylabel=r"$\Gamma_{fluid}$ ($\%$)",
+            xlim=(
+                np.log10(self.models.plotting_extrema["r_plot_min"]),
+                np.log10(self.models.plotting_extrema["r_plot_max"]),
+            ),
+            ylim=(gamma_2d_map[-1], gamma_2d_map[0]),
         )
-        ax.set_xlabel("log(R) (μm)")
-        ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
         fig.colorbar(cm, label=r"$a^2$")
-        ax.set_xlim(
-            left=np.log10(self.models.plotting_extrema["r_plot_min"]),
-            right=np.log10(self.models.plotting_extrema["r_plot_max"]),
-        )
-        ax.set_ylim(bottom=gamma_2d_map[-1], top=gamma_2d_map[0])
         ax.legend(loc="lower right")
         filename = (
             self.models.filename_path.parent
@@ -627,33 +633,21 @@ class Mrr:
             linestyle="-.",
             label=r"Rw$(\Gamma_{fluid})$",
         )
-        """
-        for line in self.models.parameters["map_line_profiles"] or []:
-            ax.plot(
-                [
-                    np.log10(self.models.plotting_extrema["r_plot_min"]),
-                    np.log10(self.models.plotting_extrema["r_plot_max"]),
-                ],
-                [line, line],
-                color=self.models.parms.io.map2D_overlay_color_dark,
-                linestyle=LINE_STYLES["loosely dotted"],
-            )
-        """
-        ax.set_title(
-            r"MRR $\alpha L$ as a function of $\Gamma_{fluid}$ and $R$"
-            f"\n{self.models.parms.wg.polarization}"
-            f", λ = {self.models.parms.wg.lambda_resonance:.3f} μm"
-            f", {self.models.parms.wg.v_coord_name} = "
-            f"{self.models.parms.wg.v_coord_value:.3f} μm"
+        ax.set(
+            title=r"MRR $\alpha L$ as a function of $\Gamma_{fluid}$ and $R$"
+            f"\n{self.models.parms.wg.polarization}, "
+            f"λ = {self.models.parms.wg.lambda_resonance:.3f} μm, "
+            f"{self.models.parms.wg.v_coord_name} = "
+            f"{self.models.parms.wg.v_coord_value:.3f} μm",
+            xlabel="log(R) (μm)",
+            ylabel=r"$\Gamma_{fluid}$ ($\%$)",
+            xlim=(
+                np.log10(self.models.plotting_extrema["r_plot_min"]),
+                np.log10(self.models.plotting_extrema["r_plot_max"]),
+            ),
+            ylim=(gamma_2d_map[-1], gamma_2d_map[0]),
         )
-        ax.set_xlabel("log(R) (μm)")
-        ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
         fig.colorbar(cm, label=r"$\alpha L$ (dB)")
-        ax.set_xlim(
-            left=np.log10(self.models.plotting_extrema["r_plot_min"]),
-            right=np.log10(self.models.plotting_extrema["r_plot_max"]),
-        )
-        ax.set_ylim(bottom=gamma_2d_map[-1], top=gamma_2d_map[0])
         ax.legend(loc="lower right")
         filename = (
             self.models.filename_path.parent
@@ -699,33 +693,21 @@ class Mrr:
             linestyle="-.",
             label=r"Rw$(\Gamma_{fluid})$",
         )
-        """
-        for line in self.models.parameters["map_line_profiles"] or []:
-            ax.plot(
-                [
-                    np.log10(self.models.plotting_extrema["r_plot_min"]),
-                    np.log10(self.models.plotting_extrema["r_plot_max"]),
-                ],
-                [line, line],
-                color=self.models.parms.io.map2D_overlay_color_dark,
-                linestyle=LINE_STYLES["loosely dotted"],
-            )
-        """
-        ax.set_title(
-            r"MRR 1/$\alpha$ as a function of $\Gamma_{fluid}$ and $R$"
-            f"\n{self.models.parms.wg.polarization}"
-            f", λ = {self.models.parms.wg.lambda_resonance:.3f} μm"
-            f", {self.models.parms.wg.v_coord_name} = "
-            f"{self.models.parms.wg.v_coord_value:.3f} μm"
+        ax.set(
+            title=r"MRR 1/$\alpha$ as a function of $\Gamma_{fluid}$ and $R$"
+            f"\n{self.models.parms.wg.polarization}, "
+            f"λ = {self.models.parms.wg.lambda_resonance:.3f} μm, "
+            f"{self.models.parms.wg.v_coord_name} = "
+            f"{self.models.parms.wg.v_coord_value:.3f} μm",
+            xlabel="log(R) (μm)",
+            ylabel=r"$\Gamma_{fluid}$ ($\%$)",
+            xlim=(
+                np.log10(self.models.plotting_extrema["r_plot_min"]),
+                np.log10(self.models.plotting_extrema["r_plot_max"]),
+            ),
+            ylim=(gamma_2d_map[-1], gamma_2d_map[0]),
         )
-        ax.set_xlabel("log(R) (μm)")
-        ax.set_ylabel(r"$\Gamma_{fluid}$ ($\%$)")
         fig.colorbar(cm, label=r"1/$\alpha$ ($\mu$m)")
-        ax.set_xlim(
-            left=np.log10(self.models.plotting_extrema["r_plot_min"]),
-            right=np.log10(self.models.plotting_extrema["r_plot_max"]),
-        )
-        ax.set_ylim(bottom=gamma_2d_map[-1], top=gamma_2d_map[0])
         ax.legend(loc="lower right")
         filename = (
             self.models.filename_path.parent
@@ -846,19 +828,21 @@ class Mrr:
 
         # max{S}
         axs_index: int = 0
-        axs[axs_index].set_ylabel(r"max$\{S\}$" + "\n" + r"(RIU$^{-1}$)")
         axs[axs_index].loglog(self.models.r, self.s)
         axs[axs_index].plot(
             [self.max_s_radius, self.max_s_radius],
             [100, self.models.plotting_extrema["S_plot_max"]],
             "r--",
         )
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
+        axs[axs_index].set(
+            ylabel=r"max$\{S\}$" + "\n" + r"(RIU$^{-1}$)",
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylim=(100, self.models.plotting_extrema["S_plot_max"]),
+            xticklabels=([]),
         )
-        axs[axs_index].set_ylim(100, self.models.plotting_extrema["S_plot_max"])
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
         # S_NR @ max{S}
         axs_index += 1
@@ -868,13 +852,15 @@ class Mrr:
             [10, self.models.plotting_extrema["S_plot_max"]],
             "r--",
         )
-        axs[axs_index].set_ylabel(r"S$_{NR}$" + "\n" + r"(RIU $^{-1}$)")
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
+        axs[axs_index].set(
+            ylabel=r"S$_{NR}$" + "\n" + r"(RIU $^{-1}$)",
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylim=(10, self.models.plotting_extrema["S_plot_max"]),
+            xticklabels=([]),
         )
-        axs[axs_index].set_ylim(10, self.models.plotting_extrema["S_plot_max"])
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
         # Se @ max{S}
         axs_index += 1
@@ -884,13 +870,15 @@ class Mrr:
             [0, self.plotting_extrema["Se_plot_max"]],
             "r--",
         )
-        axs[axs_index].set_ylabel(r"S$_e \times a$")
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
+        axs[axs_index].set(
+            ylabel=r"S$_e \times a$",
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylim=(0, self.plotting_extrema["Se_plot_max"]),
+            xticklabels=([]),
         )
-        axs[axs_index].set_ylim(0, self.plotting_extrema["Se_plot_max"])
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
         # u (h or w) @ max{S}
         axs_index += 1
@@ -903,16 +891,18 @@ class Mrr:
             ],
             "r--",
         )
-        axs[axs_index].set_ylabel(f"{self.models.parms.wg.u_coord_name} (μm)")
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
+        axs[axs_index].set(
+            ylabel=f"{self.models.parms.wg.u_coord_name} (μm)",
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylim=(
+                self.models.plotting_extrema["u_plot_min"],
+                self.models.plotting_extrema["u_plot_max"],
+            ),
+            xticklabels=([]),
         )
-        axs[axs_index].set_ylim(
-            self.models.plotting_extrema["u_plot_min"],
-            self.models.plotting_extrema["u_plot_max"],
-        )
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
         # Gamma_fluid @ max{S}
         axs_index += 1
@@ -925,28 +915,32 @@ class Mrr:
             ],
             "r--",
         )
-        axs[axs_index].set_ylabel(r"$\Gamma_{fluide}$ ($\%$)")
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
+        axs[axs_index].set(
+            ylabel=r"$\Gamma_{fluide}$ ($\%$)",
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylim=(
+                self.models.plotting_extrema["gamma_plot_min"],
+                self.models.plotting_extrema["gamma_plot_max"],
+            ),
+            xticklabels=([]),
         )
-        axs[axs_index].set_ylim(
-            self.models.plotting_extrema["gamma_plot_min"],
-            self.models.plotting_extrema["gamma_plot_max"],
-        )
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
         # a2 @ max{S}
         axs_index += 1
         axs[axs_index].semilogx(self.models.r, self.wg_a2)
         axs[axs_index].plot([self.max_s_radius, self.max_s_radius], [0, 1], "r--")
-        axs[axs_index].set_ylabel(r"$a^2$")
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
+        axs[axs_index].set(
+            ylabel=r"$a^2$",
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylim=(0, 1),
+            xticklabels=([]),
         )
-        axs[axs_index].set_ylim(0, 1)
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
         # alpha_wg @ max{S}
         axs_index += 1
@@ -955,14 +949,16 @@ class Mrr:
             np.asarray([self.models.α_wg_of_u(u) for u in self.u])
             * CONSTANTS.per_um_to_db_per_cm,
         )
-        axs[axs_index].set_ylabel(r"α$_{wg}$")
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
-        )
-        axs[axs_index].set_ylim(
-            np.floor(self.models.α_wg_model["min"] * CONSTANTS.per_um_to_db_per_cm),
-            np.ceil(self.models.α_wg_model["max"] * CONSTANTS.per_um_to_db_per_cm),
+        axs[axs_index].set(
+            ylabel=r"α$_{wg}$",
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylim=(
+                np.floor(self.models.α_wg_model.min * CONSTANTS.per_um_to_db_per_cm),
+                np.ceil(self.models.α_wg_model.max * CONSTANTS.per_um_to_db_per_cm),
+            ),
         )
 
         axs[axs_index].set_xlabel("Ring radius (μm)")
@@ -998,19 +994,21 @@ class Mrr:
         )
         # max{S}
         axs_index = 0
-        axs[axs_index].set_ylabel(r"max$\{S\}$")
         axs[axs_index].loglog(self.models.r, self.s)
         axs[axs_index].plot(
             [self.max_s_radius, self.max_s_radius],
             [100, self.models.plotting_extrema["S_plot_max"]],
             "r--",
         )
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
+        axs[axs_index].set(
+            ylabel=r"max$\{S\}$",
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylim=(100, self.models.plotting_extrema["S_plot_max"]),
+            xticklabels=([]),
         )
-        axs[axs_index].set_ylim(100, self.models.plotting_extrema["S_plot_max"])
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
         # Contrast, tau & a @ max{S}
         axs_index += 1
@@ -1022,13 +1020,15 @@ class Mrr:
             self.models.r, self.contrast, color="red", label="contrast"
         )
         axs[axs_index].plot([self.max_s_radius, self.max_s_radius], [0, 1], "r--")
-        axs[axs_index].set_ylim(0, 1)
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
+        axs[axs_index].set(
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylim=(0, 1),
+            ylabel=r"Contrast, $a$, $\tau$",
+            xticklabels=([]),
         )
-        axs[axs_index].set_ylabel(r"Contrast, $a$, $\tau$")
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
         axs[axs_index].legend(loc="upper right")
 
         # ER @ max{S}
@@ -1039,12 +1039,14 @@ class Mrr:
             [0, np.amax(self.er)],
             "r--",
         )
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
+        axs[axs_index].set(
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylabel="Extinction\nratio\n(dB)",
+            xticklabels=([]),
         )
-        axs[axs_index].set_ylabel("Extinction\nratio\n(dB)")
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
         # Q @ max{S}
         axs_index += 1
@@ -1054,12 +1056,14 @@ class Mrr:
             [0, np.amax(self.q)],
             "r--",
         )
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
+        axs[axs_index].set(
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylabel="Q",
+            xticklabels=([]),
         )
-        axs[axs_index].set_ylabel("Q")
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
         # (Finesse/2pi) / Se*a @ max{S}
         axs_index += 1
@@ -1067,35 +1071,39 @@ class Mrr:
             self.models.r,
             self.finesse / (2 * np.pi) / (self.s_e * np.sqrt(self.wg_a2)),
         )
-        axs[axs_index].set_ylim(0, 2.5)
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
+        axs[axs_index].set(
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylim=(0, 2.5),
+            ylabel=r"$\frac{Finesse/2\pi}{S_e\times a}$",
+            xticklabels=([]),
         )
-        axs[axs_index].set_ylabel(r"$\frac{Finesse/2\pi}{S_e\times a}$")
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
         # FWHM, FSR, Finesse/2pi @ max{S}
         axs_index += 1
         axs[axs_index].loglog(self.models.r, self.fwhm * 1e6, "b", label="FWHM")
         axs[axs_index].loglog(self.models.r, self.fsr * 1e6, "g", label="FSR")
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
+        axs[axs_index].set(
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            xlabel="Ring radius (μm)",
+            ylabel="FWHM and FSR\n(pm)",
         )
-        axs[axs_index].set_ylabel("FWHM and FSR\n(pm)")
-        axs[axs_index].set_xlabel("Ring radius (μm)")
-        ax_right = axs[axs_index].twinx()
+        ax_right: Axes = axs[axs_index].twinx()
         ax_right.semilogx(
             self.models.r, self.finesse / (2 * np.pi), "k--", label="Finesse/2π"
         )
         ax_right.set_ylabel("Finesse/2π")
         ax_right.grid(visible=False)
-        ax_lines = (
+        ax_lines: list = (
             axs[axs_index].get_legend_handles_labels()[0]
             + ax_right.get_legend_handles_labels()[0]
         )
-        ax_labels = (
+        ax_labels: list = (
             axs[axs_index].get_legend_handles_labels()[1]
             + ax_right.get_legend_handles_labels()[1]
         )
@@ -1190,11 +1198,13 @@ class Mrr:
                 ]
             ),
         )
-        ax.set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
+        ax.set(
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylim=(100, 1000000),
         )
-        ax.set_ylim(100, 1000000)
 
         # Spiral and MRR/spiral sensitivity ratio, if required
         if self.models.parms.debug.analyze_spiral:
@@ -1205,21 +1215,20 @@ class Mrr:
                 label=f"Spiral (spacing = {self.models.parms.spiral.spacing:.0f} μm"
                 f", min turns = {self.models.parms.spiral.turns_min:.2f})",
             )
-            ax_right = ax.twinx()
+            ax_right: Axes = ax.twinx()
             ax_right.semilogx(
                 self.models.r,
                 self.s / spiral.s,
                 "k--",
                 label=r"max$\{S_{MRR}\}$ / max$\{S_{SPIRAL}\}$",
             )
-            ax_right.set_ylabel(r"max$\{S_{MRR}\}$ / max$\{S_{SPIRAL}\}$")
-            ax_right.set_ylim(0, 30)
+            ax_right.set(ylabel=r"max$\{S_{MRR}\}$ / max$\{S_{SPIRAL}\}$", ylim=(0, 30))
             ax_right.grid(visible=False)
-            ax_lines = (
+            ax_lines: list = (
                 ax.get_legend_handles_labels()[0]
                 + ax_right.get_legend_handles_labels()[0]
             )
-            ax_labels = (
+            ax_labels: list = (
                 ax.get_legend_handles_labels()[1]
                 + ax_right.get_legend_handles_labels()[1]
             )
@@ -1313,7 +1322,7 @@ class Mrr:
         r_e: float = (1 / α_bend_b) * (1 - w)
 
         # Rw
-        optimization_result = optimize.minimize(
+        optimization_result: optimize.minimize = optimize.minimize(
             fun=self._objfun_r_w,
             x0=np.asarray(r_e),
             args=(u, α_bend_a, α_bend_b),
@@ -1477,31 +1486,7 @@ class Mrr:
 
         return -s / 1000
 
-    def _find_max_sensitivity(
-        self, r: float
-    ) -> tuple[
-        float,
-        float,
-        float,
-        float,
-        float,
-        float,
-        float,
-        float,
-        float,
-        float,
-        float,
-        float,
-        float,
-        float,
-        float,
-        float,
-        float,
-        float,
-        float,
-        float,
-        float,
-    ]:
+    def _find_max_sensitivity(self, r: float) -> tuple_of_21_floats:
         """
         Calculate maximum mrr sensitivity at radius r over all u
 

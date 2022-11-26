@@ -74,50 +74,58 @@ class Linear:
 
         # max{S}
         axs_index: int = 0
-        axs[axs_index].set_ylabel(r"max$\{S\}$" + "\n" + r"(RIU$^{-1}$)")
         axs[axs_index].loglog(self.models.r, self.s)
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
+        axs[axs_index].set(
+            ylabel=r"max$\{S\}$" + "\n" + r"(RIU$^{-1}$)",
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylim=(100, self.models.plotting_extrema["S_plot_max"]),
+            xticklabels=([]),
         )
-        axs[axs_index].set_ylim(100, self.models.plotting_extrema["S_plot_max"])
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
         # u (h or w) @ max{S}
         axs_index += 1
         axs[axs_index].semilogx(self.models.r, self.u)
-        axs[axs_index].set_ylabel(f"{self.models.parms.wg.u_coord_name} (μm)")
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
+        axs[axs_index].set(
+            ylabel=f"{self.models.parms.wg.u_coord_name} (μm)",
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylim=(
+                self.models.plotting_extrema["u_plot_min"],
+                self.models.plotting_extrema["u_plot_max"],
+            ),
+            xticklabels=([]),
         )
-        axs[axs_index].set_ylim(
-            self.models.plotting_extrema["u_plot_min"],
-            self.models.plotting_extrema["u_plot_max"],
-        )
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
         # Gamma_fluid @ max{S}
         axs_index += 1
         axs[axs_index].semilogx(self.models.r, self.gamma)
-        axs[axs_index].set_ylabel(r"$\Gamma_{fluide}$ ($\%$)")
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
+        axs[axs_index].set(
+            ylabel=r"$\Gamma_{fluide}$ ($\%$)",
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylim=(0, 100),
+            xticklabels=([]),
         )
-        axs[axs_index].set_ylim(0, 100)
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
         # a2 @ max{S}
         axs_index += 1
         axs[axs_index].semilogx(self.models.r, self.wg_a2)
-        axs[axs_index].set_ylabel(r"$a^2$")
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
+        axs[axs_index].set(
+            ylabel=r"$a^2$",
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylim=(0, 1),
+            xticklabels=([]),
         )
-        axs[axs_index].set_ylim(0, 1)
-        axs[axs_index].axes.get_xaxis().set_ticklabels([])
 
         # alpha_wg @ max{S}
         axs_index += 1
@@ -126,14 +134,16 @@ class Linear:
             np.asarray([self.models.α_wg_of_u(u) for u in self.u])
             * CONSTANTS.per_um_to_db_per_cm,
         )
-        axs[axs_index].set_ylabel(r"α$_{wg}$")
-        axs[axs_index].set_xlim(
-            self.models.plotting_extrema["r_plot_min"],
-            self.models.plotting_extrema["r_plot_max"],
-        )
-        axs[axs_index].set_ylim(
-            np.floor(self.models.α_wg_model["min"] * CONSTANTS.per_um_to_db_per_cm),
-            np.ceil(self.models.α_wg_model["max"] * CONSTANTS.per_um_to_db_per_cm),
+        axs[axs_index].set(
+            ylabel=r"α$_{wg}$",
+            xlim=(
+                self.models.plotting_extrema["r_plot_min"],
+                self.models.plotting_extrema["r_plot_max"],
+            ),
+            ylim=(
+                np.floor(self.models.α_wg_model.min * CONSTANTS.per_um_to_db_per_cm),
+                np.ceil(self.models.α_wg_model.max * CONSTANTS.per_um_to_db_per_cm),
+            ),
         )
 
         axs[axs_index].set_xlabel("Ring radius (μm)")

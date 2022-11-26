@@ -1,15 +1,16 @@
 """CONSTANTS.PY
 
-Global CONSTANTS
+Global constants and classes
 
 """
-__all__ = ["CONSTANTS", "LINE_STYLES", "InputParameters"]
+__all__ = ["CONSTANTS", "InputParameters", "LINE_STYLES", "PolyModel1D"]
 
 from dataclasses import dataclass, field
 from dacite import from_dict
 from typing import NamedTuple
 import numpy as np
 from pathlib import Path
+from numpy.polynomial import Polynomial
 from typing import cast
 
 
@@ -22,7 +23,7 @@ class Constants(NamedTuple):
     per_um_to_db_per_cm: float
 
 
-CONSTANTS: Constants = Constants(np.log10(np.e) * 10 * 10000)
+CONSTANTS: Constants = Constants(10 * np.log10(np.e) * 10000)
 
 
 # Define extra line styles, see:
@@ -50,6 +51,18 @@ class Missing:
 
 
 MISSING = Missing()
+
+
+@dataclass
+class PolyModel1D:
+    """
+    1D polynomial model parameters
+    """
+
+    name: str
+    model: Polynomial
+    min: float
+    max: float
 
 
 @dataclass
@@ -213,7 +226,7 @@ class InputParameters:
         # Check the input data
         self.check_input_data()
 
-    def check_input_data(self):
+    def check_input_data(self) -> None:
         """
         Perform a number of consistency and value range check on the input data.
         """
@@ -271,3 +284,6 @@ class InputParameters:
                     f"{self.filename}:  Negative radius value in bending loss data"
                     f" at u = {val.u:.3f}!"
                 )
+
+        # Explicit None return
+        return None
