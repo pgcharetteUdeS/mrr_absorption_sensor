@@ -1,10 +1,21 @@
 # Change Log
 
+## 2.3
+
+### Changed
+
+* Fixed small bug in figure tile for MRR
+
+
+
+# Change Log
+
 ## 2.2
 
 ### Changed
 
-* Clean up (added missing type hinting and function docstrings)
+* Added missing type hinting and function docstrings
+* Replaced most dictionaries with classes
 
 
 
