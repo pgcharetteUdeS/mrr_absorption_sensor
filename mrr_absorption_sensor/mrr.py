@@ -241,7 +241,7 @@ class Mrr:
         ax.set(
             title="MRR sensitivity as a function of "
             f"{self.models.parms.wg.u_coord_name} and R\n"
-            "{self.models.parms.wg.polarization}"
+            f"{self.models.parms.wg.polarization}"
             f", λ = {self.models.parms.wg.lambda_resonance:.3f} μm"
             f", {self.models.parms.wg.v_coord_name} = "
             f"{self.models.parms.wg.v_coord_value:.3f} μm",
