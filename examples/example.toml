@@ -66,6 +66,7 @@ analyze_spiral = true					# Analyse the MRR and linear waveguides only (boolean,
 # - u (um): EITHER the core height or width, depending on which of "core_width"
 #           OR "core_height" was specified in the "wg" section
 # - gamma ([0..1]): normalized proportion of mode power in the cladding
+# - neff: fundamental mode effectve index
 # - r (um): list of radii at which the bending losses are specified (um)
 # - alpha_bend (dB/um): list of corresponding bending losses
 #
