@@ -1,14 +1,17 @@
 # Change Log
 
+## 2.4
+
+### Changed
+
+* Cleaned up plot_article_figures.py
+
 ## 2.3
 
 ### Changed
 
-* Fixed small bug in figure tile for MRR
+* Fixed small bug in figure title for MRR
 
-
-
-# Change Log
 
 ## 2.2
 
@@ -18,20 +21,11 @@
 * Replaced most dictionaries with classes
 
 
-
 ## 2.1
-
-### Added
-
-* Nothin'...
 
 ### Changed
 
 * Changed .toml input file format
-
-### Removed
-
-* Nothin'...
 
 
 
@@ -39,15 +33,11 @@
 
 ### Added
 
-* Nothin'...
-
 ### Changed
 
 * Changed from dict to dataclass for input parameter storage
 
 ### Removed
-
-* Nothin'...
 
 
 
@@ -58,6 +48,3 @@
 ### Changed
 
 * moved CHANGELOG.md to package root directory
-
-### Removed
-
