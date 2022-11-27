@@ -509,10 +509,12 @@ def _figure_7(
 
     # Plot Smax(r)
     axs[2].loglog(r, s_max, color="blue", label=r"max{S$_{MRR}$}")
-    axs[2].set_ylabel("max(S$_{MRR}$)")
-    axs[2].set_xlabel("Radius (μm)")
-    axs[2].set_xlim(r[0], r[-1])
-    axs[2].set_ylim(10, y_max_s)
+    axs[2].set(
+        xlabel="Radius (μm)",
+        ylabel="max(S$_{MRR}$)",
+        xlim=(r[0], r[-1]),
+        ylim=(10, y_max_s),
+    )
 
     # h(R) @ Smax(r)
     h: np.ndarray = np.asarray(
