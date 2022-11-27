@@ -1,6 +1,6 @@
 """example_light.py
 
-Simplified use of the mrr_absorption_sensor package using "example_light.toml"
+Simplified use of mrr_absorption_sensor package using data from "example_light.toml"
 
 See:
     P. Girault et al., "Influence of Losses, Device Size, and Mode Confinement on

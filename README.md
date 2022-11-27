@@ -1,7 +1,7 @@
 mrr_absorption_sensor package
 
 ## Purpose:
-Calculate the maximum achievable sensitivities over a range of waveguide bending radii
+Calculate the maximum achievable sensitivities over a range of curvature radii
 for micro-ring resonator, spiral, and linear waveguide absorption sensors, as a function
 of waveguide core geometry. The package was written to analyse and plot the results
 described in:
