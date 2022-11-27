@@ -9,7 +9,7 @@ described in:
 P. Girault et al., "*Influence of Losses, Device Size, and Mode Confinement on
 Integrated Micro-Ring Resonator Performance for Absorption Spectroscopy Using
 Evanescent Field Sensing,*" Journal of Lightwave Technology, 2022,
-doi: [10.1109/JLT.2022.3220982](https://doi-org.ezproxy.usherbrooke.ca/10.1109/JLT.2022.3220982).
+doi: [10.1109/JLT.2022.3220982](https://doi.org/10.1109/JLT.2022.3220982).
 
 The strip waveguide core has either a fixed width or height and the other (free) core
 geometry parameter is allowed to vary over a specified range in the optimization
