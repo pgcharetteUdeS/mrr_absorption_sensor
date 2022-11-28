@@ -49,9 +49,9 @@ def analyze(
     specified range to find the maximum sensitivity at each radius.
 
     Args:
-        toml_input_file (str):
-        block (bool):
-        logger (Callable):
+        toml_input_file (str): .toml file containing the problem parameters
+        block (bool, optional): "block" argument for plt.show()
+        logger (Callable, optional): console logger
 
     Returns:
         models: Models class instance

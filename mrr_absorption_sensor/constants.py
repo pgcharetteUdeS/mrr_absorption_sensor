@@ -3,7 +3,13 @@
 Global constants and classes
 
 """
-__all__ = ["CONSTANTS", "InputParameters", "LINE_STYLES", "PolyModel1D"]
+__all__ = [
+    "CONSTANTS",
+    "InputParameters",
+    "LINE_STYLES",
+    "PlottingExtrema",
+    "PolyModel1D",
+]
 
 from dataclasses import dataclass, field
 from dacite import from_dict
@@ -66,9 +72,24 @@ class PolyModel1D:
 
 
 @dataclass
+class PlottingExtrema:
+    """
+    r, u, gamma, s plotting extrema
+    """
+
+    r_min: float
+    r_max: float
+    u_min: float
+    u_max: float
+    gamma_min: float
+    gamma_max: float
+    s_max: float
+
+
+@dataclass
 class Waveguide:
     """
-    Waveguide parameters
+    Waveguide parameters from .toml file
     """
 
     lambda_resonance: float
@@ -99,7 +120,7 @@ class Waveguide:
 @dataclass
 class Ring:
     """
-    RIng parameters
+    Ring parameters from .toml file
     """
 
     coupling_length: float = 0
@@ -108,7 +129,7 @@ class Ring:
 @dataclass
 class SpiralParms:
     """
-    Spiral parameters
+    Spiral parameters from .toml file
     """
 
     spacing: float = 5.0
@@ -119,7 +140,7 @@ class SpiralParms:
 @dataclass
 class Fitting:
     """
-    Model fitting parameters
+    Model fitting parameters from .toml file
     """
 
     alpha_wg_order: int = 3
@@ -133,7 +154,7 @@ class Fitting:
 @dataclass
 class Limits:
     """
-    Analysis limit parameters
+    Analysis limit parameters from .toml file
     """
 
     r_min: float
@@ -151,7 +172,7 @@ class Limits:
 @dataclass
 class IO:
     """
-    Graphing and file I/O and parameters
+    Graphing and file I/O and parameters from .toml file
     """
 
     map_line_profiles: list = field(default_factory=lambda: [20, 45, 65, 75])
@@ -169,7 +190,7 @@ class IO:
 @dataclass
 class Debug:
     """
-    Debugging and other flags
+    Debugging and other flags from .toml file
     """
 
     alpha_wg_exponential_model: bool = False
@@ -182,7 +203,7 @@ class Debug:
 @dataclass
 class Geom:
     """
-    Mode solver data class
+    Mode solver data class from .toml file
     """
 
     u: float
@@ -197,7 +218,7 @@ class Geom:
 @dataclass
 class InputParameters:
     """
-    Problem data loaded from a .toml file dictionary
+    Problem data loaded from a .toml file (see example/example.toml)
     """
 
     wg: Waveguide
@@ -228,7 +249,7 @@ class InputParameters:
 
     def check_input_data(self) -> None:
         """
-        Perform a number of consistency and value range check on the input data.
+        Perform a number of consistency and value range checks on the input data.
         """
 
         # Check selected parameters for valid content

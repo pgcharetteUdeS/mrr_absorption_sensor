@@ -1,5 +1,11 @@
 # Change Log
 
+## 2.9
+
+### Changed
+
+* Replaced plotting_extrema dict with PlottingExtrema class in models.py
+
 ## 2.8
 
 ### Changed

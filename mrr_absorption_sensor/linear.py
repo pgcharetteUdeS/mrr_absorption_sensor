@@ -78,10 +78,10 @@ class Linear:
         axs[axs_index].set(
             ylabel=r"max$\{S\}$" + "\n" + r"(RIU$^{-1}$)",
             xlim=(
-                self.models.plotting_extrema["r_plot_min"],
-                self.models.plotting_extrema["r_plot_max"],
+                self.models.plotting_extrema.r_min,
+                self.models.plotting_extrema.r_max,
             ),
-            ylim=(100, self.models.plotting_extrema["S_plot_max"]),
+            ylim=(100, self.models.plotting_extrema.s_max),
             xticklabels=([]),
         )
 
@@ -91,12 +91,12 @@ class Linear:
         axs[axs_index].set(
             ylabel=f"{self.models.parms.wg.u_coord_name} (μm)",
             xlim=(
-                self.models.plotting_extrema["r_plot_min"],
-                self.models.plotting_extrema["r_plot_max"],
+                self.models.plotting_extrema.r_min,
+                self.models.plotting_extrema.r_max,
             ),
             ylim=(
-                self.models.plotting_extrema["u_plot_min"],
-                self.models.plotting_extrema["u_plot_max"],
+                self.models.plotting_extrema.u_min,
+                self.models.plotting_extrema.u_max,
             ),
             xticklabels=([]),
         )
@@ -107,8 +107,8 @@ class Linear:
         axs[axs_index].set(
             ylabel=r"$\Gamma_{fluide}$ ($\%$)",
             xlim=(
-                self.models.plotting_extrema["r_plot_min"],
-                self.models.plotting_extrema["r_plot_max"],
+                self.models.plotting_extrema.r_min,
+                self.models.plotting_extrema.r_max,
             ),
             ylim=(0, 100),
             xticklabels=([]),
@@ -120,8 +120,8 @@ class Linear:
         axs[axs_index].set(
             ylabel=r"$a^2$",
             xlim=(
-                self.models.plotting_extrema["r_plot_min"],
-                self.models.plotting_extrema["r_plot_max"],
+                self.models.plotting_extrema.r_min,
+                self.models.plotting_extrema.r_max,
             ),
             ylim=(0, 1),
             xticklabels=([]),
@@ -137,8 +137,8 @@ class Linear:
         axs[axs_index].set(
             ylabel=r"α$_{wg}$",
             xlim=(
-                self.models.plotting_extrema["r_plot_min"],
-                self.models.plotting_extrema["r_plot_max"],
+                self.models.plotting_extrema.r_min,
+                self.models.plotting_extrema.r_max,
             ),
             ylim=(
                 np.floor(self.models.α_wg_model.min * CONSTANTS.per_um_to_db_per_cm),
@@ -184,7 +184,7 @@ class Linear:
             r (float): "radius" (length of waveguide = 2r)
             u (float): waveguide core geometry free parameter
 
-        Returns:
+        Returns: a2 (float)
 
         """
 

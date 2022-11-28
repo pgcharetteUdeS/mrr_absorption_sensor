@@ -153,13 +153,13 @@ class Mrr:
         Write xyz image data to Excel file
 
         Args:
-            filename ():
-            x_array ():
-            x_label ():
-            y_array ():
-            y_label ():
-            z_array ():
-            z_labels ():
+            filename (str): output filename
+            x_array (np.ndarray): pixel x coordinates
+            x_label (str): x axis label
+            y_array (np.ndarray): pixel y coordinates
+            y_label (str): y axis label
+            z_array (np.ndarray): pixel z coordinates
+            z_labels (str): z axis label
 
         Returns: None
 
@@ -389,8 +389,8 @@ class Mrr:
         )
         ax.set(
             xlim=(
-                np.log10(self.models.plotting_extrema["r_plot_min"]),
-                np.log10(self.models.plotting_extrema["r_plot_max"]),
+                np.log10(self.models.plotting_extrema.r_min),
+                np.log10(self.models.plotting_extrema.r_max),
             ),
             ylim=(gamma_2d_map[-1], gamma_2d_map[0]),
         )
@@ -431,8 +431,8 @@ class Mrr:
             xlabel="log(R) (μm)",
             ylabel=r"$\Gamma_{fluid}$ ($\%$)",
             xlim=(
-                np.log10(self.models.plotting_extrema["r_plot_min"]),
-                np.log10(self.models.plotting_extrema["r_plot_max"]),
+                np.log10(self.models.plotting_extrema.r_min),
+                np.log10(self.models.plotting_extrema.r_max),
             ),
             ylim=(gamma_2d_map[-1], gamma_2d_map[0]),
         )
@@ -474,8 +474,8 @@ class Mrr:
             xlabel="log(R) (μm)",
             ylabel=r"$\Gamma_{fluid}$ ($\%$)",
             xlim=(
-                np.log10(self.models.plotting_extrema["r_plot_min"]),
-                np.log10(self.models.plotting_extrema["r_plot_max"]),
+                np.log10(self.models.plotting_extrema.r_min),
+                np.log10(self.models.plotting_extrema.r_max),
             ),
             ylim=(gamma_2d_map[-1], gamma_2d_map[0]),
         )
@@ -521,8 +521,8 @@ class Mrr:
             xlabel="log(R) (μm)",
             ylabel=r"$\Gamma_{fluid}$ ($\%$)",
             xlim=(
-                np.log10(self.models.plotting_extrema["r_plot_min"]),
-                np.log10(self.models.plotting_extrema["r_plot_max"]),
+                np.log10(self.models.plotting_extrema.r_min),
+                np.log10(self.models.plotting_extrema.r_max),
             ),
             ylim=(gamma_2d_map[-1], gamma_2d_map[0]),
         )
@@ -578,8 +578,8 @@ class Mrr:
             xlabel="log(R) (μm)",
             ylabel=r"$\Gamma_{fluid}$ ($\%$)",
             xlim=(
-                np.log10(self.models.plotting_extrema["r_plot_min"]),
-                np.log10(self.models.plotting_extrema["r_plot_max"]),
+                np.log10(self.models.plotting_extrema.r_min),
+                np.log10(self.models.plotting_extrema.r_max),
             ),
             ylim=(gamma_2d_map[-1], gamma_2d_map[0]),
         )
@@ -642,8 +642,8 @@ class Mrr:
             xlabel="log(R) (μm)",
             ylabel=r"$\Gamma_{fluid}$ ($\%$)",
             xlim=(
-                np.log10(self.models.plotting_extrema["r_plot_min"]),
-                np.log10(self.models.plotting_extrema["r_plot_max"]),
+                np.log10(self.models.plotting_extrema.r_min),
+                np.log10(self.models.plotting_extrema.r_max),
             ),
             ylim=(gamma_2d_map[-1], gamma_2d_map[0]),
         )
@@ -702,8 +702,8 @@ class Mrr:
             xlabel="log(R) (μm)",
             ylabel=r"$\Gamma_{fluid}$ ($\%$)",
             xlim=(
-                np.log10(self.models.plotting_extrema["r_plot_min"]),
-                np.log10(self.models.plotting_extrema["r_plot_max"]),
+                np.log10(self.models.plotting_extrema.r_min),
+                np.log10(self.models.plotting_extrema.r_max),
             ),
             ylim=(gamma_2d_map[-1], gamma_2d_map[0]),
         )
@@ -831,16 +831,16 @@ class Mrr:
         axs[axs_index].loglog(self.models.r, self.s)
         axs[axs_index].plot(
             [self.max_s_radius, self.max_s_radius],
-            [100, self.models.plotting_extrema["S_plot_max"]],
+            [100, self.models.plotting_extrema.s_max],
             "r--",
         )
         axs[axs_index].set(
             ylabel=r"max$\{S\}$" + "\n" + r"(RIU$^{-1}$)",
             xlim=(
-                self.models.plotting_extrema["r_plot_min"],
-                self.models.plotting_extrema["r_plot_max"],
+                self.models.plotting_extrema.r_min,
+                self.models.plotting_extrema.r_max,
             ),
-            ylim=(100, self.models.plotting_extrema["S_plot_max"]),
+            ylim=(100, self.models.plotting_extrema.s_max),
             xticklabels=([]),
         )
 
@@ -849,16 +849,16 @@ class Mrr:
         axs[axs_index].loglog(self.models.r, self.s_nr)
         axs[axs_index].plot(
             [self.max_s_radius, self.max_s_radius],
-            [10, self.models.plotting_extrema["S_plot_max"]],
+            [10, self.models.plotting_extrema.s_max],
             "r--",
         )
         axs[axs_index].set(
             ylabel=r"S$_{NR}$" + "\n" + r"(RIU $^{-1}$)",
             xlim=(
-                self.models.plotting_extrema["r_plot_min"],
-                self.models.plotting_extrema["r_plot_max"],
+                self.models.plotting_extrema.r_min,
+                self.models.plotting_extrema.r_max,
             ),
-            ylim=(10, self.models.plotting_extrema["S_plot_max"]),
+            ylim=(10, self.models.plotting_extrema.s_max),
             xticklabels=([]),
         )
 
@@ -873,8 +873,8 @@ class Mrr:
         axs[axs_index].set(
             ylabel=r"S$_e \times a$",
             xlim=(
-                self.models.plotting_extrema["r_plot_min"],
-                self.models.plotting_extrema["r_plot_max"],
+                self.models.plotting_extrema.r_min,
+                self.models.plotting_extrema.r_max,
             ),
             ylim=(0, self.plotting_extrema["Se_plot_max"]),
             xticklabels=([]),
@@ -886,20 +886,20 @@ class Mrr:
         axs[axs_index].plot(
             [self.max_s_radius, self.max_s_radius],
             [
-                self.models.plotting_extrema["u_plot_min"],
-                self.models.plotting_extrema["u_plot_max"],
+                self.models.plotting_extrema.u_min,
+                self.models.plotting_extrema.u_max,
             ],
             "r--",
         )
         axs[axs_index].set(
             ylabel=f"{self.models.parms.wg.u_coord_name} (μm)",
             xlim=(
-                self.models.plotting_extrema["r_plot_min"],
-                self.models.plotting_extrema["r_plot_max"],
+                self.models.plotting_extrema.r_min,
+                self.models.plotting_extrema.r_max,
             ),
             ylim=(
-                self.models.plotting_extrema["u_plot_min"],
-                self.models.plotting_extrema["u_plot_max"],
+                self.models.plotting_extrema.u_min,
+                self.models.plotting_extrema.u_max,
             ),
             xticklabels=([]),
         )
@@ -910,20 +910,20 @@ class Mrr:
         axs[axs_index].plot(
             [self.max_s_radius, self.max_s_radius],
             [
-                self.models.plotting_extrema["gamma_plot_min"],
-                self.models.plotting_extrema["gamma_plot_max"],
+                self.models.plotting_extrema.gamma_min,
+                self.models.plotting_extrema.gamma_max,
             ],
             "r--",
         )
         axs[axs_index].set(
             ylabel=r"$\Gamma_{fluide}$ ($\%$)",
             xlim=(
-                self.models.plotting_extrema["r_plot_min"],
-                self.models.plotting_extrema["r_plot_max"],
+                self.models.plotting_extrema.r_min,
+                self.models.plotting_extrema.r_max,
             ),
             ylim=(
-                self.models.plotting_extrema["gamma_plot_min"],
-                self.models.plotting_extrema["gamma_plot_max"],
+                self.models.plotting_extrema.gamma_min,
+                self.models.plotting_extrema.gamma_max,
             ),
             xticklabels=([]),
         )
@@ -935,8 +935,8 @@ class Mrr:
         axs[axs_index].set(
             ylabel=r"$a^2$",
             xlim=(
-                self.models.plotting_extrema["r_plot_min"],
-                self.models.plotting_extrema["r_plot_max"],
+                self.models.plotting_extrema.r_min,
+                self.models.plotting_extrema.r_max,
             ),
             ylim=(0, 1),
             xticklabels=([]),
@@ -952,8 +952,8 @@ class Mrr:
         axs[axs_index].set(
             ylabel=r"α$_{wg}$",
             xlim=(
-                self.models.plotting_extrema["r_plot_min"],
-                self.models.plotting_extrema["r_plot_max"],
+                self.models.plotting_extrema.r_min,
+                self.models.plotting_extrema.r_max,
             ),
             ylim=(
                 np.floor(self.models.α_wg_model.min * CONSTANTS.per_um_to_db_per_cm),
@@ -997,16 +997,16 @@ class Mrr:
         axs[axs_index].loglog(self.models.r, self.s)
         axs[axs_index].plot(
             [self.max_s_radius, self.max_s_radius],
-            [100, self.models.plotting_extrema["S_plot_max"]],
+            [100, self.models.plotting_extrema.s_max],
             "r--",
         )
         axs[axs_index].set(
             ylabel=r"max$\{S\}$",
             xlim=(
-                self.models.plotting_extrema["r_plot_min"],
-                self.models.plotting_extrema["r_plot_max"],
+                self.models.plotting_extrema.r_min,
+                self.models.plotting_extrema.r_max,
             ),
-            ylim=(100, self.models.plotting_extrema["S_plot_max"]),
+            ylim=(100, self.models.plotting_extrema.s_max),
             xticklabels=([]),
         )
 
@@ -1022,8 +1022,8 @@ class Mrr:
         axs[axs_index].plot([self.max_s_radius, self.max_s_radius], [0, 1], "r--")
         axs[axs_index].set(
             xlim=(
-                self.models.plotting_extrema["r_plot_min"],
-                self.models.plotting_extrema["r_plot_max"],
+                self.models.plotting_extrema.r_min,
+                self.models.plotting_extrema.r_max,
             ),
             ylim=(0, 1),
             ylabel=r"Contrast, $a$, $\tau$",
@@ -1041,8 +1041,8 @@ class Mrr:
         )
         axs[axs_index].set(
             xlim=(
-                self.models.plotting_extrema["r_plot_min"],
-                self.models.plotting_extrema["r_plot_max"],
+                self.models.plotting_extrema.r_min,
+                self.models.plotting_extrema.r_max,
             ),
             ylabel="Extinction\nratio\n(dB)",
             xticklabels=([]),
@@ -1058,8 +1058,8 @@ class Mrr:
         )
         axs[axs_index].set(
             xlim=(
-                self.models.plotting_extrema["r_plot_min"],
-                self.models.plotting_extrema["r_plot_max"],
+                self.models.plotting_extrema.r_min,
+                self.models.plotting_extrema.r_max,
             ),
             ylabel="Q",
             xticklabels=([]),
@@ -1073,8 +1073,8 @@ class Mrr:
         )
         axs[axs_index].set(
             xlim=(
-                self.models.plotting_extrema["r_plot_min"],
-                self.models.plotting_extrema["r_plot_max"],
+                self.models.plotting_extrema.r_min,
+                self.models.plotting_extrema.r_max,
             ),
             ylim=(0, 2.5),
             ylabel=r"$\frac{Finesse/2\pi}{S_e\times a}$",
@@ -1087,8 +1087,8 @@ class Mrr:
         axs[axs_index].loglog(self.models.r, self.fsr * 1e6, "g", label="FSR")
         axs[axs_index].set(
             xlim=(
-                self.models.plotting_extrema["r_plot_min"],
-                self.models.plotting_extrema["r_plot_max"],
+                self.models.plotting_extrema.r_min,
+                self.models.plotting_extrema.r_max,
             ),
             xlabel="Ring radius (μm)",
             ylabel="FWHM and FSR\n(pm)",
@@ -1185,8 +1185,8 @@ class Mrr:
         )
         ax.loglog(
             [
-                self.models.plotting_extrema["r_plot_min"],
-                self.models.plotting_extrema["r_plot_max"],
+                self.models.plotting_extrema.r_min,
+                self.models.plotting_extrema.r_max,
             ],
             [s_min, s_min],
             "r--",
@@ -1200,8 +1200,8 @@ class Mrr:
         )
         ax.set(
             xlim=(
-                self.models.plotting_extrema["r_plot_min"],
-                self.models.plotting_extrema["r_plot_max"],
+                self.models.plotting_extrema.r_min,
+                self.models.plotting_extrema.r_max,
             ),
             ylim=(100, 1000000),
         )

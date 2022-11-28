@@ -35,13 +35,13 @@ from .spiral import Spiral
 
 def load_toml_file(filename: Path, logger: Callable = print) -> InputParameters:
     """
-    Load problem data from .toml file into a dataclass
+    Load problem data from .toml file dict into a InputParameters dataclass
 
     Args:
         filename (Path): .toml input file containing the problem data
-        logger (Callable): console logger (optional)
+        logger (Callable, optional): console logger (optional)
 
-    Returns: parms (InputParameters)
+    Returns: parms (InputParameters class object)
 
     """
 
@@ -114,13 +114,13 @@ def write_excel_results_file(
     and the values are the corresponding column data arrays
 
     Args:
-        excel_output_path (Path):
-        models (Models):
-        mrr (Mrr):
-        linear (Linear):
-        spiral (Spiral):
-        parms (InputParameters):
-        logger (Callable):
+        excel_output_path (Path): Excel output file Path
+        models (Models): Models class object
+        mrr (Mrr): Mrr class object
+        linear (Linear): Linear class object
+        spiral (Spiral): Spiral class object
+        parms (InputParameters): InputParameters clas object
+        logger (Callable, optional): console logger
 
     Returns: None
 

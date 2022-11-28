@@ -24,7 +24,7 @@ from sympy.core.function import FunctionClass
 from scipy.linalg import lstsq
 from sympy import functions, lambdify, symbols
 
-from .constants import CONSTANTS, InputParameters, PolyModel1D
+from .constants import CONSTANTS, InputParameters, PlottingExtrema, PolyModel1D
 
 
 class Models:
@@ -63,7 +63,7 @@ class Models:
         Args:
             parms (InputParameters): problem input parameters
             filename_path (Path): output file Path
-            logger (Callable): console logger
+            logger (Callable, optional): console logger
         """
 
         # Load class instance variables
@@ -71,8 +71,8 @@ class Models:
         self.filename_path: Path = filename_path
         self.logger: Callable = logger
 
-        # Initialize other class parameters
-        self.plotting_extrema: dict = {}
+        # Initialize plotting extrema in PlottingExtrema class object
+        self.plotting_extrema: PlottingExtrema = PlottingExtrema(0, 0, 0, 0, 0, 0, 0)
 
         # Define the array of radii to be analyzed (R domain)
         self.r: np.ndarray = np.logspace(
@@ -165,14 +165,14 @@ class Models:
             self._set_u_search_lower_bound()
 
     #
-    # alpha_wg(u), gamma(u), u(gamma), and neffs(u) modeling
+    # Payne and Lacey model for propagation losses from sidewall roughness
     #
 
-    # Payne and Lacey model for propagation losses from vertical sidewall roughness
     def _calc_k_parallel_projections(
         self, theta: float, n_clad: float, n_core: float, n_sub: float
     ) -> Tuple[float, float, float]:
         """
+        Calculate the k vector projection parallel to the film interface
 
         Args:
             theta (float): projection angle between k and the film plane
@@ -180,7 +180,7 @@ class Models:
             n_core (float): core index
             n_sub (float): substrate index
 
-        Returns: gamma_clad, kx_core, gamma_sub
+        Returns: gamma_clad (float), kx_core (float), gamma_sub (float)
 
         """
 
@@ -209,6 +209,7 @@ class Models:
         polarization: str,
     ) -> float:
         """
+        objective function for transcendental mode equation
 
         Args:
             theta (float): projection angle between k and the film plane
@@ -218,7 +219,7 @@ class Models:
             n_sub (float): substrate index
             polarization (str): light polarization
 
-        Returns: squared loss exponent
+        Returns: squared residual (float)
 
         """
 
@@ -250,6 +251,7 @@ class Models:
         polarization: str,
     ) -> Tuple[float, float]:
         """
+        Calculate fundamental mode effective index with transcendental mode equation
 
         Args:
             h (float): core thickness
@@ -258,7 +260,7 @@ class Models:
             n_sub (float): substrate index
             polarization (str):
 
-        Returns: n_eff, residual from the fit
+        Returns: n_eff (float), residual from the fit (float)
 
         """
 
@@ -282,13 +284,14 @@ class Models:
 
     def _calc_alpha_db_per_cm(self, n_eff: float, height: float, width: float) -> float:
         """
+        Calculate waveguide propagation losses with the Payne & Lacey model
 
         Args:
             n_eff (float): mode effective index
             height (float): core height
             width (float): cor width
 
-        Returns: alpha (db/cm)
+        Returns: losses (float, db/cm)
 
         """
 
@@ -326,14 +329,18 @@ class Models:
         # Return alpha_wg in dB/cm
         return alpha_db_per_m / 100
 
-    # alpha_wg(u) model function
+    #
+    # alpha_wg(u), gamma(u), u(gamma), and neffs(u) modeling
+    #
+
     def α_wg_of_u(self, u: float | None = None) -> float:
         """
+        Calculate alpha_wg(u)
 
         Args:
             u (float): core geometry free parameter
 
-        Returns: alpha_wg
+        Returns: alpha_wg (float)
 
         """
         # If no height or width specified, return minimum alpha_wg value
@@ -357,36 +364,38 @@ class Models:
             )
         ) / CONSTANTS.per_um_to_db_per_cm
 
-    # gamma(u), u(gamma), neff(u) wrappers for model-specific calls to _interpolate()
     def gamma_of_u(self, u: float) -> float:
         """
+        Calculate gamma(u)
 
         Args:
             u (float): : core geometry free parameter
 
-        Returns: gamma(u)
+        Returns: gamma(u), float
 
         """
         return self._interpolate(model=self.gamma_model, x=u)
 
     def u_of_gamma(self, gamma: float) -> float:
         """
+        Calculate u(gamma)
 
         Args:
             gamma (float): gamma
 
-        Returns: u(gamma)
+        Returns: u(gamma), float
 
         """
         return self._interpolate(model=self.u_model, x=gamma)
 
     def n_eff_of_u(self, u: float) -> float:
         """
+        Calculate neff(u)
 
         Args:
-            u (float): : core geometry free parameter():
+            u (float): : core geometry free parameter
 
-        Returns: neff(u)
+        Returns: neff(u), float
 
         """
         return self._interpolate(model=self.n_eff_model, x=u)
@@ -394,10 +403,11 @@ class Models:
     @staticmethod
     def _interpolate(model: PolyModel1D, x: float) -> float:
         """
+        Interpolate gamma(u), u(gamma), neff(u)
 
         Args:
-            model (dict): interpolation model
-            x (float): model free parameter
+            model (PolyModel1D): interpolation model
+            x (float): free parameter
 
         Returns: interpolated value and clip to min/max boundaries
 
@@ -408,14 +418,13 @@ class Models:
 
         return min(model.max, value)
 
-    # FIt alpha_wg(u), gamma(u), u(gamma), neff(u) 1D models to the mode solver data
     def _fit_1d_models(self) -> None:
         """
-        1) Fit polynomial models to alpha_wg(u), gamma(u), u(gamma), and neffs(u),
-           load the info (model parameters, bounds) into dictionaries for each.
+        1) Fit polynomial models to alpha_wg(u), gamma(u), u(gamma), and neffs(u), load
+           the info (model parameters, bounds) into PolyModel1D class object for each.
 
         2) Fit interpolation models for r(u) @ max(alpha_bend) and r(u)
-           @ min(alpha_bend), i.e. to R[0](u) and R[-1](u).
+           @ min(alpha_bend), i.e. to r[0](u) and r[-1](u).
 
         Returns: None
 
@@ -578,7 +587,7 @@ class Models:
     def _parse_bending_loss_mode_solver_data(self) -> None:
         """
         Parse the alpha_bend(R, u) mode solver data, determine the extrema,
-        build the "u / R / log(alpha_bend)" arrays for fitting.
+        build the "u / r / log(alpha_bend)" arrays for fitting.
 
         Returns: None
 
@@ -640,8 +649,8 @@ class Models:
         alpha_bend(r, h) 3D figure slider callback
 
         Args:
-            *_ ():
-            **__ ():
+            *_ (): *args arguments ignored
+            **__ (): **kwargs arguments ignored
 
         Returns: None
 
@@ -660,8 +669,8 @@ class Models:
         alpha_bend(r, h) 3D figure save button callback
 
         Args:
-            *_ ():
-            **__ ():
+            *_ (): *args arguments ignored
+            **__ (): **kwargs arguments ignored
 
         Returns: None
 
@@ -678,8 +687,8 @@ class Models:
         alpha_bend(r, h) 3D figure "top view" button callback
 
         Args:
-            *_ ():
-            **__ ():
+            *_ (): *args arguments ignored
+            **__ (): **kwargs arguments ignored
 
         Returns: None
 
@@ -696,8 +705,8 @@ class Models:
         alpha_bend(r, h) 3D figure "reset view"" button callback
 
         Args:
-            *_ ():
-            **__ ():
+            *_ (): *args arguments ignored
+            **__ (): **kwargs arguments ignored
 
         Returns: None
 
@@ -941,6 +950,9 @@ class Models:
 
         PS: I tried the symfit package, didn't get anything better than the result
             below with lstsq(), and it failed to converge for most polynomial forms.
+
+        Return: None
+
         """
 
         #
@@ -1018,22 +1030,28 @@ class Models:
     #
 
     def _set_u_search_lower_bound(self) -> None:
-        # At small ring radii, the interpolation model for alpha_bend(u, r) is
-        # unreliable at low u. As a result, the search for optimal u in the optimization
-        # sometimes converges towards a solution at low u whereas the solution at small
-        # radii lies necessarily at high u to minimize bending losses. To mitigate this
-        # problem, the search domain lower bound for u is constrained at small radii.
-        #
-        # The point at which the ring radius is considered "small", i.e. where the
-        # alpha_bend interpolation model fails, is u-dependant. This boundary
-        # is determined by calculating the radius at each u for which
-        # alpha_bend exceeds a user-specified threshold ("alpha_bend_threshold"),
-        # values are stored in the array "r_alpha_bend_threshold",
-        # see _parse_bending_loss_mode_solver_data(). A spline interpolation
-        # is used to model the u search domain lower bound as a function of radius.
-        #
-        # For radii greater than the spline r domain, u is allowed to take on any value
-        # in the full u domain during optimization.
+        """
+        At small ring radii, the interpolation model for alpha_bend(u, r) is
+        unreliable at low u. As a result, the search for optimal u in the optimization
+        sometimes converges towards a solution at low u whereas the solution at small
+        radii lies necessarily at high u to minimize bending losses. To mitigate this
+        problem, the search domain lower bound for u is constrained at small radii.
+
+        The point at which the ring radius is considered "small", i.e. where the
+        alpha_bend interpolation model fails, is u-dependant. This boundary
+        is determined by calculating the radius at each u for which
+        alpha_bend exceeds a user-specified threshold ("alpha_bend_threshold"),
+        values are stored in the array "r_alpha_bend_threshold",
+        see _parse_bending_loss_mode_solver_data(). A spline interpolation
+        is used to model the u search domain lower bound as a function of radius.
+
+        For radii greater than the spline r domain, u is allowed to take on any value
+        in the full u domain during optimization.
+
+
+        Returns: None
+
+        """
 
         # Fetch list of core geometry u values
         u: np.ndarray = np.asarray([value.u for value in self.parms.geom.values()])
@@ -1145,7 +1163,7 @@ class Models:
         Args:
             r (float): waveguide bending radius (um)
 
-        Returns: (u_min, u_max) u search domain extrema (um)
+        Returns: (u_min, u_max) u search domain extrema (float, um)
 
         """
 
@@ -1162,12 +1180,9 @@ class Models:
 
         return u_min, u_max
 
-    #
-    # Calculate shared values for sensor Class instance plotting
-    #
-
     def calculate_plotting_extrema(self, max_s: float) -> None:
         """
+        Calculate plotting extrema in self.plotting_extrema PlottingExtrema object
 
         Args:
             max_s (float): maximum sensitivity
@@ -1177,28 +1192,24 @@ class Models:
         """
 
         # R domain extrema (complete decades)
-        self.plotting_extrema["r_plot_min"] = 10 ** (
+        self.plotting_extrema.r_min = 10 ** (
             np.floor(np.log10(self.parms.limits.r_min))
         )
-        self.plotting_extrema["r_plot_max"] = 10 ** (
-            np.ceil(np.log10(self.parms.limits.r_max))
-        )
+        self.plotting_extrema.r_max = 10 ** (np.ceil(np.log10(self.parms.limits.r_max)))
 
         # u domain extrema
         u: np.ndarray = np.asarray([value.u for value in self.parms.geom.values()])
-        self.plotting_extrema["u_plot_min"] = u[0] * 0.9
-        self.plotting_extrema["u_plot_max"] = u[-1] * 1.1
+        self.plotting_extrema.u_min = u[0] * 0.9
+        self.plotting_extrema.u_max = u[-1] * 1.1
 
         # Gamma domain extrema (%)
-        self.plotting_extrema["gamma_plot_min"] = (
+        self.plotting_extrema.gamma_min = (
             np.floor(self.gamma_of_u(u[-1]) * 0.9 * 10) * 10
         )
-        self.plotting_extrema["gamma_plot_max"] = (
-            np.ceil(self.gamma_of_u(u[0]) * 1.1 * 10) * 10
-        )
+        self.plotting_extrema.gamma_max = np.ceil(self.gamma_of_u(u[0]) * 1.1 * 10) * 10
 
         # max{S} vertical marker
-        self.plotting_extrema["S_plot_max"] = 10 ** np.ceil(np.log10(max_s))
+        self.plotting_extrema.s_max = 10 ** np.ceil(np.log10(max_s))
 
         # Explicit None return
         return None
