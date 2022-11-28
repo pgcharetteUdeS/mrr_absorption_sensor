@@ -15,6 +15,7 @@ import sys
 
 from plot_article_figures import plot_article_figures
 
+# Add the parent directory so that the mrr_absorption_sensor directory can be found
 sys.path.append("..\\")
 from mrr_absorption_sensor import analyze
 

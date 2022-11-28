@@ -52,8 +52,20 @@ import sys
 
 from plot_article_figures import plot_article_figures
 
+# Add the parent directory so that the mrr_absorption_sensor directory can be found
 sys.path.append("..\\")
 from mrr_absorption_sensor import analyze
+
+# matplotlib initializations
+plt.rcParams.update(
+    {
+        "figure.dpi": 200,
+        "font.size": 6,
+        "lines.linewidth": 0.5,
+        "axes.linewidth": 0.5,
+        "figure.max_open_warning": 25,
+    },
+)
 
 
 def mrr_absorption_sensor_vs_spiral(toml_input_filename: str) -> None:
@@ -68,17 +80,6 @@ def mrr_absorption_sensor_vs_spiral(toml_input_filename: str) -> None:
 
     # Start execution timer
     global_start_time: float = time.perf_counter()
-
-    # matplotlib initializations
-    plt.rcParams.update(
-        {
-            "figure.dpi": 200,
-            "font.size": 6,
-            "lines.linewidth": 0.5,
-            "axes.linewidth": 0.5,
-            "figure.max_open_warning": 25,
-        },
-    )
 
     # Define the logger for console information messages
     logging.basicConfig(
@@ -129,5 +130,6 @@ def mrr_absorption_sensor_vs_spiral(toml_input_filename: str) -> None:
     return None
 
 
+# Run as independent script, supply default .toml filename
 if __name__ == "__main__":
     mrr_absorption_sensor_vs_spiral("example.toml")

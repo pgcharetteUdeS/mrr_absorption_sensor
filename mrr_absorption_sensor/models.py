@@ -335,7 +335,7 @@ class Models:
 
     def α_wg_of_u(self, u: float | None = None) -> float:
         """
-        Calculate alpha_wg(u)
+        Interpolate alpha_wg(u)
 
         Args:
             u (float): core geometry free parameter
@@ -366,7 +366,7 @@ class Models:
 
     def gamma_of_u(self, u: float) -> float:
         """
-        Calculate gamma(u)
+        Interpolate gamma(u)
 
         Args:
             u (float): : core geometry free parameter
@@ -378,7 +378,7 @@ class Models:
 
     def u_of_gamma(self, gamma: float) -> float:
         """
-        Calculate u(gamma)
+        Interpolate u(gamma)
 
         Args:
             gamma (float): gamma
@@ -390,7 +390,7 @@ class Models:
 
     def n_eff_of_u(self, u: float) -> float:
         """
-        Calculate neff(u)
+        Interpolate neff(u)
 
         Args:
             u (float): : core geometry free parameter
@@ -403,13 +403,13 @@ class Models:
     @staticmethod
     def _interpolate(model: PolyModel1D, x: float) -> float:
         """
-        Interpolate gamma(u), u(gamma), neff(u)
+        Interpolate gamma(u), u(gamma), neff(u) and clip to min/max boundaries
 
         Args:
             model (PolyModel1D): interpolation model
             x (float): free parameter
 
-        Returns: interpolated value and clip to min/max boundaries
+        Returns: interpolated value (float)
 
         """
 
