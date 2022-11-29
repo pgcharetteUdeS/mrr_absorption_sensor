@@ -51,9 +51,7 @@ def load_toml_file(filename: Path, logger: Callable = print) -> InputParameters:
     parms: InputParameters = from_dict(
         data_class=InputParameters, data=toml_dict, config=dacite.Config(strict=True)
     )
-    logger(
-        f"Loaded information from '{filename}' ({len(parms.geom)} geom entries)."
-    )
+    logger(f"Loaded information from '{filename}' ({len(parms.geom)} geom entries).")
 
     # Write out the parameters to a .toml file, for reference purposes
     filename_txt: Path = (
@@ -101,6 +99,25 @@ def validate_excel_results_file(filename_path: Path) -> Path:
     return excel_output_filename
 
 
+def _add_sheet_to_workbook(sensor_dict: dict, wb: Workbook, sensor_name: str):
+    """
+    Add a sheet to the Workbook with the sensor data
+    Args:
+        sensor_dict (dict): dictionary containing the sensor data
+        wb (Workbook): Workbook to which the sheet is appended
+        sensor_name (): Sensor type for naming the sheet
+
+    Returns: None
+
+    """
+    sensor_data: np.ndarray = np.asarray(list(sensor_dict.values())).T
+    sheet: Worksheet = wb.create_sheet(sensor_name)
+    sheet.append(list(sensor_dict.keys()))
+    for row in sensor_data:
+        sheet.append(row.tolist())
+    return None
+
+
 def write_excel_results_file(
     excel_output_path: Path | None,
     models: Models,
@@ -129,9 +146,10 @@ def write_excel_results_file(
     """
     # Create Excel workbook
     wb: Workbook = Workbook()
+    wb.remove_sheet(wb.worksheets[0])
 
     # Save the MMR data to a sheet
-    mrr_data_dict: dict = {
+    mrr_dict: dict = {
         "R_um": models.r,
         "neff": mrr.n_eff,
         "maxS_RIU_inv": mrr.s,
@@ -155,12 +173,7 @@ def write_excel_results_file(
         "FWHM_um": mrr.fwhm,
         "FSR_um": mrr.fsr,
     }
-    mrr_data: np.ndarray = np.asarray(list(mrr_data_dict.values())).T
-    mrr_sheet: Worksheet = wb["Sheet"]
-    mrr_sheet.title = "MRR"
-    mrr_sheet.append(list(mrr_data_dict.keys()))
-    for row in mrr_data:
-        mrr_sheet.append(row.tolist())
+    _add_sheet_to_workbook(sensor_dict=mrr_dict, wb=wb, sensor_name="MRR")
 
     # Save the calculated and interpolated alpha_wg(u) values to a sheet
     alpha_wg_sheet: Worksheet = wb.create_sheet("alpha_wg")
@@ -205,7 +218,7 @@ def write_excel_results_file(
         re_rw_sheet.append(line)
 
     # Save the linear waveguide data to a sheet
-    linear_data_dict: dict = {
+    linear_dict: dict = {
         "R_um": models.r,
         "maxS_RIU_inv": linear.s,
         f"{models.parms.wg.u_coord_name}_um": linear.u,
@@ -213,15 +226,11 @@ def write_excel_results_file(
         "L_um": 2 * models.r,
         "a2": linear.wg_a2,
     }
-    linear_data: np.ndarray = np.asarray(list(linear_data_dict.values())).T
-    linear_sheet: Worksheet = wb.create_sheet("Linear")
-    linear_sheet.append(list(linear_data_dict.keys()))
-    for row in linear_data:
-        linear_sheet.append(row.tolist())
+    _add_sheet_to_workbook(sensor_dict=linear_dict, wb=wb, sensor_name="Linear")
 
     # If required, save the spiral data to a sheet
     if parms.debug.analyze_spiral:
-        spiral_data_dict: dict = {
+        spiral_dict: dict = {
             "R_um": models.r,
             "maxS_RIU_inv": spiral.s,
             f"{models.parms.wg.u_coord_name}_um": spiral.u,
@@ -231,11 +240,7 @@ def write_excel_results_file(
             "L_um": spiral.l,
             "a2": spiral.wg_a2,
         }
-        spiral_data: np.ndarray = np.asarray(list(spiral_data_dict.values())).T
-        spiral_sheet: Worksheet = wb.create_sheet("Spiral")
-        spiral_sheet.append(list(spiral_data_dict.keys()))
-        for row in spiral_data:
-            spiral_sheet.append(row.tolist())
+        _add_sheet_to_workbook(sensor_dict=spiral_dict, wb=wb, sensor_name="Spiral")
 
     # Save the Excel file to disk
     wb.save(filename=str(excel_output_path))
