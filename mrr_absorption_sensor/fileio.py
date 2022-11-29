@@ -51,7 +51,9 @@ def load_toml_file(filename: Path, logger: Callable = print) -> InputParameters:
     parms: InputParameters = from_dict(
         data_class=InputParameters, data=toml_dict, config=dacite.Config(strict=True)
     )
-    logger(f"Loaded information from '{filename}'.")
+    logger(
+        f"Loaded information from '{filename}' ({len(parms.geom)} geom entries)."
+    )
 
     # Write out the parameters to a .toml file, for reference purposes
     filename_txt: Path = (

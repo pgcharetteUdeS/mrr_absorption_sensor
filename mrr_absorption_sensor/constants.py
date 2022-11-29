@@ -143,7 +143,7 @@ class Fitting:
     Model fitting parameters from .toml file
     """
 
-    alpha_wg_order: int = 3
+    alpha_wg_order: int = 4
     alpha_wg_exponential_model: bool = False
     gamma_order: int = 4
     neff_order: int = 3
