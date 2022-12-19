@@ -199,49 +199,6 @@ class Models:
         # Return results!
         return gamma_clad, kx_core, gamma_sub
 
-    def _calculate_mode_parameters_obj_fun(
-        self,
-        theta: float,
-        h: float,
-        n_clad: float,
-        n_core: float,
-        n_sub: float,
-        polarization: str,
-    ) -> float:
-        """
-        objective function for transcendental mode equation
-
-        Args:
-            theta (float): projection angle between k and the film plane
-            h (float): core thickness
-            n_clad (float): cladding index
-            n_core (float): core index
-            n_sub (float): substrate index
-            polarization (str): light polarization
-
-        Returns: squared residual (float)
-
-        """
-
-        # Calculate squared residual
-        a: float = h / 2
-        [gamma_clad, kx_core, gamma_sub] = self._calc_k_parallel_projections(
-            theta=theta, n_clad=n_clad, n_core=n_core, n_sub=n_sub
-        )
-        if polarization == "TE":
-            e = (
-                2 * a * kx_core
-                - np.arctan2(gamma_sub, kx_core)
-                - np.arctan2(gamma_clad, kx_core)
-            )
-        else:
-            e = (
-                2 * a * kx_core
-                - np.arctan2(n_core**2 * gamma_sub, n_sub**2 * kx_core)
-                - np.arctan2(n_core**2 * gamma_clad, n_clad**2 * kx_core)
-            )
-        return e**2
-
     def _calc_mode_effective_index(
         self,
         h: float,
@@ -264,20 +221,49 @@ class Models:
 
         """
 
+        def _obj_fun(theta: float) -> float:
+            """
+            objective function for transcendental mode equation
+
+            Args:
+                theta (float): projection angle between k and the film plane
+
+            Returns: squared residual (float)
+
+            """
+
+            # Calculate squared residual
+            a: float = h / 2
+            [gamma_clad, kx_core, gamma_sub] = self._calc_k_parallel_projections(
+                theta=theta, n_clad=n_clad, n_core=n_core, n_sub=n_sub
+            )
+            if polarization == "TE":
+                e = (
+                    2 * a * kx_core
+                    - np.arctan2(gamma_sub, kx_core)
+                    - np.arctan2(gamma_clad, kx_core)
+                )
+            else:
+                e = (
+                    2 * a * kx_core
+                    - np.arctan2(n_core**2 * gamma_sub, n_sub**2 * kx_core)
+                    - np.arctan2(n_core**2 * gamma_clad, n_clad**2 * kx_core)
+                )
+            return e**2
+
         theta_max: float = np.pi / 2
         theta_min: float = (
             np.arcsin(n_sub / n_core) if n_sub > n_clad else np.arcsin(n_clad / n_core)
         )
         optimization_result: optimize.OptimizeResult = optimize.minimize(
-            fun=self._calculate_mode_parameters_obj_fun,
+            fun=_obj_fun,
             x0=np.asarray([(theta_max + theta_min) / 2]),
             bounds=((theta_min, theta_max),),
             method="Powell",
-            args=(h, n_clad, n_core, n_sub, polarization),
         )
-        theta: float = optimization_result.x[0]
+        theta_solution: float = optimization_result.x[0]
         residual: float = optimization_result.fun
-        n_eff: float = n_core * np.sin(theta)
+        n_eff: float = n_core * np.sin(theta_solution)
 
         # Return results
         return n_eff, residual

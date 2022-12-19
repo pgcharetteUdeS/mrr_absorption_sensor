@@ -904,33 +904,6 @@ class Spiral:
 
         return s_nr, outer_spiral_r_min, l_total, wg_a2
 
-    def _obj_fun(self, x: np.ndarray, r: float) -> float:
-        """
-        Objective function for the optimization in find_max_sensitivity()
-
-        Args:
-            x (float): array of free parameters in the optimization (u, n_turns)
-            r (float): spiral outer radius
-
-        Returns: negative of sensitivity, scaled by 1000 to aid convergence (float)
-
-        """
-
-        # Fetch the solution vector components
-        u: float = x[0]
-        n_turns: float = x[1]
-
-        # Minimizer sometimes tries values of the solution vector outside the bounds...
-        u = min(u, self.models.parms.limits.u_max)
-        u = max(u, self.models.parms.limits.u_min)
-        n_turns = max(n_turns, 0)
-
-        # Calculate sensitivity at current solution vector S(r, u, n_turns)
-        s, _, _, _ = self._calc_sensitivity(r=r, u=u, n_turns=n_turns)
-        assert s >= 0, "S should not be negative!"
-
-        return -s / 1000
-
     def _find_max_sensitivity(
         self, r: float
     ) -> tuple[float, float, float, float, float, float, float]:
@@ -950,6 +923,29 @@ class Spiral:
             a2 (float): waveguide loss factor a2 @ max{S}
 
         """
+
+        def _obj_fun(x: np.ndarray) -> float:
+            """
+            Objective function for the optimization
+
+            Args:
+                x (float): array of free parameters in the optimization (u, n_turns)
+
+            Returns: negative of sensitivity, scaled by 1000 to aid convergence (float)
+
+            """
+
+            # Fetch the solution vector components
+            u: float = x[0]
+            n_turns: float = x[1]
+
+            # Minimizer sometimes tries values of the solution vector outside bounds...
+            u = min(u, self.models.parms.limits.u_max)
+            u = max(u, self.models.parms.limits.u_min)
+            n_turns = max(n_turns, 0)
+
+            # Negative sensitivity scaled by 1/1000
+            return -self._calc_sensitivity(r=r, u=u, n_turns=n_turns)[0] / 1000
 
         # Determine search domain extrema for u
         u_min, u_max = self.models.u_search_domain(r)
@@ -988,13 +984,12 @@ class Spiral:
 
             # Find h and n_turns that maximize S at radius R
             optimization_result: optimize.OptimizeResult = optimize.minimize(
-                fun=self._obj_fun,
+                fun=_obj_fun,
                 x0=np.asarray([u0, n_turns_0]),
                 bounds=(
                     (u_min, u_max),
                     (self.models.parms.spiral.turns_min, n_turns_max),
                 ),
-                args=(r,),
                 method=self.models.parms.fit.optimization_method,
                 tol=1e-9,
             )

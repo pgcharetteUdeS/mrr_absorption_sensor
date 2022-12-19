@@ -1275,30 +1275,6 @@ class Mrr:
 
         return np.exp(ln_a), -minus_b
 
-    def _objfun_r_w(
-        self, r: float, u: float, α_bend_a: float, α_bend_b: float
-    ) -> float:
-        """
-        Calculate the residual for the current solution of Rw modeled
-        using equation (15) in the paper
-
-        Args:
-            r (float): radius
-            u (float): waveguide core free parameter
-            α_bend_a (float): alpha_bend(r) model parameter A
-            α_bend_b (float): alpha_bend(r) model parameter B
-
-        Returns: residual (float)
-
-        """
-
-        α_bend: float = α_bend_a * np.exp(-α_bend_b * r)
-        residual: float = 1 - r * (2 * np.pi) * (
-            self._α_prop(u=u) + (1 - α_bend_b * r) * α_bend
-        )
-
-        return residual**2
-
     def _calc_r_e_and_r_w(self, gamma: float) -> tuple[float, float, float, float]:
         """
         Calculate Re(gamma) and Rw(gamma)
@@ -1310,6 +1286,25 @@ class Mrr:
                  A, B (floats, alpha_bend(r) model parameters A & B)
 
         """
+
+        def _objfun_r_w(r: float) -> float:
+            """
+            Calculate the residual for the current solution of Rw modeled
+            using equation (15) in the paper
+
+            Args:
+                r (float): radius
+
+            Returns: residual (float)
+
+            """
+
+            α_bend: float = α_bend_a * np.exp(-α_bend_b * r)
+            residual: float = 1 - r * (2 * np.pi) * (
+                self._α_prop(u=u) + (1 - α_bend_b * r) * α_bend
+            )
+
+            return residual**2
 
         # u corresponding to gamma
         u: float = self.models.u_of_gamma(gamma=gamma)
@@ -1323,9 +1318,8 @@ class Mrr:
 
         # Rw
         optimization_result: optimize.minimize = optimize.minimize(
-            fun=self._objfun_r_w,
+            fun=_objfun_r_w,
             x0=np.asarray(r_e),
-            args=(u, α_bend_a, α_bend_b),
             method="SLSQP",
         )
         r_w: float = optimization_result["x"][0]
@@ -1461,31 +1455,6 @@ class Mrr:
 
         return s
 
-    def _obj_fun(self, u: float, *args) -> float:
-        """
-        Objective function for the non-linear minimization in find_max_sensitivity()
-
-        Args:
-            u (float): waveguide core free parameter in the optimization
-            *args (float): r, radius
-
-        Returns: negative of sensitivity (to maximize sensitivity in the optimization,
-                 scaled by 1000 for a reasonable range to aid convergence)
-
-        """
-
-        # Fetch additional parameters
-        r: float = args[0]
-
-        # Minimizer sometimes tries values of the solution vector outside the bounds...
-        u = min(u, self.models.parms.limits.u_max)
-        u = max(u, self.models.parms.limits.u_min)
-
-        # Calculate sensitivity at current solution vector S(r, h)
-        s: float = self._calc_sensitivity(r=r, u=u)
-
-        return -s / 1000
-
     def _find_max_sensitivity(self, r: float) -> tuple_of_21_floats:
         """
         Calculate maximum mrr sensitivity at radius r over all u
@@ -1518,6 +1487,25 @@ class Mrr:
 
         """
 
+        def _obj_fun(u: float) -> float:
+            """
+            Objective function for the non-linear minimization
+
+            Args:
+                u (float): waveguide core free parameter in the optimization
+
+            Returns: negative of sensitivity (to maximize sensitivity in optimization,
+                     scaled by 1000 for a reasonable range to aid convergence)
+
+            """
+
+            # Minimizer sometimes tries values of the solution vector outside bounds...
+            u = min(u, self.models.parms.limits.u_max)
+            u = max(u, self.models.parms.limits.u_min)
+
+            # Negative sensitivity, scaled by 1/1000
+            return -self._calc_sensitivity(r=r, u=u) / 1000
+
         # Determine u search domain extrema
         u_min, u_max = self.models.u_search_domain(r)
 
@@ -1530,18 +1518,16 @@ class Mrr:
         if u_min != u_max:
             if self.models.parms.fit.optimization_local:
                 optimization_result: optimize.OptimizeResult = optimize.minimize(
-                    fun=self._obj_fun,
+                    fun=_obj_fun,
                     x0=np.asarray([u0]),
                     bounds=((u_min, u_max),),
-                    args=(r,),
                     method=self.models.parms.fit.optimization_method,
                     tol=1e-9,
                 )
             else:
                 optimization_result = optimize.shgo(
-                    func=self._obj_fun,
+                    func=_obj_fun,
                     bounds=[(u_min, u_max)],
-                    args=(r,),
                     iters=3,
                     options={"minimize_every_iter": True},
                 )

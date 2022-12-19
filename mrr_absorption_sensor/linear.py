@@ -213,27 +213,6 @@ class Linear:
 
         return s_nr
 
-    def _obj_fun(self, u: float, r: float) -> float:
-        """
-        Objective function used for minimization in find_max_sensitivity(u) @ r
-
-        Args:
-            u (float): waveguide core geometry free parameter
-            r (float): "radius" (length of waveguide = 2r)
-
-        Returns: negative of sensitivity (for maximizing sensitivity)
-
-        """
-
-        # Minimizer sometimes tries values of the solution vector outside the bounds...
-        u = min(u, self.models.parms.limits.u_max)
-        u = max(u, self.models.parms.limits.u_min)
-
-        # Calculate sensitivity at current solution vector S(r, h)
-        s: float = self._calc_sensitivity(r=r, u=u)
-
-        return -s / 1000
-
     def _find_max_sensitivity(self, r: float) -> Tuple[float, float, float, float]:
         """
         Calculate maximum sensitivity at radius r over all u
@@ -248,6 +227,24 @@ class Linear:
 
         """
 
+        def _obj_fun(u: float) -> float:
+            """
+            Objective function used for minimization
+
+            Args:
+                u (float): waveguide core geometry free parameter
+
+            Returns: negative of sensitivity (for maximizing sensitivity)
+
+            """
+
+            # Minimizer sometimes tries values of the solution vector outside bounds...
+            u = min(u, self.models.parms.limits.u_max)
+            u = max(u, self.models.parms.limits.u_min)
+
+            # Negative sensitivity scaled by 1/1000
+            return -self._calc_sensitivity(r=r, u=u) / 1000
+
         # If this is the first optimization, set the initial guess for u at the
         # maximum value in the domain (at small radii, bending losses are high,
         # the optimal solution will be at high u), else use previous solution.
@@ -259,10 +256,9 @@ class Linear:
 
         # Find u that maximizes S at radius R
         optimization_result: optimize.OptimizeResult = optimize.minimize(
-            fun=self._obj_fun,
+            fun=_obj_fun,
             x0=np.asarray([u0]),
             bounds=((self.models.parms.limits.u_min, self.models.parms.limits.u_max),),
-            args=(r,),
             method=self.models.parms.fit.optimization_method,
             tol=1e-9,
         )

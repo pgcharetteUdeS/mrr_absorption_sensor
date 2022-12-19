@@ -1,5 +1,14 @@
 # Change Log
 
+## 2.92
+
+### Changed
+
+* Integrated the minimization objective functions into their respective calling
+functions (models.py, linear.py, spiral.py, mrr.py)
+
+# Change Log
+
 ## 2.91
 
 ### Changed
