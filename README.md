@@ -36,9 +36,10 @@ Classes:
 2. The return value from analyze.analyze() must be stored in a local variable in the
    calling script for the buttons to work in the 3D graph of alpha_bend(r, u).
 
-3. The alpha_bend(r, u) model is hardcoded in models.Models.fit_alpha_bend_model()
-   but the code is structured in such a way that it is relatively easy to change, see
-   the "USER-DEFINABLE MODEL-SPECIFIC SECTION" code section.
+3. The model for the radiative bending losses as a function of ring radius r and 
+   waveguide core geometry free parameter u, alpha_bend(r, u), is hardcoded in
+   models.Models._fit_α_bend_model() but the code is structured in such a way that it is
+   relatively easy to change, see "USER-DEFINABLE MODEL-SPECIFIC SECTION" code section.
 
 ## Known issues:
 

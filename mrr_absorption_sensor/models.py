@@ -46,9 +46,10 @@ class Models:
     1) To accommodate either fixed core width or fixed core height optimization
        problems, the waveguide core geometry dimensions are labeled "u" and "v",
        with "u" being the variable components and "v" the fixed component.
-    2) The model for alpha_bend(r, u) is hardcoded in fit_alpha_bend_model()
-       but the code is structured in such a way that it is relatively easy to change,
-       see the "USER-DEFINABLE MODEL-SPECIFIC SECTION" code section.
+    2) The model for alpha_bend(r, u), the radiative bending losses, is hardcoded
+       in _fit_α_bend_model() but the code is structured in such a way that it is
+       relatively easy to change, see the "USER-DEFINABLE MODEL-SPECIFIC SECTION"
+       code section.
 
     """
 
@@ -270,7 +271,7 @@ class Models:
 
     def _calc_alpha_db_per_cm(self, n_eff: float, height: float, width: float) -> float:
         """
-        Calculate waveguide propagation losses with the Payne & Lacey model
+        Calculate mode propagation losses with the Payne & Lacey model
 
         Args:
             n_eff (float): mode effective index
@@ -920,7 +921,9 @@ class Models:
 
     def _fit_α_bend_model(self) -> None:
         """
-        Polynomial model least squares fit to ln(alpha_bend(r, u))
+        Polynomial model least squares fit to ln(alpha_bend(r, u)), the natural
+        logarithm of the radiative bending losses as a function of ring radius and
+        core geometry free parameter.
 
         Current model:
 

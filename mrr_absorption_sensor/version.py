@@ -2,4 +2,4 @@
 Package version
 """
 
-__version__: str = "2.92"
+__version__: str = "2.93"
